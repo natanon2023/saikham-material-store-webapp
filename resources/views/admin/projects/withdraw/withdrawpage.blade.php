@@ -1,0 +1,95 @@
+@extends('layouts.admin')
+
+@section('content')
+<div class="main-content">
+    @include('components.successanderror')
+
+    <div class="boxmaterial">
+        <div style="display: flex; justify-content: space-between; align-items: center; ">
+            <h3>เบิกวัสดุ</h3>
+            <a href="{{ route('admin.projects.index') }}" class="btn btn-primary">ย้อนกลับ</a>
+        </div>
+    </div>
+
+    <div class="boxmaterial" style="margin-top: 20px;">
+        <form action="{{ route('admin.projects.withdrawstore', $project->id) }}" method="POST">
+            @csrf
+
+            <div class="form-group" style="margin-bottom: 20px; max-width: 100%;">
+                <label for="withdrawn_by" class="form-label">เลือกผู้เบิกวัสดุ </label>
+                <select name="withdrawn_by" id="withdrawn_by" class="form-input" required>
+                    <option value="">กรุณาเลือกผู้เบิก</option>
+                    @foreach($users as $user)
+                    <option value="{{ $user->id }}">{{ $user->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-secondary">
+                ยืนยันการเบิกวัสดุ
+            </button>
+        </form>
+    </div>
+    <div class="boxmaterial" style="margin-top: 20px;">
+        <h3>ข้อมูลวัสดุที่จะเบิก</h3>
+        <hr>
+
+        @foreach ($project->customerneed as $need)
+        <table>
+            <thead style="background:#333;color:#fff;">
+                <tr align="center">
+                    <th>ลำดับ</th>
+                    <th>ประเภท</th>
+                    <th>รายละเอียด</th>
+                    <th>ล็อต</th>
+                    <th>จำนวนใช้</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach ($need->productset->productsetitem->sortBy('material.material_type') as $item)
+                @php $mat = $item->material; @endphp
+                <tr>
+                    <td align="center">{{ $loop->iteration }}</td>
+                    <td align="center">
+                        <b>{{ $mat->material_type }}</b>
+                    </td>
+                    <td align="center">
+                        @if($mat->aluminiumItem)
+                        {{ $mat->aluminiumItem->aluminiumType->name ?? '-' }} <br>
+                        สี {{ $mat->aluminiumItem->aluminumSurfaceFinish->name ?? '-' }}
+
+                        @elseif($mat->glassItem)
+                        {{ $mat->glassItem->glassType->name ?? '-' }} <br>
+                        สี {{ $mat->glassItem->colourItem->name ?? '-' }}
+
+                        @elseif($mat->accessoryItem)
+                        {{ $mat->accessoryItem->accessoryType->name ?? '-' }}
+
+                        @elseif($mat->consumableItem)
+                        {{ $mat->consumableItem->consumabletype->name ?? '-' }}
+                        @endif
+                    </td>
+                    <td align="center">
+                        {{ $item->calculated_lot }}
+                    </td>
+                    <td align="center">
+                        {{ $item->calculated_qty }}
+                    </td>
+
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+
+        @endforeach
+    </div>
+
+    <br>
+
+
+
+
+</div>
+
+@endsection

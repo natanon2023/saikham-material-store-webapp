@@ -1,0 +1,303 @@
+@extends('layouts.admin')
+
+@section('content')
+<div class="main-content">
+    <div class="boxmaterial" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h3 style="margin: 0;">ออกใบเสนอราคา</h3>
+        </div>
+    
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <a href="{{ route('admin.projects.index',$project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
+            @if ($project->status == 'pending_quotation')
+            <form action="{{ route('admin.projects.satatuswaitingapproval') }}" method="post" style="margin: 0;">
+                @csrf
+                <input type="hidden" value="{{ $project->id }}" name="id">
+                <button type="submit" class="btn btn-secondary">ยืนยันการเสนอราคา</button>
+            </form>
+            @endif
+        </div>
+    </div>
+    
+
+    
+    <div class="box" style="padding: 30px;">
+        <div style=" margin-bottom: 10px;" align="end">
+            หน้าที่ 1
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+            <div>
+                <h4>ร้านทรายคำวัสดุ</h4>
+                <p>193 หมู่ 13 ต.โพธิ์ไทร อ.โพธิ์ไทร จ.อุบลราชธานี 34340</p>
+                <p>เลขประจำตัวผู้เสียภาษี 5342100004679</p>
+                <p>เบอร์มือถือ 0895284181</p>
+            </div>
+            <div>
+                <h4>ใบเสนอราคา</h4>
+                <p><strong>เลขที่</strong> {{ $project->quotation_number }} </p>
+                <p><strong>งาน </strong> {{ $project->projectname->name }}</p>
+                <p><strong>วันที่ออก </strong> {{ date('d-m-Y') }}</p>
+                <p><strong>ผู้ขาย</strong> ไพร์ยนร์ ทรายคำ</p>
+            </div>
+            
+        </div>
+        <hr>
+        <div style="display: flex; justify-content: space-between; margin-top: 5px; margin-bottom: 20px;">
+            <div>
+                <h4><strong>ลูกค้า</strong> </h4>
+                <p>{{ $project->customer->first_name.' '.$project->customer->last_name }}</p>
+                <p>
+                    {{ $project->customer->house_number }}
+                    ต.{{ $project->customer->tambon->name_th}}
+                    อ.{{ $project->customer->amphure->name_th }}
+                    จ.{{ $project->customer->province->name_th}}
+                    {{ $project->customer->tambon->zip_code }}
+                </p>
+                <p>เบอร์มือถือ {{ $project->customer->phone }}</p>
+                <p>เลขประจำตัวผู้เสียภาษี {{ $project->customer->tax_id_number }}</p>
+
+            </div>
+        </div>
+        <hr>
+
+        <h3 style="margin-top: 20px; color: black;">ค่าใช้จ่ายอื่นๆ</h3>
+        <table width="100%" border="1" cellspacing="0" cellpadding="5">
+            <tr align="center" style="background:#f2f2f2;">
+                <td width="10%">ลำดับ</td>
+                <td>ประเภทค่าใช้จ่าย</td>
+                <td width="20%">จำนวนเงิน (บาท)</td>
+            </tr>
+
+            @php
+            $totalExpenses = 0;
+            @endphp
+
+            @foreach($project->projectexpenses as $expense)
+            @php
+            $totalExpenses += $expense->amount;
+            @endphp
+
+
+            <tr>
+                <td align="center">{{ $loop->iteration }}</td>
+                <td>{{ $expense->type?->name }}</td>
+                <td align="right">{{ number_format($expense->amount, 2) }}</td>
+            </tr>
+            @endforeach
+
+            @if($project->projectexpenses->isEmpty())
+            <tr>
+                <td colspan="3" align="center">ไม่มีรายการค่าใช้จ่ายเพิ่มเติม</td>
+            </tr>
+            @endif
+        </table>
+
+        <h3 style="margin-top: 20px; margin-bottom: 20px; color: black;">ค่าแรงช่าง</h3>
+        <table >
+            <tr align="center">
+                <td>ลำดับ</td>
+                <td>รายการ</td>
+                <td>จำนวนวันทำงาน</td>
+                <td>อัตราค่าแรงต่อวัน</td>
+                <td>ค่าแรงต่อวันรวม</td>
+            </tr>
+            <tr>
+                <td  align="center">1</td>
+                <td >วันออกสำรวจหน้างาน</td>
+                <td align="center">1</td>
+                <td align="center">{{number_format($project->labor_cost_surveying,2)  }}</td>
+                <td align="right">{{number_format($project->labor_cost_surveying*1,2)  }}</td>
+            </tr>
+            <tr>
+                <td  align="center">2</td>
+                <td  >วันติดตั้ง</td>
+                <td align="center">{{ $project->estimated_work_days }}</td>
+                <td align="center">{{number_format($project->daily_labor_rate,2)  }}</td>
+                <td align="right">{{number_format($project->estimated_work_days*$project->daily_labor_rate,2)  }}</td>
+            </tr>
+            <tr class="text-end">
+                <td colspan="4"><strong>รวม</strong></td>
+                <td>{{ number_format($project->labor_cost_surveying + $project->estimated_work_days*$project->daily_labor_rate, 2) }} บาท</td>
+            </tr>
+        </table>
+
+
+        <h3 style="margin-top: 20px; margin-bottom: 20px; color: black;">รายการชุดที่สั่ง</h3>
+
+        <table border="1" width="100%" cellpadding="6" cellspacing="0">
+            <tr align="center" style="background:#333;">
+                <td width="5%">ลำดับ</td>
+                <td width="30%">รายการ</td>
+                <td width="20%">ขนาด (ซม.)</td>
+                <td width="10%">จำนวน</td>
+                <td width="10%">ราคาต่อชุด</td>
+                <td width="20%">ราคารวม (บาท)</td>
+            </tr>
+
+            @php
+            $grandTotalProject = 0;
+            @endphp
+
+            @foreach ($project->customerneed as $need)
+            
+
+            <tr style="background-color: #e9ecef;">
+                <td align="center">{{ $loop->iteration }}</td>
+                <td>{{ $need->productset->productSetName->name }}</td>
+                <td align="center">
+                    {{ $need->location }}
+                    ({{ $need->width }} x {{ $need->high }} ซม.)
+                </td>
+                <td align="center">{{ $need->quantity }} ชุด</td>
+                <td align="right">{{ number_format($need->calculated_total, 2) }}</td>
+                <td align="right">{{ number_format($need->quantity*$need->calculated_total, 2) }}</td>
+            </tr>
+            @endforeach
+        </table>
+
+        
+
+        <div style="margin-top: 30px; display: flex; justify-content: flex-end;">
+            <table width="40%" border="0" cellspacing="0" cellpadding="5">
+                @php
+                    
+
+                    $sumtotal =  $need->quantity*$need->calculated_total + $totalExpenses + $project->labor_cost_surveying + $project->estimated_work_days*$project->daily_labor_rate;
+                    
+                    $income = 0.20;
+                    $sumincome = $sumtotal + ($sumtotal * $income );
+
+                    $sevic = $sumincome - $sumtotal;
+
+
+                    $vatPercent = 0.07;
+                    $sumvattotal = $sumincome + ($sumincome * $vatPercent);
+                    $pricevat = $sumvattotal - $sumincome;
+
+                    
+                @endphp
+                <tr>
+                    <td align="right"><strong>ค่าใช้จ่ายอื่นๆ</strong></td>
+                    <td align="right">{{ number_format($totalExpenses, 2) }} บาท</td>
+                </tr>
+                <tr>
+                    <td align="right"><strong>รายการชุดที่สั่ง</strong></td>
+                    <td align="right">{{ number_format($need->quantity*$need->calculated_total, 2) }} บาท</td>
+                </tr>
+                <tr>
+                    <td align="right"><strong>ค่าแรงช่าง</strong></td>
+                    <td align="right">{{number_format($project->labor_cost_surveying + $project->estimated_work_days*$project->daily_labor_rate,2)  }} บาท</td>
+                </tr>
+                <tr>
+                    <td align="right" style="border-top: 1px solid #ddd;"><strong>ค่าบริการ 20%</strong></td>
+                    <td align="right" style="border-top: 1px solid #ddd;">{{ number_format($sevic, 2) }} บาท</td>
+                </tr>
+                <tr>
+                    <td align="right" style="border-top: 1px solid #ddd;"><strong>รวมเป็นเงิน (ก่อน VAT)</strong></td>
+                    <td align="right" style="border-top: 1px solid #ddd;">{{ number_format($sumincome, 2) }} บาท</td>
+                </tr>
+                
+                <tr>
+                    <td align="right"><strong>ภาษีมูลค่าเพิ่ม 7%</strong></td>
+                    <td align="right">{{ number_format($pricevat, 2) }} บาท</td>
+                </tr>
+                <tr style="background-color: #f2f2f2; font-size: 1.2em;">
+                    <td align="right"><strong>ยอดสุทธิ</strong></td>
+                    <td align="right"><strong>{{ number_format($sumvattotal, 2) }} บาท</strong></td>
+                </tr>
+            </table>
+        </div>
+
+        <div style="margin-top: 50px;">
+            <p><strong>หมายเหตุ:</strong> ยืนยันราคาภายใน 7 วัน</p>
+        </div>
+
+    </div>
+
+    
+
+    
+    <div class="boxmaterial">
+        <div style=" margin-bottom: 10px;" align="end">
+            หน้าที่ 2
+        </div>
+        <h3>ข้อมูลสต็อกวัสดุเพื่อการเสนอราคา (แบบละเอียด)</h3>
+        <hr>
+
+        @foreach ($project->customerneed as $need)
+        <div style=" display: flex; justify-content: space-between; margin-top:20px; margin-bottom: 20px;">
+            <h4>
+                ชุดงาน: {{ $need->productset->productSetName->name }}
+                ({{ $need->width }} × {{ $need->high }} ซม.)
+            </h4>
+            <h4>
+                ราคาต่อชุด : {{ number_format($need->calculated_total, 2) }} บาท
+            </h4>
+        </div>
+
+
+
+        <table border="1" width="100%" cellpadding="5" cellspacing="0">
+            <thead style="background:#333;color:#fff;">
+                <tr align="center">
+                    <th>ประเภท</th>
+                    <th>รายละเอียด</th>
+                    <th>ล็อต</th>
+                    <th>ราคา/หน่วย</th>
+                    <th>จำนวนใช้</th>
+                    <th>ราคารวม</th>
+                    <th>หมายเหตุ</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach ($need->productset->productsetitem->sortBy('material.material_type') as $item)
+                @php $mat = $item->material; @endphp
+                <tr>
+                    <td align="center">
+                        <b>{{ $mat->material_type }}</b>
+                    </td>
+                    <td align="center">
+                        @if($mat->aluminiumItem)
+                        {{ $mat->aluminiumItem->aluminiumType->name ?? '-' }} <br>
+                        สี {{ $mat->aluminiumItem->aluminumSurfaceFinish->name ?? '-' }}
+
+                        @elseif($mat->glassItem)
+                        {{ $mat->glassItem->glassType->name ?? '-' }} <br>
+                        สี {{ $mat->glassItem->colourItem->name ?? '-' }}
+
+                        @elseif($mat->accessoryItem)
+                        {{ $mat->accessoryItem->accessoryType->name ?? '-' }}
+
+                        @elseif($mat->consumableItem)
+                        {{ $mat->consumableItem->consumabletype->name ?? '-' }}
+                        @endif
+                    </td>
+                    <td align="center">
+                        {{ $item->calculated_lot }}
+                    </td>
+                    <td align="right">
+                        {{ number_format($item->calculated_unit_price, 2) }}
+                    </td>
+                    <td align="center">
+                        {{ $item->calculated_qty }}
+                    </td>
+                    <td align="right">
+                        <b>{{ number_format($item->calculated_total, 2) }}</b>
+                    </td>
+                    <td align="center">
+                        {{ $item->calculated_remark }}
+                    </td>
+
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+
+        @endforeach
+    </div>
+
+
+
+</div>
+@endsection

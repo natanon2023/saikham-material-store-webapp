@@ -1,0 +1,39 @@
+.calendar-container {
+    background: white; 
+    padding: 20px; 
+    border-radius: 15px; 
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+#calendar {
+    min-height: 650px;
+    font-family: 'Sarabun', sans-serif;
+}
+
+.fc .fc-toolbar-title {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 1.8em;
+    color: #334E68;
+}
+
+.fc .fc-button-primary {
+    background-color: #334E68;
+    border-color: #334E68;
+}
+
+.fc .fc-button-primary:hover {
+    background-color: #334E68;
+}
+
+.fc .fc-event {
+    cursor: pointer;
+    padding: 2px 5px;
+}
+
+.fc .fc-day-today {
+    background-color: #f8f9fa !important;
+    border: 2px solid #334E68 !important;
+}
+

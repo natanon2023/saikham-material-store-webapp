@@ -1,0 +1,123 @@
+@extends('layouts.admin')
+
+@section('content')
+<div class="main-content">
+    @include('components.successanderror')
+
+    <div class="boxmaterial" style="display: flex; justify-content: space-between; align-items: center;  margin-bottom: 20px;">
+        <h3 style="margin: 0;">รายละเอียดงาน</h3>
+        <a href="{{ route('admin.projects.adminfulleventcalendarpage') }}" class="btn btn-primary">ย้อนกลับ</a>
+    </div>
+
+    <div class="controlboxproject1" style="display: flex; flex-wrap: wrap; background: #fff;  box-shadow: 0 4px 12px rgba(0,0,0,0.08); overflow: hidden; margin-bottom: 20px; border: 1px solid #eaeaea;">
+
+        <div class="boximgproject" style="flex: 1 1 350px; min-height: 300px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center; border-right: 1px solid #eaeaea;">
+            @if (!empty($project->homeimg))
+            <img src="data:image/jpeg;base64,{{ base64_encode($project->homeimg) }}" alt="Project Image" style="width:100%; height:100%; object-fit:cover;">
+            @else
+            <div style="text-align:center; color:#adb5bd; font-size: 1.2rem;">
+                <i class="fas fa-image" style="font-size: 3rem; margin-bottom: 10px;"></i><br>
+                <span>ยังไม่มีรูปภาพหน้างาน</span>
+            </div>
+            @endif
+        </div>
+
+        <div class="controlboxproject2" style="flex: 2 1 500px; padding: 25px; display: flex; flex-direction: column;">
+
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #f1f3f5; padding-bottom: 15px; margin-bottom: 15px;">
+                <h3 style="margin: 0; color: #333; font-size: 1.4rem;">{{ $project->projectname->name }}</h3>
+                <div style="background-color: {{ $currentStatus[0] }}; color: #fff; padding: 6px 20px; border-radius: 50px; font-weight: bold; font-size: 0.9rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: inline-block; text-align: center;">
+                    {{ $currentStatus[1] }}
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 140px 1fr; gap: 10px; font-size: 1rem; color: #555; margin-bottom: 20px;">
+                <div style="color: #888;">รหัสงาน:</div>
+                <div><strong>{{ $project->project_code.'-'.\Carbon\Carbon::parse($project->created_at)->format('Ymd') }}</strong></div>
+
+                <div style="color: #888;">ชื่อลูกค้า:</div>
+                <div><strong>คุณ {{ $project->customer->first_name }} {{ $project->customer->last_name }}</strong></div>
+
+                <div style="color: #888;">เบอร์โทร:</div>
+                <div><strong>{{ $project->customer->phone ?? '-' }}</strong></div>
+
+                @if (in_array($project->status, ['pending_survey', 'waiting_survey', 'surveying']))
+                <div style="color: #888;">วันนัดสำรวจ:</div>
+                <div style="color: #FF8C00;"><strong>{{ $project->survey_date }}</strong></div>
+                @endif
+
+                
+
+                @if(in_array($project->status, ['materials_withdrawn', 'installing', 'completed']))
+                <div style="color: #888;">วันทำงาน:</div>
+                <div style="color: #4CAF50;"><strong>วันที่ {{ $project->installation_start_date }} ถึง {{ $project->installation_end_date ?? 'ยังไม่ได้กำหนด' }}</strong></div>
+                @endif
+            </div>
+
+            <div style="margin-top: auto; padding-top: 15px; border-top: 1px solid #f1f3f5; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    @if ($project->status == 'pending_survey')
+                    <a href="{{ route('admin.projects.expensedetail', $project->id) }}" class="btn btn-secondary btn-full-text">เพิ่มค่าใช้จ่าย</a>
+
+                    @elseif ($project->status == 'waiting_survey')
+                    <form action="{{ route('admin.projects.updatestatussurveying', $project->id) }}" method="post" style="margin:0;">
+                        @csrf
+                        <button class="btn btn-secondary btn-full-text">สำรวจหน้างาน</button>
+                    </form>
+
+                    @elseif($project->status == 'surveying')
+                    <a href="{{ route('admin.projects.formsurveying', $project->id) }}" class="btn btn-secondary btn-full-text">บันทึกการสำรวจ</a>
+
+                    @elseif($project->status == 'pending_quotation')
+                    <a href="{{ route('admin.projects.addbid', $project->id) }}" class="btn btn-secondary btn-full-text">เสนอราคา</a>
+
+                    @elseif($project->status == 'waiting_approval')
+                    <form action="{{ route('admin.projects.updatestatusapproved', $project->id) }}" method="post" style="margin:0;">
+                        @csrf
+                        <button class="btn btn-secondary btn-full-text">ลูกค้าอนุมัติ</button>
+                    </form>
+
+                    @elseif($project->status == 'approved')
+                    <form action="{{ route('admin.projects.updatestatusmaterialplanning', $project->id) }}" method="post" style="margin:0;">
+                        @csrf
+                        <button class="btn btn-secondary btn-full-text">วางแผนวัสดุ</button>
+                    </form>
+
+                    @elseif($project->status == 'material_planning')
+                    <a href="{{ route('admin.projects.materialplanningpage', $project->id) }}" class="btn btn-secondary btn-full-text">รายการที่จะซื้อ</a>
+
+                    @elseif($project->status == 'waiting_purchase')
+                    <form action="{{ route('admin.projects.updatestatusreadytowithdraw', $project->id) }}" method="post" style="margin:0;">
+                        @csrf
+                        <button class="btn btn-secondary btn-full-text">พร้อมเบิกวัสดุ</button>
+                    </form>
+
+                    @elseif($project->status == 'ready_to_withdraw')
+                    <a href="{{ route('admin.projects.withdrawpage', $project->id) }}" class="btn btn-secondary btn-full-text">เบิกวัสดุ</a>
+
+                    @elseif($project->status == 'materials_withdrawn')
+                    <form action="{{ route('admin.projects.updatestatusinstalling', $project->id) }}" method="POST" style="margin: 0;">
+                        @csrf
+                        <button class="btn btn-secondary btn-full-text">เริ่มการติดตั้ง</button>
+                    </form>
+
+                    @elseif($project->status == 'installing')
+                    <a href="{{ route('admin.projects.issues.create', $project->id) }}" class="btn btn-danger btn-full-text">แจ้งปัญหา</a>
+                    <form action="{{ route('admin.projects.updatestatuscompleted', $project->id) }}" method="POST" style="margin: 0;">
+                        @csrf
+                        <button type="submit" class="btn btn-success btn-full-text">เสร็จสมบูรณ์</button>
+                    </form>
+                    @endif
+                </div>
+
+                <div>
+                    <a href="{{ route('admin.projects.alldetail', $project->id) }}" class="btn btn-primary btn-full-text" title="ดูรายละเอียดเต็ม">
+                        ดูรายละเอียดทั้งหมด
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+@endsection

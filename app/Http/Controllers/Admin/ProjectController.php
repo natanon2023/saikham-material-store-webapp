@@ -1,0 +1,1761 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\AccessoryType;
+use App\Models\AluminiumProfileType;
+use App\Models\Customer;
+use App\Models\ExpenseType;
+use App\Models\ProductSetName;
+use App\Models\Project;
+use App\Models\ProjectExpense;
+use App\Models\Projectimages;
+use App\Models\ProjectName;
+use App\Models\ThaiAmphure;
+use App\Models\ThaiProvince;
+use App\Models\ThaiTambon;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use App\Models\AluminumSurfaceFinish;
+use App\Models\GlassType;
+use App\Models\ColourItem;
+use App\Models\ConsumableType;
+use App\Models\CustomerNeed;
+use App\Models\ImageTypeName;
+use App\Models\Material;
+use App\Models\Price;
+use App\Models\ProductSet;
+use App\Models\ProductSetItem;
+use App\Models\ToolType;
+use App\Models\MaterialLog;
+use App\Models\Withdrawal;
+use App\Models\WithdrawalItem;
+use App\Models\ProjectIssue;
+use App\Models\IssueImage;
+use Carbon\Carbon;
+
+
+class ProjectController extends Controller
+{
+    public function index($id)
+    {
+        $project = Project::with([
+            'customer.province',
+            'customer.amphure',
+            'customer.tambon',
+            'createdBy',
+            'updatedBy',
+            'assignedSurveyor',
+            'assignedInstaller',
+            'projectname',
+            'projectexpenses'
+
+        ])->find($id);
+
+        $statusColors = [
+                'pending_survey' => ['#D4AF37', 'นัดสำรวจ'],
+                'waiting_survey' => ['#FF8C00', 'รอวันสำรวจ'],
+                'surveying' => ['#1E90FF', 'กำลังสำรวจ'],
+                'pending_quotation' => ['#E91E63', 'รอเสนอราคา'],
+                'waiting_approval' => ['#9C27B0', 'รออนุมัติ'],
+                'approved' => ['#78d37b', 'อนุมัติแล้ว'],
+                'material_planning' => ['#00CED1', 'วางแผนวัสดุ'],
+                'waiting_purchase' => ['#FF4500', 'รอสั่งซื้อ'],
+                'ready_to_withdraw' => ['#008080', 'พร้อมเบิก'],
+                'materials_withdrawn' => ['#8B4513', 'เบิกวัสดุแล้ว'],
+                'installing' => ['#4CAF50', 'กำลังติดตั้ง'],
+                'completed' => ['#708090', 'เสร็จสิ้น'],
+                'cancelled' => ['#DC143C', 'ยกเลิก']
+        ];
+
+        $currentStatus = $statusColors[$project->status] ?? ['#ccc', 'ไม่ระบุ'];
+
+        return view("admin.projects.index", compact('project','statusColors','currentStatus'));
+    }
+
+    public function formprojectexpense($id)
+    {
+        $project = Project::find($id);
+        $expense = ExpenseType::all();
+        return view('admin.projects.projectexpense.formprojectexpense', compact('expense', 'project'));
+    }
+
+    public function createprojectexpense(Request $request)
+    {
+
+        $project = Project::find($request->project_id);
+        ProjectExpense::create([
+            'project_id' => $project->id,
+            'expense_type_id' => $request->expense_type_id,
+            'description' => $request->description,
+            'amount' => $request->amount,
+            'expense_date' => $request->expense_date,
+            'created_by' => Auth::user()->id
+        ]);
+
+        return redirect()->route('admin.projects.expensedetail', $project->id)->with('success', 'เพิ่มรายการค่าใช้จ่ายสำเร็จ');
+    }
+
+    public function formeditProjectexpense($id)
+    {
+        $projectexpense = ProjectExpense::with([
+            'type',
+            'creator'
+        ])->find($id);
+        $expense = ExpenseType::all();
+        return view('admin.projects.projectexpense.edit.formeditProjectexpense', compact('projectexpense', 'expense'));
+    }
+
+    public function editprojectexpense(Request $request)
+    {
+        $projectExpense = ProjectExpense::find($request->id);
+
+        $project = Project::find($request->project_id);
+
+        $projectExpense->update([
+            'project_id' => $project->id,
+            'expense_type_id' => $request->expense_type_id,
+            'description' => $request->description,
+            'amount' => $request->amount,
+            'expense_date' => $request->expense_date,
+            'created_by' => Auth::id(),
+        ]);
+
+
+        return redirect()->route('admin.projects.expensedetail', $project->id)->with('success', 'แก้ไขรายการค่าใช้จ่ายเรียบร้อยแล้ว');
+    }
+
+    public function deleteprojectexpense($id)
+    {
+        $projectexpense = ProjectExpense::find($id);
+
+        $project = Project::find($projectexpense->project_id);
+
+        $projectexpense->delete();
+
+        return redirect()->route('admin.projects.expensedetail', $project->id)->with('success', 'ลบข้อมูลค่าใช้จ่ายสำเร็จ');
+    }
+
+
+    public function formexpense($id)
+    {
+        $project = Project::find($id);
+        $expens = ExpenseType::withTrashed()->get();
+        return view('admin.projects.projectexpense.formexpense', compact('project', 'expens'));
+    }
+
+    public function createexpense(Request $request)
+    {
+        ExpenseType::create([
+            'name' => $request->name,
+            'description' => $request->description
+        ]);
+
+        return redirect()->back()->with('success', 'เพิ่มชื่อรายการค่าใช้สำเร็จ');
+    }
+
+    public function updateexpense(Request $request, $id)
+    {
+        $expense = ExpenseType::find($id);
+
+        $expense->update([
+            'name' => $request->name,
+            'description' => $request->description
+        ]);
+
+        return redirect()->back()->with('success', 'อัปเดตข้อมูลสำเร็จ');
+    }
+
+    public function deleteexpense($id)
+    {
+        $expense = ExpenseType::find($id);
+        $expense->delete();
+
+        return redirect()->back()->with('success', 'ลบรายการค่าใช้จ่ายสำเร็จ');
+    }
+
+    public function restoreexpense($id)
+    {
+        $expense = ExpenseType::withTrashed()->find($id);
+        $expense->restore();
+
+        return redirect()->back()->with('success', 'กู้คืนรายการค่าใช้จ่ายสำเร็จ');
+    }
+
+
+
+    public function expensedetail($id)
+    {
+        $project = Project::with([
+            'customer.province',
+            'customer.amphure',
+            'customer.tambon',
+            'createdBy',
+            'updatedBy',
+            'assignedSurveyor',
+            'assignedInstaller',
+            'projectname',
+            'projectexpenses.type',
+            'projectexpenses.creator'
+
+        ])->find($id);
+        return view('admin.projects.projectexpense.expensedetail', compact('project'));
+    }
+
+    public function formnewcustomer()
+    {
+        $customerall = Customer::withTrashed()->get();
+        $province = ThaiProvince::orderBy('name_th', 'ASC')->get();
+
+        return view("admin.projects.pendingsurvey.formnewcustomer", compact('province', 'customerall'));
+    }
+
+    public function createnewcustomer(Request $request)
+    {
+        Customer::create([
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+            'email' => $request->email,
+            'phone' => $request->phone,
+            'house_number' => $request->house_number,
+            'village' => $request->village,
+            'alley' => $request->alley,
+            'road' => $request->road,
+            'province_id' => $request->province_id,
+            'amphure_id' => $request->amphure_id,
+            'tambon_id' => $request->tambon_id,
+            'zip_code' => $request->zip_code,
+            'house_name' => $request->house_name,
+            'note' => $request->note,
+            'gender' => $request->gender,
+            'prefix' => $request->prefix,
+            'tax_id_number' => $request->tax_id_number
+        ]);
+
+        return back()->with('success', 'บันทึกข้อมูลลูกค้าใหม่สำเร็จ');
+    }
+
+    public function editcustomer($id)
+    {
+        $customer = Customer::with([
+            'province',
+            'amphure',
+            'tambon',
+        ])->find($id);
+
+        $province = ThaiProvince::orderBy('name_th', 'ASC')->get();
+        $amphure = ThaiAmphure::where('province_id', $customer->province_id)->orderBy('name_th', 'ASC')->get();
+        $tambon = ThaiTambon::where('amphure_id', $customer->amphure_id)->orderBy('name_th', 'ASC')->get();
+
+        return view('admin.projects.pendingsurvey.editcustomer', compact('customer', 'province', 'amphure', 'tambon'));
+    }
+
+    public function updatecustomer(Request $request, $id)
+    {
+        $customer = Customer::find($id);
+
+        $customer->update([
+            'prefix' => $request->prefix,
+            'gender' => $request->gender,
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+            'email' => $request->email,
+            'phone' => $request->phone,
+            'house_number' => $request->house_number,
+            'village' => $request->village,
+            'alley' => $request->alley,
+            'road' => $request->road,
+            'province_id' => $request->province_id,
+            'amphure_id' => $request->amphure_id,
+            'tambon_id' => $request->tambon_id,
+            'zip_code' => $request->zip_code,
+            'house_name' => $request->house_name,
+            'tax_id_number' => $request->tax_id_number
+        ]);
+
+        return redirect()->back()->with('success', 'แก้ไขข้อมูลเรียบร้อย');
+    }
+
+
+    public function deletecustomer($id)
+    {
+        Customer::find($id)->delete();
+        return redirect()->back()->with('success', 'ลบข้อมูลเรียบร้อย (สามารถกู้คืนได้)');
+    }
+
+    public function restorecustomer($id)
+    {
+        Customer::withTrashed()->find($id)->restore();
+        return redirect()->back()->with('success', 'กู้คืนข้อมูลเรียบร้อย');
+    }
+
+
+    public function getAmphures($id)
+    {
+        $amphures = ThaiAmphure::where('province_id', $id)->orderBy('name_th', 'ASC')->get();
+        return response()->json($amphures);
+    }
+
+    public function getTambons($id)
+    {
+        $tambons = ThaiTambon::where('amphure_id', $id)->select('id', 'name_th', 'zip_code')->orderBy('name_th', 'ASC')->get();
+        return response()->json($tambons);
+    }
+
+
+    public function formprojectname()
+    {
+        $projectnameall = ProjectName::withTrashed()->get();
+        return view('admin.projects.pendingsurvey.formprojectname', compact('projectnameall'));
+    }
+
+    public function createprojectname(Request $request)
+    {
+        ProjectName::create([
+            'name' => $request->name
+        ]);
+        return redirect()->back()->with('success', 'เพิ่มชื่อโครงการสำเร็จ');
+    }
+
+    public function updateprojectname(Request $request, $id)
+    {
+        $project = ProjectName::find($id);
+
+        if ($project) {
+            $project->update([
+                'name' => $request->name
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'แก้ไขข้อมูลเรียบร้อย');
+    }
+
+    public function deleteprojectname($id)
+    {
+        $project = ProjectName::find($id);
+        if ($project) {
+            $project->delete();
+        }
+        return redirect()->back()->with('success', 'ลบข้อมูลเรียบร้อย');
+    }
+
+    public function restoreprojectname($id)
+    {
+        $project = ProjectName::withTrashed()->find($id);
+        if ($project) {
+            $project->restore();
+        }
+        return redirect()->back()->with('success', 'กู้คืนข้อมูลเรียบร้อย');
+    }
+
+
+
+    public function updatestatuswaiting_survey(Request $request)
+    {
+        $project = Project::find($request->id);
+
+        $project->update([
+            'status' => 'waiting_survey'
+        ]);
+
+        return redirect()->route('admin.projects.index',$project->id)->with('success', 'บันทึกข้อมูลและอัปเดตสถานะสำเร็จ');
+    }
+
+    public function formpendingsurvey()
+    {
+        $projectname = ProjectName::all();
+        $customer = Customer::all();
+        $technician = User::where('role', 'technician')->get();
+        return view("admin.projects.pendingsurvey.formpendingsurvey", compact('customer', 'technician', 'projectname'));
+    }
+
+
+
+    public function pendingsurvey(Request $request)
+    {
+        $prefix = 'INV' . date('ym');
+        $lastProject = Project::where('tax_invoice_number', 'LIKE', $prefix . '%')->orderBy('id', 'desc')->first();
+
+        $prefixqt = 'QT' . date('ym');
+        $lastProjectqt = Project::where('quotation_number','LIKE',$prefixqt.'%')->orderBy('id','desc')->first();
+
+        $prefixrc = 'RC' . date('ym');
+        $lastProjectrc = Project::where('receipt_number','LIKE',$prefixrc.'%')->orderBy('id','desc')->first();
+
+        if ($lastProject && $lastProject->tax_invoice_number) {
+            $lastNumber = (int) substr($lastProject->tax_invoice_number, -4);
+            $nextNumber = $lastNumber + 1;
+        } else {
+            $nextNumber = 1;
+        }
+
+        if ($lastProjectqt && $lastProjectqt->quotation_number) {
+            $lastNumber = (int) substr($lastProjectqt->quotation_number, -4);
+            $nextNumberqt = $lastNumber + 1;
+        } else {
+            $nextNumberqt = 1;
+        }
+
+        if ($lastProjectrc && $lastProjectrc->receipt_number) {
+            $lastNumber = (int) substr($lastProjectrc->receipt_number, -4);
+            $nextNumberrc = $lastNumber + 1;
+        } else {
+            $nextNumberrc = 1;
+        }
+
+
+
+        $autoTaxInvoiceNumber = $prefix . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        $autoprefixqt = $prefixqt . str_pad($nextNumberqt, 4, '0', STR_PAD_LEFT);
+        $autoprefixrc = $prefixrc . str_pad($nextNumberrc, 4, '0', STR_PAD_LEFT);
+
+        $project = Project::create([
+            'project_name_id' => $request->project_name_id,
+            'customer_id' => $request->customer_id,
+            'assigned_surveyor_id' => $request->assigned_surveyor_id,
+            'survey_date' => $request->survey_date,
+            'note' => $request->note,
+            'labor_cost_surveying' => $request->labor_cost_surveying,
+            'tax_invoice_number' => $autoTaxInvoiceNumber,
+            'quotation_number' => $autoprefixqt,
+            'receipt_number' => $autoprefixrc,
+            'created_by' => Auth::id()
+        ]);
+
+        return redirect()->route('admin.projects.index', $project->id)->with('success', 'เพิ่มโครงการใหม่และนัดหมายการสำรวจหน้างานสำเร็จ');
+    }
+
+
+
+
+    public function formsurveying($id)
+    {
+
+        $project = Project::with([
+            'customer.province',
+            'customer.amphure',
+            'customer.tambon',
+            'createdBy',
+            'updatedBy',
+            'assignedSurveyor',
+            'assignedInstaller',
+            'projectname',
+            'projectimage.imagetype',
+            'customerneed.creator',
+            'customerneed.productset.productSetName',
+        ])->find($id);
+
+        return view('admin.projects.survey.surveying', compact('project'));
+    }
+
+    public function formcustomerneed($id)
+    {
+        $project = Project::find($id);
+        $productset = ProductSet::with([
+            'productSetName'
+        ])->get();
+
+        $projectimg = Projectimages::where('project_id',$id)->get();
+
+        return view('admin.projects.survey.formcustomerneed', compact('project', 'productset','projectimg'));
+    }
+
+
+    public function addcustomerneed(Request $request)
+    {
+
+        $project = Project::find($request->project_id);
+
+        CustomerNeed::create([
+            'project_id' => $project->id,
+            'product_set_id' => $request->product_set_id,
+            'location' => $request->location,
+            'quantity' => $request->quantity,
+            'high' => $request->high,
+            'width' => $request->width,
+            'created_by' => Auth::id()
+        ]);
+
+        return redirect()->route('admin.projects.formsurveying', $project->id)->with('success', 'เพิ่มรายการความต้องการลูกค้าสำเร็จ');
+    }
+
+    public function formcustomerneeddetial($id)
+    {
+        $project = Project::find($id);
+        $productset = ProductSet::with([
+            'productSetName'
+        ])->get();
+
+        $projectimg = Projectimages::where('project_id',$id)->get();
+
+        return view('admin.projects.survey.formcustomerneeddetial', compact('project', 'productset','projectimg'));
+    }
+
+
+    public function addcustomerneeddetial(Request $request)
+    {
+
+        $project = Project::find($request->project_id);
+
+        CustomerNeed::create([
+            'project_id' => $project->id,
+            'product_set_id' => $request->product_set_id,
+            'location' => $request->location,
+            'quantity' => $request->quantity,
+            'high' => $request->high,
+            'width' => $request->width,
+            'created_by' => Auth::id()
+        ]);
+
+        return redirect()->route('admin.projects.alldetail', $project->id)->with('success', 'เพิ่มรายการความต้องการลูกค้าสำเร็จ');
+    }
+
+    public function editformcustomerneed($id)
+    {
+
+        $customerNeed = CustomerNeed::find($id);
+
+        $project = Project::find($customerNeed->project_id);
+
+        $productset = ProductSet::all();
+        $projectimg = Projectimages::where('project_id', $project->id)->get();
+
+        return view('admin.projects.survey.editformcustomerneed', compact('customerNeed', 'project', 'productset', 'projectimg'));
+    }
+
+    public function updatecustomerneed(Request $request, $id)
+    {
+        $customerNeed = CustomerNeed::find($id);
+
+        $customerNeed->update([
+            'product_set_id' => $request->product_set_id,
+            'location' => $request->location,
+            'quantity' => $request->quantity,
+            'high' => $request->high,
+            'width' => $request->width
+        ]);
+
+        return redirect()->back()->with('success', 'แก้ไขรายการความต้องการลูกค้าสำเร็จ');
+    }
+
+
+    public function deletecustomerneed($id)
+    {
+        $customerneed = CustomerNeed::find($id);
+
+        $customerneed->delete();
+
+        return redirect()->back()->with('success', 'ลบรายการความต้องการสำเร็จ');
+    }
+
+
+
+
+
+    public function formprojectimage($id)
+    {
+        $project = Project::find($id);
+        $imgtypename = ImageTypeName::all();
+
+        return view('admin.projects.survey.formprojectimage', compact('project','imgtypename'));
+    }
+
+    public function createprojectimage(Request $request)
+    {
+
+        $project = Project::find($request->project_id);
+
+        $file = $request->file('image_path');
+        $imageData = file_get_contents($file->getRealPath());
+
+        Projectimages::create([
+            'project_id' => $project->id,
+            'image_path' => $imageData,
+            'image_type' => $request->image_type,
+            'description' => $request->description
+        ]);
+
+        return redirect()->route('admin.projects.formsurveying', $project->id)->with('success', 'เพิ่มรูปภาพโครงการสำเร็จ');
+    }
+
+    public function formprojectimagedetail($id)
+    {
+        $project = Project::find($id);
+        $imgtypename = ImageTypeName::all();
+        
+        return view('admin.projects.survey.formprojectimagedetail', compact('project','imgtypename'));
+    }
+
+    public function createprojectimagedetail(Request $request)
+    {
+
+        $project = Project::find($request->project_id);
+
+        $file = $request->file('image_path');
+        $imageData = file_get_contents($file->getRealPath());
+
+        Projectimages::create([
+            'project_id' => $project->id,
+            'image_path' => $imageData,
+            'image_type' => $request->image_type,
+            'description' => $request->description
+        ]);
+
+        return redirect()->route('admin.projects.alldetail', $project->id)->with('success', 'เพิ่มรูปภาพโครงการสำเร็จ');
+    }
+
+    public function deleteprojectimage($id)
+    {
+        $projectimge = Projectimages::find($id);
+
+        $projectimge->delete();
+
+        return redirect()->back()->with('success', 'ลบข้อมูลภาพสำเร็จ');
+    }
+
+
+    public function formeditprojectimage($id)
+    {
+
+        $projectImage = Projectimages::find($id);
+        $imgtypename = ImageTypeName::all();
+
+        return view('admin.projects.survey.editprojectimage', compact('projectImage','imgtypename'));
+    }
+
+    public function updateprojectimage(Request $request, $id)
+    {
+        $projectImage = Projectimages::findOrFail($id);
+        $projectImage->image_type = $request->image_type;
+        $projectImage->description = $request->description;
+
+        if ($request->hasFile('image_path')) {
+            $file = $request->file('image_path');
+            $imageData = file_get_contents($file->getRealPath());
+            $projectImage->image_path = $imageData;
+        }
+
+        $projectImage->save();
+
+        return redirect()->route('admin.projects.formsurveying', $projectImage->project_id)->with('success', 'แก้ไขรูปภาพสำเร็จ');
+    }
+
+    public function productsetdetail()
+    {
+        $productset = ProductSet::with([
+            'productSetName',
+            'glasscolouritem',
+            'aluminumSurfaceFinish',
+            'glasstype'
+        ])->get();
+
+        return view('admin.projects.productset.productsetdetail', compact('productset'));
+    }
+
+
+
+
+    public function formproductset()
+    {
+        $productsetname = ProductSetName::all();
+        $aluminumsurfacefinish = AluminumSurfaceFinish::all();
+        $glasstype = GlassType::all();
+        $glasscolouritem = ColourItem::all();
+
+        return view('admin.projects.productset.formproductset', compact('productsetname', 'aluminumsurfacefinish', 'glasstype', 'glasscolouritem'));
+    }
+
+    public function createproductset(Request $request)
+    {
+
+        $file = $request->file('product_image');
+
+        $imagedata = file_get_contents($file->getRealPath());
+
+        $productset = ProductSet::create([
+            'product_set_name_id' => $request->product_set_name_id,
+            'product_image' => $imagedata,
+            'detail' => $request->detail,
+            'aluminum_surface_finish_id' => $request->aluminum_surface_finish_id,
+            'glass_colouritem_id' => $request->glass_colouritem_id,
+            'glasstype_id' => $request->glasstype_id,
+            'created_by' => Auth::user()->id
+        ]);
+
+        return redirect()->route('admin.projects.formaddproductsetitem', $productset->id)->with('success', 'บันทึกข้อมูลเบื้องต้นสำเร็จ');
+    }
+
+
+    public function formeditproductset($id)
+    {
+
+        $productset = ProductSet::find($id);
+
+        $productsetname = ProductSetName::all();
+        $aluminumsurfacefinish = AluminumSurfaceFinish::all();
+        $glasstype = GlassType::all();
+        $glasscolouritem = ColourItem::all();
+
+        return view('admin.projects.productset.formeditproductset', compact('productset', 'productsetname', 'aluminumsurfacefinish', 'glasstype', 'glasscolouritem'));
+    }
+
+    public function editproductset(Request $request, $id)
+    {
+        $productset = ProductSet::find($id);
+
+        $editproductset = [
+            'product_set_name_id' => $request->product_set_name_id,
+            'detail' => $request->detail,
+            'aluminum_surface_finish_id' => $request->aluminum_surface_finish_id,
+            'glass_colouritem_id' => $request->glass_colouritem_id,
+            'glasstype_id' => $request->glasstype_id,
+        ];
+
+        if ($request->hasFile('product_image')) {
+            $file = $request->file('product_image');
+            $editproductset['product_image'] = file_get_contents($file->getRealPath());
+        }
+
+        $productset->update($editproductset);
+
+        return redirect()->route('admin.projects.productsetdetail')->with('success', 'แก้ไขผลิตภัณฑ์เรียบร้อยแล้ว');
+    }
+
+
+    public function deleteproductset($id)
+    {
+        $productset = ProductSet::find($id);
+        $productset->delete();
+
+        return redirect()->back()->with('success', 'ลบผลิตภัณฑ์เรียบร้อยแล้ว');
+    }
+
+    public function showdeletproductset()
+    {
+        $productset = ProductSet::onlyTrashed()->with([
+            'productSetName',
+            'glasscolouritem',
+            'aluminumSurfaceFinish',
+            'glasstype'
+        ])->get();
+
+        return view('admin.projects.productset.showdeletproductset', compact('productset'));
+    }
+
+    public function restoreproductset($id)
+    {
+        $productset = ProductSet::onlyTrashed()->find($id);
+        $productset->restore();
+
+        return back()->with('success', 'กู้คืนผลิตภัณฑ์เรียบร้อยแล้ว');
+    }
+
+
+
+
+    public function formaddproductsetitem(Request $request, $id)
+    {
+
+        $productset = ProductSet::with([
+            'productSetName',
+            'productsetitem'
+        ])->find($id);
+
+
+        $aluminiumlist = Material::with([
+            'aluminiumItem.aluminiumType',
+            'aluminiumItem.aluminiumType',
+            'aluminiumItem.aluminumSurfaceFinish'
+        ])->where('material_type', 'อลูมิเนียม')->whereHas('aluminiumItem', function ($a) use ($productset) {
+            $a->where('aluminum_surface_finish_id', $productset->aluminum_surface_finish_id);
+        })->get();
+
+        $accessorylist = Material::with([
+            'accessoryItem.accessoryType',
+            'accessoryItem.aluminumSurfaceFinish',
+            'accessoryItem.unit',
+        ])->where('material_type', 'อุปกรณ์เสริม')->whereHas('accessoryItem', function ($as) use ($productset) {
+            $as->where('aluminum_surface_finish_id', $productset->aluminum_surface_finish_id);
+        })->get();
+
+        $glasslist = Material::with([
+            'glassItem.glassType',
+            'glassItem.colourItem',
+            'glassItem.glassSize',
+        ])->where('material_type', 'กระจก')->whereHas('glassItem', function ($gl) use ($productset) {
+            $gl->where('glass_type_id', $productset->glasstype_id);
+            $gl->where('colouritem_id', $productset->glass_colouritem_id);
+        })->get();
+
+        $outhelist = Material::with([
+            'consumableItem.unit',
+            'consumableItem.consumabletype',
+            'toolItem.toolType'
+        ])->whereIn('material_type', ['วัสดุสิ้นเปลือง', 'เครื่องมือช่าง'])->get();
+
+
+        $material = $aluminiumlist->merge($accessorylist)->merge($glasslist)->merge($outhelist);
+
+
+
+
+        $aluminumtype = AluminiumProfileType::all();
+        $aluminumSurfaces = AluminumSurfaceFinish::all();
+        $glassTypes = GlassType::all();
+        $colour = ColourItem::all();
+        $accessorytype = AccessoryType::all();
+        $consumable = ConsumableType::all();
+        $tool = ToolType::all();
+
+
+        return view('admin.projects.productset.formaddproductsetitem', compact('productset', 'material', 'aluminumSurfaces', 'glassTypes', 'colour', 'aluminumtype', 'consumable', 'accessorytype', 'tool'));
+    }
+
+    public function addmaterialproductsetitem(Request $request)
+    {
+        $material = Material::find($request->material_id);
+
+
+        ProductSetItem::create([
+            'product_set_id' => $request->product_set_id,
+            'material_id'  => $request->material_id,
+            'created_by' => Auth::id()
+        ]);
+
+        return redirect()->back()->with('success', 'เพิ่มวัสดุเข้าชุดผลิตภัณฑ์สำเร็จ');
+    }
+
+    public function deletematerialproductsetitem($id)
+    {
+        $productsetitem = ProductSetItem::find($id);
+
+        $productsetitem->delete();
+
+
+        return redirect()->back()->with('success', 'ลบออกจากชุดผลิตภัณฑ์สำเร็จ');
+    }
+
+    public function showitemproduct($id)
+    {
+        $productset = ProductSet::with([
+            'productSetName',
+            'productsetitem.material',
+            'productsetitem.material.aluminiumItem.aluminiumType',
+            'productsetitem.material.aluminiumItem.aluminumSurfaceFinish',
+            'productsetitem.material.aluminiumItem.aluminiumLengths',
+            'productsetitem.material.glassItem.glassType',
+            'productsetitem.material.glassItem.colourItem',
+            'productsetitem.material.glassItem.glassSize',
+            'productsetitem.material.accessoryItem.accessoryType',
+            'productsetitem.material.accessoryItem.aluminumSurfaceFinish',
+            'productsetitem.material.accessoryItem.unit',
+            'productsetitem.material.consumableItem.unit',
+            'productsetitem.material.consumableItem.consumabletype',
+            'productsetitem.material.toolItem.toolType'
+        ])->find($id);
+
+        return view('admin.projects.productset.showitemproduct', compact('productset'));
+    }
+
+
+
+
+
+
+    public function formproductsetname()
+    {
+
+        return view('admin.projects.productset.formproductsetname');
+    }
+
+    public function createproductsetname(Request $request)
+    {
+
+        ProductSetName::create([
+            'name' => $request->name
+        ]);
+
+        return redirect()->route('admin.projects.formproductset', $request->id)->with('success', 'เพิ่มชื่อผลิตภัณฑ์สำเร็จ');
+    }
+
+    public function updatestatussurveying(Request $request, $id)
+    {
+        $project = Project::find($id);
+        $project->update([
+            'status' => 'surveying'
+        ]);
+
+        return redirect()->route('admin.projects.formsurveying', $project->id)->with('success', 'กำลังสำรวจ');
+    }
+
+
+    public function updatestatuspendingquotation(Request $request)
+    {
+
+        $project = Project::find($request->id);
+        $project->update([
+            'status' => 'pending_quotation'
+        ]);
+
+        return redirect()->route('admin.projects.index',$project->id)->with('success', 'รอเสนอราคา');
+    }
+
+
+
+    public function projectalldetail($id)
+    {
+
+
+        $project = Project::with([
+            'customer.province',
+            'customer.amphure',
+            'customer.tambon',
+            'projectname',
+            'createdBy',
+            'assignedSurveyor',
+            'assignedInstaller',
+            'projectimage.imagetype',
+            'customerneed',
+            'customerneed.creator',
+            'customerneed.productset.productSetName',
+            'projectexpenses',
+            'projectexpenses.type',
+            'projectexpenses.creator'
+
+        ])->find($id);
+
+        $projectname = ProjectName::all();
+        $customerall = Customer::all();
+        $technician = User::where('role', 'technician')->get();
+
+        $canEditCoreInfo = in_array($project->status, [
+            'waiting_survey', 
+            'pending_survey', 
+            'surveying', 
+            'pending_quotation', 
+            'waiting_approval'
+        ]);
+
+
+        return view('admin.projects.alldetail.detailpage', compact('project', 'customerall', 'projectname', 'technician','canEditCoreInfo'));
+    }
+
+    public function addautersurver(Request $request)
+    {
+
+        $project = Project::find($request->id);
+        $updateData = [
+            'estimated_work_days' => $request->estimated_work_days,
+            'daily_labor_rate' => $request->daily_labor_rate
+        ];
+
+        if ($request->hasFile('homeimg')) {
+            $file = $request->file('homeimg');
+            $updateData['homeimg'] = file_get_contents($file->getRealPath());
+        }
+
+        $project->update($updateData);
+
+        return redirect()->back()->with('success', 'เพิ่มรูปภาพและรายละเอียดเพิ่มเติมสำเร็จ');
+    }
+
+
+
+    public function satatuswaitingapproval(Request $request)
+    {
+        $project = Project::find($request->id);
+        $project->update([
+            'status' => 'waiting_approval'
+        ]);
+
+        return redirect()->route('admin.projects.index')->with('success', 'เสนอราคาสำเร็จ รอลูกค้าอนุมัติ');
+    }
+
+
+    public function addbid($id)
+    {
+
+        $project = Project::with([
+            'customer.province',
+            'customer.amphure',
+            'customer.tambon',
+            'projectname',
+            'customerneed',
+            'customerneed.productset.productSetName',
+            'customerneed.productset.productsetitem',
+            'projectexpenses',
+            'projectexpenses.type',
+            'customerneed.productset.productsetitem.material',
+            'customerneed.productset.productsetitem.material.aluminiumItem.aluminiumType',
+            'customerneed.productset.productsetitem.material.aluminiumItem.aluminumSurfaceFinish',
+            'customerneed.productset.productsetitem.material.aluminiumItem.aluminiumLengths.price',
+            'customerneed.productset.productsetitem.material.glassItem.glassType',
+            'customerneed.productset.productsetitem.material.glassItem.colourItem',
+            'customerneed.productset.productsetitem.material.glassItem.glassSize.price',
+            'customerneed.productset.productsetitem.material.accessoryItem.accessoryType',
+            'customerneed.productset.productsetitem.material.accessoryItem.aluminumSurfaceFinish',
+            'customerneed.productset.productsetitem.material.accessoryItem.unit',
+            'customerneed.productset.productsetitem.material.consumableItem.unit',
+            'customerneed.productset.productsetitem.material.consumableItem.consumabletype',
+            'customerneed.productset.productsetitem.material.toolItem.toolType',
+            'customerneed.productset.productsetitem.material.price',
+            'assignedSurveyor.profile'
+        ])->find($id);
+
+        $sumtotolproduct = 0;
+
+        foreach ($project->customerneed as $need) {
+            $m_w = $need->width / 100;
+            $m_h = $need->high / 100;
+
+            $needTotal = 0;
+
+            $requestlent = max($m_w, $m_h);
+
+            foreach ($need->productset->productsetitem as $item) {
+                $material = $item->material;
+                $type = $material->material_type;
+
+                $selectprice = 0;
+                $selectlot = '';
+                $remark = '';
+                $qtyuse = 0;
+
+                if ($type == 'อลูมิเนียม') {
+                    $totalneedlen = ($m_w * 2) + ($m_h * 2);
+                    $stock = Price::where('material_id', $material->id)
+                        ->where('quantity', '>', 0)
+                        ->whereHas('aluminiumlength', function ($show) use ($requestlent) {
+                            $show->where('length_meter', '>=', $requestlent);
+                        })
+                        ->orderBy('id', 'asc')
+                        ->first();
+
+                    if ($stock) {
+                        $len = $stock->aluminiumlength->length_meter;
+                        $qtyuse = ceil($totalneedlen / $len);
+                        $selectprice = $stock->price;
+                        $selectlot = $stock->lot;
+                        $remark = "ใช้อลูมิเนียมยาว {$len} ม. จำนวน {$qtyuse} เส้น";
+                    } else {
+                        $flatlen = 6;
+                        $qtyuse = ceil($totalneedlen / $flatlen);
+                        $selectprice = 300;
+                        $selectlot = 'ไม่มีของหรือขนาดไม่พอ';
+                        $remark = "ใช้ราคาเหมา 300 บ. ต่อ เส้น ({$flatlen} ม.) จำนวน {$qtyuse} เส้น";
+                    }
+                } elseif ($type == 'กระจก') {
+
+                    $needArea = $m_w * $m_h;
+
+                    $stock = Price::where('material_id', $material->id)
+                        ->where('quantity', '>', 0)
+                        ->whereHas('glassSize', function ($q) use ($m_w, $m_h) {
+                            $q->where('width_meter', '>=', $m_w)
+                                ->where('length_meter', '>=', $m_h);
+                        })
+                        ->orderBy('id', 'asc')
+                        ->first();
+
+                    if ($stock && $stock->glassSize) {
+
+                        $sheetW = $stock->glassSize->width_meter;
+                        $sheetH = $stock->glassSize->length_meter;
+                        $sheetArea = $sheetW * $sheetH;
+
+                        $qtyuse = ceil($needArea / $sheetArea) * 2;
+
+                        $selectprice = $stock->price;
+                        $selectlot   = $stock->lot;
+                        $remark = "ใช้กระจก {$sheetW}×{$sheetH} ม. จำนวน {$qtyuse} แผ่น";
+                    } else {
+                        $flatW = 2;
+                        $flatH = 2;
+                        $flatArea = $flatW * $flatH;
+                        $qtyuse = ceil($needArea / $flatArea) * 2;
+                        $selectprice = 400;
+                        $selectlot   = 'ไม่มีของ/ขนาดไม่พอ';
+                        $remark = "ใช้กระจกเหมา {$flatW}×{$flatH} ม. 400 บ. ต่อ แผ่น จำนวน {$qtyuse} แผ่น";
+                    }
+                } else {
+                    $stock = Price::where('material_id', $material->id)->where('quantity', '>', 0)->orderBy('id', 'asc')->first();
+
+                    if ($stock) {
+                        $selectprice = $stock->price;
+                        $selectlot = $stock->lot;
+                        $qtyuse = 1;
+                        $remark = '-';
+                    } else {
+                        $qtyuse = 1;
+                        $selectprice = 100;
+                        $selectlot = 'ไม่มีของ';
+                        $remark = 'ใช้ราคาเหมา 100 บ.';
+                    }
+                }
+
+                $total_item_price = $qtyuse * $selectprice;
+                $item->calculated_lot = $selectlot;
+                $item->calculated_unit_price = $selectprice;
+                $item->calculated_qty = $qtyuse;
+                $item->calculated_total = $total_item_price;
+                $item->calculated_remark = $remark;
+                $need->calculated_total = $needTotal;
+                $needTotal += $total_item_price;
+            }
+        }
+
+        return view('admin.projects.bid.addbid', compact('project'));
+    }
+
+
+    public function updatestatusapproved($id)
+    {
+        $project = Project::find($id);
+
+        $project->update([
+            'status' => 'approved'
+        ]);
+
+        return redirect()->route('admin.projects.index')->with('success', 'ลูกค้าอนุมัติแล้ว');
+    }
+
+    public function  updatestatusmaterialplanning($id)
+    {
+        $project = Project::find($id);
+
+        $project->update([
+            'status' => 'material_planning'
+        ]);
+
+        return redirect()->route('admin.projects.materialplanningpage', $id)->with('success', 'วางแผนวัสดุ');
+    }
+
+    public function materialplanningpage($id)
+    {
+        $project = Project::with([
+            'customer.province',
+            'customer.amphure',
+            'customer.tambon',
+            'projectname',
+            'customerneed',
+            'customerneed.productset.productSetName',
+            'customerneed.productset.productsetitem',
+            'projectexpenses',
+            'projectexpenses.type',
+            'customerneed.productset.productsetitem.material',
+            'customerneed.productset.productsetitem.material.aluminiumItem.aluminiumType',
+            'customerneed.productset.productsetitem.material.aluminiumItem.aluminumSurfaceFinish',
+            'customerneed.productset.productsetitem.material.aluminiumItem.aluminiumLengths.price',
+            'customerneed.productset.productsetitem.material.glassItem.glassType',
+            'customerneed.productset.productsetitem.material.glassItem.colourItem',
+            'customerneed.productset.productsetitem.material.glassItem.glassSize.price',
+            'customerneed.productset.productsetitem.material.accessoryItem.accessoryType',
+            'customerneed.productset.productsetitem.material.accessoryItem.aluminumSurfaceFinish',
+            'customerneed.productset.productsetitem.material.accessoryItem.unit',
+            'customerneed.productset.productsetitem.material.consumableItem.unit',
+            'customerneed.productset.productsetitem.material.consumableItem.consumabletype',
+            'customerneed.productset.productsetitem.material.toolItem.toolType',
+            'customerneed.productset.productsetitem.material.price',
+            'assignedSurveyor.profile'
+        ])->find($id);
+
+        $sumtotolproduct = 0;
+
+        foreach ($project->customerneed as $need) {
+            $m_w = $need->width / 100;
+            $m_h = $need->high / 100;
+
+            $needTotal = 0;
+
+            $requestlent = max($m_w, $m_h);
+
+            foreach ($need->productset->productsetitem as $item) {
+                $material = $item->material;
+                $type = $material->material_type;
+
+                $selectprice = 0;
+                $selectlot = '';
+                $remark = '';
+                $qtyuse = 0;
+
+                if ($type == 'อลูมิเนียม') {
+                    $totalneedlen = ($m_w * 2) + ($m_h * 2);
+                    $stock = Price::where('material_id', $material->id)
+                        ->where('quantity', '>', 0)
+                        ->whereHas('aluminiumlength', function ($show) use ($requestlent) {
+                            $show->where('length_meter', '>=', $requestlent);
+                        })
+                        ->orderBy('id', 'asc')
+                        ->first();
+
+                    if ($stock) {
+                        $len = $stock->aluminiumlength->length_meter;
+                        $qtyuse = ceil($totalneedlen / $len);
+                        $selectprice = $stock->price;
+                        $selectlot = $stock->lot;
+                        $remark = "ใช้อลูมิเนียมยาว {$len} ม. จำนวน {$qtyuse} เส้น";
+                    } else {
+                        $flatlen = 6;
+                        $qtyuse = ceil($totalneedlen / $flatlen);
+                        $selectprice = 300;
+                        $selectlot = 'ไม่มีของหรือขนาดไม่พอ';
+                        $remark = "ใช้ราคาเหมา 300 บ. ต่อ เส้น ({$flatlen} ม.) จำนวน {$qtyuse} เส้น";
+                    }
+                } elseif ($type == 'กระจก') {
+
+                    $needArea = $m_w * $m_h;
+
+                    $stock = Price::where('material_id', $material->id)
+                        ->where('quantity', '>', 0)
+                        ->whereHas('glassSize', function ($q) use ($m_w, $m_h) {
+                            $q->where('width_meter', '>=', $m_w)
+                                ->where('length_meter', '>=', $m_h);
+                        })
+                        ->orderBy('id', 'asc')
+                        ->first();
+
+                    if ($stock && $stock->glassSize) {
+
+                        $sheetW = $stock->glassSize->width_meter;
+                        $sheetH = $stock->glassSize->length_meter;
+                        $sheetArea = $sheetW * $sheetH;
+
+                        $qtyuse = ceil($needArea / $sheetArea) * 2;
+
+                        $selectprice = $stock->price;
+                        $selectlot   = $stock->lot;
+                        $remark = "ใช้กระจก {$sheetW}×{$sheetH} ม. จำนวน {$qtyuse} แผ่น";
+                    } else {
+                        $flatW = 2;
+                        $flatH = 2;
+                        $flatArea = $flatW * $flatH;
+                        $qtyuse = ceil($needArea / $flatArea) * 2;
+                        $selectprice = 400;
+                        $selectlot   = 'ไม่มีของ/ขนาดไม่พอ';
+                        $remark = "ใช้กระจกเหมา {$flatW}×{$flatH} ม. 400 บ. ต่อ แผ่น จำนวน {$qtyuse} แผ่น";
+                    }
+                } else {
+                    $stock = Price::where('material_id', $material->id)->where('quantity', '>', 0)->orderBy('id', 'asc')->first();
+
+                    if ($stock) {
+                        $selectprice = $stock->price;
+                        $selectlot = $stock->lot;
+                        $qtyuse = 1;
+                        $remark = '-';
+                    } else {
+                        $qtyuse = 1;
+                        $selectprice = 100;
+                        $selectlot = 'สินค้าหมด';
+                        $remark = 'ใช้ราคาเหมา 100 บ.';
+                    }
+                }
+
+                $total_item_price = $qtyuse * $selectprice;
+                $item->calculated_lot = $selectlot;
+                $item->calculated_unit_price = $selectprice;
+                $item->calculated_qty = $qtyuse;
+                $item->calculated_total = $total_item_price;
+                $item->calculated_remark = $remark;
+                $need->calculated_total = $needTotal;
+                $needTotal += $total_item_price;
+            }
+        }
+
+        return view('admin.projects.materialplanning.materialplanningpage', compact('project'));
+    }
+
+    public function  updatestatuswaitingpurchase($id)
+    {
+        $project = Project::find($id);
+
+        $project->update([
+            'status' => 'waiting_purchase'
+        ]);
+
+        return redirect()->route('admin.projects.index')->with('success', 'วางแผนวัสดุสำเร็จรอซื้อวัสดุ');
+    }
+
+    public function  updatestatusreadytowithdraw($id)
+    {
+        $project = Project::find($id);
+
+        $project->update([
+            'status' => 'ready_to_withdraw'
+        ]);
+
+        return redirect()->route('admin.projects.index')->with('success', 'พร้อมวัสดุ');
+    }
+
+
+
+
+    private function calculateMaterial(Project $project)
+    {
+        foreach ($project->customerneed as $need) {
+
+            $m_w = $need->width / 100;
+            $m_h = $need->high / 100;
+            $needTotal = 0;
+            $requestlent = max($m_w, $m_h);
+
+            foreach ($need->productset->productsetitem as $item) {
+
+                $material = $item->material;
+                $type = $material->material_type;
+
+                $selectprice = 0;
+                $selectlot = '';
+                $remark = '';
+                $qtyuse = 0;
+
+
+                if ($type == 'อลูมิเนียม') {
+
+                    $totalneedlen = ($m_w * 2) + ($m_h * 2);
+
+                    $stock = Price::where('material_id', $material->id)
+                        ->where('quantity', '>', 0)
+                        ->whereHas('aluminiumlength', function ($q) use ($requestlent) {
+                            $q->where('length_meter', '>=', $requestlent);
+                        })
+                        ->orderBy('id')
+                        ->first();
+
+                    if ($stock) {
+                        $len = $stock->aluminiumlength->length_meter;
+                        $qtyuse = ceil($totalneedlen / $len);
+                        $selectprice = $stock->price;
+                        $selectlot = $stock->lot;
+                        $remark = "ใช้อลูมิเนียม {$len} ม. {$qtyuse} เส้น";
+                    } else {
+                        $qtyuse = ceil($totalneedlen / 6);
+                        $selectprice = 300;
+                        $selectlot = 'ไม่มีของ';
+                        $remark = 'ใช้ราคาเหมา';
+                    }
+                } elseif ($type == 'กระจก') {
+
+                    $needArea = $m_w * $m_h;
+
+                    $stock = Price::where('material_id', $material->id)
+                        ->where('quantity', '>', 0)
+                        ->first();
+
+                    if ($stock && $stock->glassSize) {
+                        $area = $stock->glassSize->width_meter * $stock->glassSize->length_meter;
+                        $qtyuse = ceil($needArea / $area) * 2;
+                        $selectprice = $stock->price;
+                        $selectlot = $stock->lot;
+                    } else {
+                        $qtyuse = ceil($needArea / 4) * 2;
+                        $selectprice = 400;
+                        $selectlot = 'ไม่มีของ';
+                    }
+                } else {
+                    $qtyuse = 1;
+                    $stock = Price::where('material_id', $material->id)
+                        ->where('quantity', '>', 0)
+                        ->first();
+
+                    if ($stock) {
+                        $selectprice = $stock->price;
+                        $selectlot = $stock->lot;
+                    }
+                }
+
+                $item->calculated_qty = $qtyuse;
+                $item->calculated_unit_price = $selectprice;
+                $item->calculated_total = $qtyuse * $selectprice;
+                $item->calculated_lot = $selectlot;
+                $item->calculated_remark = $remark;
+
+                $needTotal += $item->calculated_total;
+            }
+
+            $need->calculated_total = $needTotal;
+        }
+
+        return $project;
+    }
+
+
+
+
+
+    public function withdrawpage($id)
+    {
+        $project = Project::with(['customerneed.productset.productsetitem.material'])->find($id);
+        $project = $this->calculateMaterial($project);
+
+        $users = User::all();
+
+        return view('admin.projects.withdraw.withdrawpage', compact('project', 'users'));
+    }
+
+    public function withdrawstore($id)
+    {
+        $project = Project::with([
+            'customerneed.productset.productsetitem.material'
+        ])->find($id);
+
+        $withdrawal = Withdrawal::create([
+            'project_id'   => $project->id,
+            'withdrawn_by' => Auth::id(),
+            'recorded_by'  => Auth::id(),
+        ]);
+
+        $project = $this->calculateMaterial($project);
+
+        foreach ($project->customerneed as $need) {
+            foreach ($need->productset->productsetitem as $item) {
+
+                $qty = $item->calculated_qty;
+
+                if ($qty <= 0) continue;
+
+                $price = Price::where('material_id', $item->material->id)->where('quantity', '>=', $qty)->orderBy('id')->first();
+
+                if ($price) {
+
+                    $price->decrement('quantity', $qty);
+
+                    MaterialLog::create([
+                        'material_id' => $item->material->id,
+                        'price_id'    => $price->id,
+                        'user_id'     => Auth::id(),
+                        'direction'   => 'out',
+                    ]);
+
+                    WithdrawalItem::create([
+                        'withdrawal_id' => $withdrawal->id,
+                        'material_id'   => $item->material->id,
+                        'lot'           => $price->id,
+                        'quantity'      => $qty,
+                    ]);
+                }
+            }
+        }
+
+        $project->update([
+            'status' => 'materials_withdrawn'
+        ]);
+
+
+        return redirect()->route('admin.projects.index')->with('success', 'เบิกวัสดุสำเร็จ');
+    }
+
+    public function assignInstaller(Request $request, $id)
+    {
+        $project = Project::findOrFail($id);
+
+        $start = Carbon::parse($request->installation_start_date);
+        $end   = $start->copy()->addDays($project->estimated_work_days - 1);
+
+        $project->update([
+            'assigned_installer_id'    => $request->assigned_installer_id,
+            'installation_start_date'  => $start,
+            'installation_end_date'    => $end
+        ]);
+
+        return redirect()->route('admin.projects.index')->with('success', 'กำหนดช่างและวันทำงานเรียบร้อย');
+    }
+
+
+
+    public function installingpage($id)
+    {
+        $project = Project::with([
+            'customerneed.productset.productsetitem.material'
+        ])->find($id);
+
+        $technician = User::where('role', 'technician')->get();
+
+
+        return view('admin.projects.installing.installingpage', compact('project', 'technician'));
+    }
+
+    public function updatestatusinstalling($id)
+    {
+        $project = Project::findOrFail($id);
+
+        $project->update([
+            'status' => 'installing'
+        ]);
+
+        return redirect()->route('admin.projects.index')->with('success', 'อัปเดตสถานะเป็น กำลังติดตั้ง');
+    }
+
+    public function updatestatuscompleted($id)
+    {
+        $project = Project::findOrFail($id);
+
+        $project->update([
+            'status' => 'completed'
+        ]);
+
+        return redirect()->route('admin.projects.index')->with('success', 'อัปเดตสถานะเป็น เสร็จสมบูรณ์');
+    }
+
+    public function updatestatuscancelled($id)
+    {
+        $project = Project::findOrFail($id);
+
+        $project->update([
+            'status' => 'cancelled'
+        ]);
+
+        return redirect()->route('admin.projects.index')->with('success', 'ยกเลิกงานเรียบร้อย');
+    }
+
+
+    public function updateProjectPendingSurvey(Request $request, $id)
+    {
+        $project = Project::find($id);
+        $project->update([
+            'project_name_id'      => $request->project_name_id,
+            'customer_id'          => $request->customer_id,
+            'survey_date'          => $request->survey_date,
+            'assigned_surveyor_id' => $request->assigned_surveyor_id,
+            'labor_cost_surveying' => $request->labor_cost_surveying,
+            'note'                 => $request->note,
+        ]);
+
+        return back()->with('success', 'แก้ไขข้อมูลงานสำเร็จ');
+    }
+
+
+    public function formdetialexpense($id)
+    {
+        $project = Project::find($id);
+        $expense = ExpenseType::all();
+        return view('admin.projects.detialexpense.formdetialexpense', compact('expense', 'project'));
+    }
+
+    public function createdetialexpense(Request $request)
+    {
+
+        $project = Project::find($request->project_id);
+        ProjectExpense::create([
+            'project_id' => $project->id,
+            'expense_type_id' => $request->expense_type_id,
+            'description' => $request->description,
+            'amount' => $request->amount,
+            'expense_date' => $request->expense_date,
+            'created_by' => Auth::user()->id
+        ]);
+
+        return redirect()->route('admin.projects.alldetail', $project->id)->with('success', 'เพิ่มรายการค่าใช้จ่ายสำเร็จ');
+    }
+
+    public function formeditdetialexpense($id)
+    {
+        $projectexpense = ProjectExpense::with([
+            'type',
+            'creator'
+        ])->find($id);
+        $expense = ExpenseType::all();
+        return view('admin.projects.detialexpense.edit.formeditdetialexpense', compact('projectexpense', 'expense'));
+    }
+
+    public function editdetialexpense(Request $request)
+    {
+        $projectExpense = ProjectExpense::find($request->id);
+
+        $project = Project::find($request->project_id);
+
+        $projectExpense->update([
+            'project_id' => $project->id,
+            'expense_type_id' => $request->expense_type_id,
+            'description' => $request->description,
+            'amount' => $request->amount,
+            'expense_date' => $request->expense_date,
+            'created_by' => Auth::id(),
+        ]);
+
+        return redirect()->route('admin.projects.alldetail', $project->id)->with('success', 'แก้ไขรายการค่าใช้จ่ายเรียบร้อยแล้ว');
+    }
+
+    public function deletedetialexpense($id)
+    {
+        $projectexpense = ProjectExpense::find($id);
+
+        $project = Project::find($projectexpense->project_id);
+
+        $projectexpense->delete();
+
+        return redirect()->route('admin.projects.alldetail', $project->id)->with('success', 'ลบข้อมูลค่าใช้จ่ายสำเร็จ');
+    }
+
+    public function createIssue($id)
+    {
+        $project = Project::findOrFail($id);
+
+        return view('admin.projects.issues_create', compact('project'));
+    }
+
+
+    public function storeIssue(Request $request, $project_id)
+    {
+        $issue = ProjectIssue::create([
+            'project_id'  => $project_id,
+            'reported_by' => Auth::id(),
+            'category'    => $request->category,
+            'title'       => $request->title,
+            'description' => $request->description,
+            'status'      => 'pending',
+        ]);
+
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $file) {
+                $imageData = file_get_contents($file->getRealPath());
+
+                IssueImage::create([
+                    'issue_id'   => $issue->id,
+                    'image_data' => $imageData,
+                ]);
+            }
+        }
+
+        return redirect()->back()->with('success', 'รายงานปัญหาและบันทึกรูปภาพสำเร็จ');
+    }
+
+    public function adminfulleventcalendarpage()
+    {
+        $query = Project::with('projectname')->whereNotNull('survey_date');
+
+        $events = $query->with(['projectname', 'customer'])->get()->flatMap(function ($pj) {
+            $customerName = $pj->customer->first_name ?? 'ไม่ระบุลูกค้า';
+            $projectName = $pj->projectname->name ?? 'ไม่มีชื่อโครงการ';
+            $statusLabel = $this->getStatusLabel($pj->status);
+            $color = $this->getStatusColor($pj->status);
+
+            $items = [];
+
+            if ($pj->survey_date) {
+                $items[] = [
+                    'id'    => $pj->id . '_survey',
+                    'title' => "[สำรวจ] " . $customerName . " - " . $projectName,
+                    'start' => date('Y-m-d', strtotime($pj->survey_date)),
+                    'url'   => route('admin.projects.index', $pj->id),
+                    'backgroundColor' => $color,
+                    'borderColor'     => $color,
+                    'allDay'          => true,
+                    'textColor'       => '#ffffff'
+                ];
+            }
+
+            if ($pj->installation_start_date && $pj->installation_end_date) {
+                $items[] = [
+                    'id'    => $pj->id . '_install',
+                    'title' => "[ติดตั้ง] " . $customerName . " - " . $projectName . " (" . $statusLabel . ")",
+                    'start' => date('Y-m-d', strtotime($pj->installation_start_date)),
+                    'end'   => date('Y-m-d', strtotime($pj->installation_end_date . ' +1 day')),
+                    'url'   => route('admin.projects.index', $pj->id),
+                    'backgroundColor' => $color, 
+                    'borderColor'     => $color,
+                    'allDay'          => true,
+                    'textColor'       => '#ffffff'
+                ];
+            }
+
+            return $items;
+        });
+
+        return view('admin.projects.adminfulleventcalendarpage', compact('events'));
+    }
+
+    private function getStatusLabel($status)
+    {
+        $labels = [
+            'waiting_survey'      => 'รอวันสำรวจ',
+            'pending_survey'      => 'นัดสำรวจ',
+            'surveying'           => 'กำลังสำรวจ',
+            'pending_quotation'   => 'รอเสนอราคา',
+            'waiting_approval'    => 'รออนุมัติ',
+            'approved'            => 'อนุมัติแล้ว',
+            'material_planning'   => 'วางแผนวัสดุ',
+            'waiting_purchase'    => 'รอสั่งซื้อ',
+            'ready_to_withdraw'   => 'พร้อมเบิก',
+            'materials_withdrawn' => 'เบิกวัสดุแล้ว',
+            'installing'          => 'กำลังติดตั้ง',
+            'completed'           => 'เสร็จสิ้น',
+            'cancelled'           => 'ยกเลิก',
+        ];
+
+        return $labels[$status] ?? 'ไม่ระบุสถานะ';
+    }
+
+
+    private function getStatusColor($status)
+    {
+        $colors = [
+            'waiting_survey'      => '#FF8C00',
+            'pending_survey'      => '#D4AF37',
+            'surveying'           => '#1E90FF',
+            'pending_quotation'   => '#E91E63',
+            'waiting_approval'    => '#9C27B0',
+            'approved'            => '#78d37b',
+            'material_planning'   => '#00CED1',
+            'waiting_purchase'    => '#FF4500',
+            'ready_to_withdraw'   => '#008080',
+            'materials_withdrawn' => '#8B4513',
+            'installing'          => '#4CAF50',
+            'completed'           => '#708090',
+            'cancelled'           => '#DC143C',
+        ];
+
+        return $colors[$status] ?? '#2196F3';
+    }
+
+
+    public function formcrateimgtype(){
+
+        $imgtype = ImageTypeName::withTrashed()->get();
+        return view('admin.projects.survey.formcrateimgtype',compact('imgtype'));
+    }
+
+    public function crateimgtype(Request $request){
+
+        ImageTypeName::create([
+             'name' => $request->name
+        ]);
+
+        return back()->with('success', 'เพิ่มประเภทภาพสำเร็จ');
+    }
+
+
+    public function updateimgtype(Request $request, $id)
+    {
+        $imgtype = ImageTypeName::find($id);
+
+        if ($imgtype) {
+            $imgtype->update([
+                'name' => $request->name
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'แก้ไขข้อมูลเรียบร้อย');
+    }
+
+    public function deleteimgtype($id)
+    {
+        $imgtype = ImageTypeName::find($id);
+        if ($imgtype) {
+            $imgtype->delete();
+        }
+        return redirect()->back()->with('success', 'ลบข้อมูลเรียบร้อย');
+    }
+
+    public function restoreimgtype($id)
+    {
+        $imgtype = ImageTypeName::withTrashed()->find($id);
+        if ($imgtype) {
+            $imgtype->restore();
+        }
+        return redirect()->back()->with('success', 'กู้คืนข้อมูลเรียบร้อย');
+    }
+
+    
+}

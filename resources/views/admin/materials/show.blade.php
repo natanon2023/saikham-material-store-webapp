@@ -1,0 +1,343 @@
+@extends('layouts.admin')
+
+@section('content')
+<div class="main-content">
+    @include('components.successanderror')
+
+
+    <div class="boxmaterial" style="display: flex; justify-content: space-between; align-items: center;">
+        <h3>รายละเอียดวัสดุ</h3>
+        <a href="{{ route('admin.materials.index') }}" class="btn btn-primary">ย้อนกลับ</a>
+    </div>
+
+
+
+    <div>
+        <div class="box" style="margin-top: 20px; padding : 20px;">
+            <strong>ประเภทวัสดุ :</strong>{{ $material->material_type }} |
+            <strong>ผู้เพิ่มข้อมูล :</strong> {{ $material->user->name }} |
+            <strong>วันที่เพิ่มข้อมูล : </strong>{{ $material->created_at }}
+        </div>
+
+        
+
+        <div>
+            @if ($material->material_type === 'อลูมิเนียม')
+            <div class="card-dt">
+                <div class="card-dt-img">
+
+                    <div class="card-dt-img-control">
+                        <img src="data:image/jpeg;base64,{{ base64_encode($material->aluminiumItem->image_aluminium_item) }}" class="imgposition1">
+                    </div>
+                </div>
+
+                <div class="dt-text">
+                    <div class="dt-text1">
+                        <div style="display: block;">
+                            <strong>ประเภทย่อย : </strong>{{ $material->aluminiumItem->aluminiumType->name }} <br>
+                            <strong>สี : </strong>{{ $material->aluminiumItem->aluminumSurfaceFinish->name }} <br>
+                        </div>
+
+
+                        <div>
+                            <p class="stockbox1">{{ $material->price->sum('quantity') }} เส้น</p>
+                        </div>
+
+                    </div>
+
+                    <div class="dt-text2">
+                        <a href="{{ route('admin.materials.editmaterial',$material->id) }}" class="btn-icon btn-edit" title="แก้ไข">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <form action="{{ route('admin.materials.destroy', $material->id) }}" method="POST"
+                            style="display:inline;" onsubmit="return confirm('ยืนยันการลบ?');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn-icon btn-delete" title="ลบ">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+            @elseif ($material->material_type === 'กระจก')
+            <div class="card-dt">
+                <div class="card-dt-img">
+
+                    <div class="card-dt-img-control">
+                        <img src="data:image/jpeg;base64,{{ base64_encode($material->glassItem->image_glass_item) }}" class="imgposition1">
+                    </div>
+                </div>
+
+                <div class="dt-text">
+                    <div class="dt-text1">
+                        <div style="display: block;">
+                            <strong>ประเภทย่อย : </strong>{{ $material->glassItem->glassType->name }} <br>
+                            <strong>สี : </strong>{{ $material->glassItem->colourItem->name }} <br>
+                        </div>
+
+                        <div>
+                            <p class="stockbox1">{{ $material->price->sum('quantity') }} แผ่น</p>
+                        </div>
+                    </div>
+
+                    <div class="dt-text2">
+                        <a href="{{ route('admin.materials.editmaterial',$material->id) }}" class="btn-icon btn-edit" title="แก้ไข">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <form action="{{ route('admin.materials.destroy', $material->id) }}" method="POST"
+                            style="display:inline;" onsubmit="return confirm('ยืนยันการลบ?');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn-icon btn-delete" title="ลบ">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            @elseif($material->material_type === 'อุปกรณ์เสริม')
+            <div class="card-dt">
+                <div class="card-dt-img">
+
+                    <div class="card-dt-img-control">
+                        <img src="data:image/jpeg;base64,{{ base64_encode($material->accessoryItem->image_accessory_item) }}" class="imgposition1">
+                    </div>
+                </div>
+
+                <div class="dt-text">
+                    <div class="dt-text1">
+                        <div style="display: block;">
+                            <strong>ประเภทย่อย : </strong>{{ $material->accessoryItem->accessoryType->name }} <br>
+                            <strong>สี : </strong>{{ $material->accessoryItem->aluminumSurfaceFinish->name }} <br>
+                        </div>
+
+                        <div>
+                            <p class="stockbox1">{{ $material->price->sum('quantity') }} {{ $material->accessoryItem->unit->name }}</p>
+                        </div>
+                    </div>
+
+                    <div class="dt-text2">
+                        <a href="{{ route('admin.materials.editmaterial',$material->id) }}" class="btn-icon btn-edit" title="แก้ไข">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <form action="{{ route('admin.materials.destroy', $material->id) }}" method="POST"
+                            style="display:inline;" onsubmit="return confirm('ยืนยันการลบ?');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn-icon btn-delete" title="ลบ">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            @elseif($material->material_type === 'เครื่องมือช่าง')
+            <div class="card-dt">
+                <div class="card-dt-img">
+                    <div class="card-dt-img-control">
+                        <img src="data:image/jpeg;base64,{{ base64_encode($material->toolItem->image_tool_item) }}" class="imgposition1">
+                    </div>
+                </div>
+
+                <div class="dt-text">
+                    <div class="dt-text1">
+                        <div style="display: block;">
+                            <strong>ชื่อเครื่องมือช่าง : </strong>{{ $material->toolItem->toolType->name }} <br>
+                            <strong>หมายเหตุ : </strong>{{ $material->toolItem->description }}
+                        </div>
+
+                        <div>
+                            <p class="stockbox1">{{ $material->price->sum('quantity') }} {{ $material->toolItem->unit->name }}</p>
+                        </div>
+                    </div>
+
+                    <div class="dt-text2">
+                        <a href="{{ route('admin.materials.editmaterial',$material->id) }}" class="btn-icon btn-edit" title="แก้ไข">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <form action="{{ route('admin.materials.destroy', $material->id) }}" method="POST"
+                            style="display:inline;" onsubmit="return confirm('ยืนยันการลบ?');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn-icon btn-delete" title="ลบ">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            @elseif($material->material_type === 'วัสดุสิ้นเปลือง')
+            <div class="card-dt">
+                <div class="card-dt-img">
+
+                    <div class="card-dt-img-control">
+                        <img src="data:image/jpeg;base64,{{ base64_encode($material->consumableItem->image_consumable_item) }}" class="imgposition1">
+                    </div>
+                </div>
+
+                <div class="dt-text">
+                    <div class="dt-text1">
+                        <div style="display: block;">
+                            <strong>ชื่อวัสดุสิ้นเปลือง : </strong>{{ $material->consumableItem->consumabletype->name }} <br>
+                        </div>
+
+                        <div>
+                            <p class="stockbox1">{{ $material->price->sum('quantity') }} {{ $material->consumableItem->unit->name }}</p>
+                        </div>
+                    </div>
+
+                    <div class="dt-text2">
+                        <a href="{{ route('admin.materials.editmaterial',$material->id) }}" class="btn-icon btn-edit" title="แก้ไข">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <form action="{{ route('admin.materials.destroy', $material->id) }}" method="POST"
+                            style="display:inline;" onsubmit="return confirm('ยืนยันการลบ?');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn-icon btn-delete" title="ลบ">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            @endif
+        </div>
+    </div>
+
+    <div class="control-boxsearch">
+            <div class="boxsearch">
+                <form action="{{ route('admin.materials.showdetailmaterial', $material->id) }}" method="GET" style="display:flex; gap:10px; align-items:center;">
+                    <select name="direction" class="form-select">
+                        <option value="">ทั้งหมด</option>
+                        <option value="in" {{ request('direction') == 'in' ? 'selected' : '' }}>
+                            เข้า
+                        </option>
+                        <option value="out" {{ request('direction') == 'out' ? 'selected' : '' }}>
+                            ออก
+                        </option>
+                    </select>
+
+                    <button type="submit" class="btn btn-secondary">ค้นหา</button>
+                    <a href="{{ route('admin.materials.showdetailmaterial', $material->id) }}" class="btn btn-primary">รีเซ็ต</a>
+                </form>
+            </div>
+    </div>
+
+    <div style="margin-top: 20px; padding : 20px; background-color: white;">
+        <strong>รายการการเคลื่อนไหวของวัสดุ</strong>
+    </div>
+    <table style="text-align: center;">
+        <tr>
+            <th>ล็อต</th>
+            <th>รายการ</th>
+            <th>วันที่และเวลา</th>
+            <th>ภาพวัสดุ</th>
+            <th>รายละเอียดวัสดุ</th>
+            <th>จำนวน</th>
+            <th>ราคาต้นทุนต่อหน่วย</th>
+            <th>ผู้ดำเนินการ</th>
+            <th>จัดการ</th>
+        </tr>
+        @foreach ($material->materialLogs as $log)
+        <tr align="center">
+            <td style=" height:max-content;">{{ $log->price->lot }}</td>
+            <td>
+                @if ($log->direction == 'in')
+                <div style="background-color: #bcffafff; padding: 5px; width: fit-content; border-radius: 20px; ">
+                    เข้า
+                </div>
+                @elseif($log->direction == 'return')
+                <div style="background-color: #bcffafff; padding: 5px; width: fit-content; border-radius: 20px; ">
+                    คืน
+                </div>
+                @else
+                <div style="background-color: #ffafafff; padding: 5px; width: fit-content; border-radius: 20px;">
+                    ออก
+                </div>
+                @endif
+            </td>
+            <td>{{ $log->created_at }}</td>
+            <td>
+                @if ($log->material->material_type == 'อลูมิเนียม')
+                <img src="data:image/jpeg;base64,{{ base64_encode($log->material->aluminiumItem->image_aluminium_item) }}" class="imgposition4">
+                @elseif ($log->material->material_type == 'กระจก')
+                <img src="data:image/jpeg;base64,{{ base64_encode($log->material->glassItem->image_glass_item) }}" class="imgposition4">
+                @elseif ($log->material->material_type == 'อุปกรณ์เสริม')
+                <img src="data:image/jpeg;base64,{{ base64_encode($log->material->accessoryItem->image_accessory_item) }}" class="imgposition4">
+                @elseif ($log->material->material_type == 'วัสดุสิ้นเปลือง')
+                <img src="data:image/jpeg;base64,{{ base64_encode($log->material->consumableItem->image_consumable_item) }}" class="imgposition4">
+                @elseif ($log->material->material_type == 'เครื่องมือช่าง')
+                <img src="data:image/jpeg;base64,{{ base64_encode($log->material->toolItem->image_tool_item) }}" class="imgposition4">
+                @endif
+            </td>
+            <td>
+                @if ($log->material->material_type == 'อลูมิเนียม')
+                <small>
+                    อลูมิเนียม -
+                    {{ $log->material->aluminiumItem->aluminiumType->name }} -
+                    {{ $log->material->aluminiumItem->aluminumSurfaceFinish->name }} -
+                    {{ $log->price->aluminiumLength->length_meter.' เมตร' }}
+                </small>
+                @elseif ($log->material->material_type == 'กระจก')
+                <small>
+                    กระจก -
+                    {{ $log->material->glassItem->glassType->name }} -
+                    {{ 'สี'.$log->material->glassItem->colourItem->name }} -
+                    {{ 'ขนาด(กว้าง*สูง) '.'('.$log->price->glassSize->width_meter.'*'.$log->price->glassSize->length_meter.')'.' ซม.' }} -
+                    {{ $log->price->glassSize->thickness.' มิลลิเมตร' }}
+                </small>
+
+                @elseif ($log->material->material_type == 'อุปกรณ์เสริม')
+                <small>
+                    อุปกรณ์เสริม -
+                    {{ $log->material->accessoryItem->accessoryType->name }} -
+                    {{ $log->material->accessoryItem->aluminumSurfaceFinish->name }}
+                </small>
+
+                @elseif ($log->material->material_type == 'วัสดุสิ้นเปลือง')
+                <small>
+                    วัสดุสิ้นเปลือง -
+                    {{ $log->material->consumableItem->consumabletype->name }}
+                </small>
+
+                @elseif ($log->material->material_type == 'เครื่องมือช่าง')
+                <small>
+                    เครื่องมือช่าง -
+                    {{ $log->material->toolItem->toolType->name }}
+                    <p style="font-size: xx-small;">
+                        {{ $log->material->toolItem->description }}
+                    </p>
+                </small>
+                @endif
+            </td>
+            <td>
+                {{ $log->price->quantity }}
+            </td>
+            <td>
+                {{ $log->price->price }}
+            </td>
+            <td style="font-size: xx-small;">{{ $log->user->name }}</td>
+            <td>
+                <a href="{{ route('admin.materials.formeditsatock',$log->price_id) }}" class="btn-icon btn-edit" title="แก้ไข">
+                    <i class="fas fa-edit"></i>
+                </a>
+            </td>
+        </tr>
+        @endforeach
+        @if ($material->materialLogs->isEmpty())
+        <tr>
+            <td colspan="9" style="padding:20px;">
+                ยังไม่มีประวัติการเคลื่นไหวสต็อก
+            </td>
+        </tr>
+        @endif
+
+
+    </table>
+
+</div>
+
+@endsection
