@@ -39,7 +39,7 @@
                 <p><strong>วันที่ออก </strong> {{ date('d-m-Y') }}</p>
                 <p><strong>ผู้ขาย</strong> ไพร์ยนร์ ทรายคำ</p>
             </div>
-            
+            jkhoo
         </div>
         <hr>
         <div style="display: flex; justify-content: space-between; margin-top: 5px; margin-bottom: 20px;">
