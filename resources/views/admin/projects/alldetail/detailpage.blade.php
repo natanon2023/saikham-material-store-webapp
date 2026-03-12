@@ -2,6 +2,19 @@
 
 @section('content')
 <div class="main-content">
+    @php
+       $satatusopen = [
+            'waiting_approval',
+           'approved',
+           'material_planning',
+           'waiting_purchase',
+           'ready_to_withdraw',
+           'materials_withdrawn',
+           'installing',
+           'completed'
+       ];
+
+    @endphp
     <div class="boxmaterial control-section" style="display: flex; justify-content: space-between; align-items: center;">
         <div>
             <h3>รายละเอียดงาน: {{ $project->projectname?->name }}</h3>
@@ -63,7 +76,10 @@
         </div>
         <div>
             <a href="{{ route('admin.projects.index',$project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
-            <!-- <a href="{{ route('admin.projects.addbid',$project->id) }}" class="btn btn-secondary">ใบเสนอราคา</a> -->
+            @if (in_array($project->status, $satatusopen))
+                <a href="{{ route('admin.projects.addbid',$project->id) }}" class="btn btn-secondary">ใบเสนอราคา</a>
+            @endif
+            
         </div>
 
     </div>

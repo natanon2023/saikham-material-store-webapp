@@ -244,6 +244,8 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
         Route::put('/{id}', [ProjectController::class, 'updateimgtype'])->name('updateimgtype');
         Route::delete('/{id}', [ProjectController::class, 'deleteimgtype'])->name('deleteimgtype');
         Route::post('/{id}/restore', [ProjectController::class, 'restoreimgtype'])->name('restoreimgtype');
+
+        Route::get('/projects/{id}/export-pdf', [ProjectController::class, 'exportPdf'])->name('exportPdf');
         
 
 

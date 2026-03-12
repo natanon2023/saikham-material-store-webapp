@@ -35,6 +35,7 @@ use App\Models\WithdrawalItem;
 use App\Models\ProjectIssue;
 use App\Models\IssueImage;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 
 class ProjectController extends Controller
@@ -55,24 +56,24 @@ class ProjectController extends Controller
         ])->find($id);
 
         $statusColors = [
-                'pending_survey' => ['#D4AF37', 'นัดสำรวจ'],
-                'waiting_survey' => ['#FF8C00', 'รอวันสำรวจ'],
-                'surveying' => ['#1E90FF', 'กำลังสำรวจ'],
-                'pending_quotation' => ['#E91E63', 'รอเสนอราคา'],
-                'waiting_approval' => ['#9C27B0', 'รออนุมัติ'],
-                'approved' => ['#78d37b', 'อนุมัติแล้ว'],
-                'material_planning' => ['#00CED1', 'วางแผนวัสดุ'],
-                'waiting_purchase' => ['#FF4500', 'รอสั่งซื้อ'],
-                'ready_to_withdraw' => ['#008080', 'พร้อมเบิก'],
-                'materials_withdrawn' => ['#8B4513', 'เบิกวัสดุแล้ว'],
-                'installing' => ['#4CAF50', 'กำลังติดตั้ง'],
-                'completed' => ['#708090', 'เสร็จสิ้น'],
-                'cancelled' => ['#DC143C', 'ยกเลิก']
+            'pending_survey' => ['#D4AF37', 'นัดสำรวจ'],
+            'waiting_survey' => ['#FF8C00', 'รอวันสำรวจ'],
+            'surveying' => ['#1E90FF', 'กำลังสำรวจ'],
+            'pending_quotation' => ['#E91E63', 'รอเสนอราคา'],
+            'waiting_approval' => ['#9C27B0', 'รออนุมัติ'],
+            'approved' => ['#78d37b', 'อนุมัติแล้ว'],
+            'material_planning' => ['#00CED1', 'วางแผนวัสดุ'],
+            'waiting_purchase' => ['#FF4500', 'รอสั่งซื้อ'],
+            'ready_to_withdraw' => ['#008080', 'พร้อมเบิก'],
+            'materials_withdrawn' => ['#8B4513', 'เบิกวัสดุแล้ว'],
+            'installing' => ['#4CAF50', 'กำลังติดตั้ง'],
+            'completed' => ['#708090', 'เสร็จสิ้น'],
+            'cancelled' => ['#DC143C', 'ยกเลิก']
         ];
 
         $currentStatus = $statusColors[$project->status] ?? ['#ccc', 'ไม่ระบุ'];
 
-        return view("admin.projects.index", compact('project','statusColors','currentStatus'));
+        return view("admin.projects.index", compact('project', 'statusColors', 'currentStatus'));
     }
 
     public function formprojectexpense($id)
@@ -360,7 +361,7 @@ class ProjectController extends Controller
             'status' => 'waiting_survey'
         ]);
 
-        return redirect()->route('admin.projects.index',$project->id)->with('success', 'บันทึกข้อมูลและอัปเดตสถานะสำเร็จ');
+        return redirect()->route('admin.projects.index', $project->id)->with('success', 'บันทึกข้อมูลและอัปเดตสถานะสำเร็จ');
     }
 
     public function formpendingsurvey()
@@ -379,10 +380,10 @@ class ProjectController extends Controller
         $lastProject = Project::where('tax_invoice_number', 'LIKE', $prefix . '%')->orderBy('id', 'desc')->first();
 
         $prefixqt = 'QT' . date('ym');
-        $lastProjectqt = Project::where('quotation_number','LIKE',$prefixqt.'%')->orderBy('id','desc')->first();
+        $lastProjectqt = Project::where('quotation_number', 'LIKE', $prefixqt . '%')->orderBy('id', 'desc')->first();
 
         $prefixrc = 'RC' . date('ym');
-        $lastProjectrc = Project::where('receipt_number','LIKE',$prefixrc.'%')->orderBy('id','desc')->first();
+        $lastProjectrc = Project::where('receipt_number', 'LIKE', $prefixrc . '%')->orderBy('id', 'desc')->first();
 
         if ($lastProject && $lastProject->tax_invoice_number) {
             $lastNumber = (int) substr($lastProject->tax_invoice_number, -4);
@@ -457,9 +458,9 @@ class ProjectController extends Controller
             'productSetName'
         ])->get();
 
-        $projectimg = Projectimages::where('project_id',$id)->get();
+        $projectimg = Projectimages::where('project_id', $id)->get();
 
-        return view('admin.projects.survey.formcustomerneed', compact('project', 'productset','projectimg'));
+        return view('admin.projects.survey.formcustomerneed', compact('project', 'productset', 'projectimg'));
     }
 
 
@@ -488,9 +489,9 @@ class ProjectController extends Controller
             'productSetName'
         ])->get();
 
-        $projectimg = Projectimages::where('project_id',$id)->get();
+        $projectimg = Projectimages::where('project_id', $id)->get();
 
-        return view('admin.projects.survey.formcustomerneeddetial', compact('project', 'productset','projectimg'));
+        return view('admin.projects.survey.formcustomerneeddetial', compact('project', 'productset', 'projectimg'));
     }
 
 
@@ -559,7 +560,7 @@ class ProjectController extends Controller
         $project = Project::find($id);
         $imgtypename = ImageTypeName::all();
 
-        return view('admin.projects.survey.formprojectimage', compact('project','imgtypename'));
+        return view('admin.projects.survey.formprojectimage', compact('project', 'imgtypename'));
     }
 
     public function createprojectimage(Request $request)
@@ -584,8 +585,8 @@ class ProjectController extends Controller
     {
         $project = Project::find($id);
         $imgtypename = ImageTypeName::all();
-        
-        return view('admin.projects.survey.formprojectimagedetail', compact('project','imgtypename'));
+
+        return view('admin.projects.survey.formprojectimagedetail', compact('project', 'imgtypename'));
     }
 
     public function createprojectimagedetail(Request $request)
@@ -622,7 +623,7 @@ class ProjectController extends Controller
         $projectImage = Projectimages::find($id);
         $imgtypename = ImageTypeName::all();
 
-        return view('admin.projects.survey.editprojectimage', compact('projectImage','imgtypename'));
+        return view('admin.projects.survey.editprojectimage', compact('projectImage', 'imgtypename'));
     }
 
     public function updateprojectimage(Request $request, $id)
@@ -899,7 +900,7 @@ class ProjectController extends Controller
             'status' => 'pending_quotation'
         ]);
 
-        return redirect()->route('admin.projects.index',$project->id)->with('success', 'รอเสนอราคา');
+        return redirect()->route('admin.projects.index', $project->id)->with('success', 'รอเสนอราคา');
     }
 
 
@@ -931,15 +932,15 @@ class ProjectController extends Controller
         $technician = User::where('role', 'technician')->get();
 
         $canEditCoreInfo = in_array($project->status, [
-            'waiting_survey', 
-            'pending_survey', 
-            'surveying', 
-            'pending_quotation', 
+            'waiting_survey',
+            'pending_survey',
+            'surveying',
+            'pending_quotation',
             'waiting_approval'
         ]);
 
 
-        return view('admin.projects.alldetail.detailpage', compact('project', 'customerall', 'projectname', 'technician','canEditCoreInfo'));
+        return view('admin.projects.alldetail.detailpage', compact('project', 'customerall', 'projectname', 'technician', 'canEditCoreInfo'));
     }
 
     public function addautersurver(Request $request)
@@ -970,7 +971,7 @@ class ProjectController extends Controller
             'status' => 'waiting_approval'
         ]);
 
-        return redirect()->route('admin.projects.index')->with('success', 'เสนอราคาสำเร็จ รอลูกค้าอนุมัติ');
+        return redirect()->route('admin.projects.index',$project->id)->with('success', 'เสนอราคาสำเร็จ รอลูกค้าอนุมัติ');
     }
 
 
@@ -1653,7 +1654,7 @@ class ProjectController extends Controller
                     'start' => date('Y-m-d', strtotime($pj->installation_start_date)),
                     'end'   => date('Y-m-d', strtotime($pj->installation_end_date . ' +1 day')),
                     'url'   => route('admin.projects.index', $pj->id),
-                    'backgroundColor' => $color, 
+                    'backgroundColor' => $color,
                     'borderColor'     => $color,
                     'allDay'          => true,
                     'textColor'       => '#ffffff'
@@ -1710,16 +1711,18 @@ class ProjectController extends Controller
     }
 
 
-    public function formcrateimgtype(){
+    public function formcrateimgtype()
+    {
 
         $imgtype = ImageTypeName::withTrashed()->get();
-        return view('admin.projects.survey.formcrateimgtype',compact('imgtype'));
+        return view('admin.projects.survey.formcrateimgtype', compact('imgtype'));
     }
 
-    public function crateimgtype(Request $request){
+    public function crateimgtype(Request $request)
+    {
 
         ImageTypeName::create([
-             'name' => $request->name
+            'name' => $request->name
         ]);
 
         return back()->with('success', 'เพิ่มประเภทภาพสำเร็จ');
@@ -1757,5 +1760,25 @@ class ProjectController extends Controller
         return redirect()->back()->with('success', 'กู้คืนข้อมูลเรียบร้อย');
     }
 
-    
+    public function exportPdf($id)
+    {
+        // ดึงข้อมูลโปรเจกต์ (เหมือนตอนดูหน้าเว็บปกติ)
+        $project = Project::with([
+            'customer.province',
+            'customer.amphure',
+            'customer.tambon',
+            'projectname',
+            'projectexpenses.type',
+            'customerneed.productset.productSetName'
+        ])->find($id);
+
+        // สั่งให้ PDF ไปอ่านหน้า Blade ที่เราจะสร้างเฉพาะสำหรับ PDF
+        $pdf = Pdf::loadView('admin.projects.bid.addbid', compact('project'));
+
+        // สั่งใช้ฟอนต์ภาษาไทย
+        $pdf->setOption(['defaultFont' => 'THSarabunNew']);
+
+        // แสดงผลเป็นหน้า PDF บนเบราว์เซอร์
+        return $pdf->stream('Quotation-' . $project->quotation_number . '.pdf');
+    }
 }
