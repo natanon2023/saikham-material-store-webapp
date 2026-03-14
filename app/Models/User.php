@@ -128,4 +128,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Customerneed::class,'created_by');
     }
+
+    public function assignedProjects()
+    {
+        return $this->belongsToMany(Project::class, 'assigned_installers', 'user_id', 'project_id'); 
+    }
 }

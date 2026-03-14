@@ -16,7 +16,6 @@ class Project extends Model
         'customer_id',
         'status',
         'assigned_surveyor_id',
-        'assigned_installer_id',
         'survey_date',
         'survey_notes',
         'quotation_date',
@@ -90,7 +89,12 @@ class Project extends Model
     }
 
     public function withdrawals()
-{
-    return $this->hasMany(Withdrawal::class)->orderBy('created_at', 'desc');
-}
+    {
+        return $this->hasMany(Withdrawal::class)->orderBy('created_at', 'desc');
+    }
+
+    public function installers()
+    {
+        return $this->belongsToMany(User::class, 'assigned_installers', 'project_id', 'user_id')->withTimestamps(); 
+    }
 }

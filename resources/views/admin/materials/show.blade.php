@@ -312,6 +312,7 @@
                     </p>
                 </small>
                 @endif
+                ({{ $log->price->dealer->name }})
             </td>
             <td>
                 {{ $log->price->quantity }}

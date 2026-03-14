@@ -2,19 +2,6 @@
 
 @section('content')
 <div class="main-content">
-    @php
-       $satatusopen = [
-            'waiting_approval',
-           'approved',
-           'material_planning',
-           'waiting_purchase',
-           'ready_to_withdraw',
-           'materials_withdrawn',
-           'installing',
-           'completed'
-       ];
-
-    @endphp
     <div class="boxmaterial control-section" style="display: flex; justify-content: space-between; align-items: center;">
         <div>
             <h3>รายละเอียดงาน: {{ $project->projectname?->name }}</h3>
@@ -76,15 +63,74 @@
         </div>
         <div>
             <a href="{{ route('admin.projects.index',$project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
-            @if (in_array($project->status, $satatusopen))
-                <a href="{{ route('admin.projects.addbid',$project->id) }}" class="btn btn-secondary">ใบเสนอราคา</a>
-            @endif
-            
         </div>
 
     </div>
     <div style=" margin-top: 20px;">
         @include('components.successanderror')
+    </div>
+    <div class="boxmaterial" style="margin-top: 20px;">
+        <div style="margin-bottom: 15px;  border-bottom: 2px solid #eee; padding-bottom: 10px;">
+            จัดการเอกสารโครงการ
+        </div>
+        
+        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+            
+            @if (in_array($project->status, $satatusopen))
+            <div style="flex: 1; min-width: 250px; border: 1px solid #61b8c2;  padding: 15px;  display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <h5>ใบเสนอราคา</h5>
+                    <p style="margin: 5px 0 0 0; font-size: 13px; color: #666;">รายละเอียดและยอดประเมิน</p>
+                </div>
+                <a href="{{ route('admin.projects.addbid', $project->id) }}" class="btn btn-secondary" style="height:max-content; background-color: #17a2b8; border: none; padding: 8px 15px; ">
+                    เปิดเอกสาร
+                </a>
+            </div>
+            
+            @endif
+
+
+            @if (in_array($project->status,$statusmaterialplanningopen))
+            <div style="flex: 1; min-width: 250px; border: 1px solid #61b8c2;  padding: 15px;  display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <h5>ใบสั่งซื้อวัสดุ</h5>
+                    <p style="margin: 5px 0 0 0; font-size: 13px; color: #666;">รายการวัสดุที่ต้องซื้อเพิ่ม</p>
+                </div>
+                <a href="{{ route('admin.projects.materialplanningpage', $project->id) }}" class="btn btn-secondary" style="height:max-content; background-color: #00CED1; border: none; padding: 8px 15px; ">
+                    เปิดเอกสาร
+                </a>
+            </div>
+            @endif
+
+            @if (in_array($project->status, $statuspayment))
+            <div style="flex: 1; min-width: 250px; border: 1px solid #28a745;  padding: 15px;  display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <h5>ใบเสร็จรับเงิน</h5>
+                    <p style="margin: 5px 0 0 0; font-size: 13px; color: #666;">หลักฐานการชำระเงิน</p>
+                </div>
+                <a href="{{ route('admin.projects.receipt', $project->id) }}" class="btn btn-secondary" style="height:max-content; background-color: #28a745; border: none; padding: 8px 15px; ">
+                    เปิดเอกสาร
+                </a>
+            </div>
+
+            <div style="flex: 1; min-width: 250px; border: 1px solid #dc3545;  padding: 15px;  display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <h5>ใบกำกับภาษี</h5>
+                    <p style="margin: 5px 0 0 0; font-size: 13px; color: #666;">เอกสารภาษีมูลค่าเพิ่ม (VAT)</p>
+                </div>
+                <a href="{{ route('admin.projects.taxInvoice', $project->id) }}" class="btn btn-secondary" style=" height:max-content; background-color: #dc3545; border: none; padding: 8px 15px; ">
+                    เปิดเอกสาร
+                </a>
+            </div>
+            @endif
+
+            @if (!in_array($project->status, $satatusopen) && !in_array($project->status, $statuspayment) && !in_array($project->status, $statusmaterialplanningopen))
+            <div style="width: 100%; text-align: center; padding: 20px; background-color: #f8f9fa; border-radius: 8px; color: #6c757d;">
+                <i class="fas fa-info-circle"></i> โปรเจกต์นี้ยังไม่อยู่ในขั้นตอนการออกเอกสาร (กรุณาอัปเดตสถานะการสำรวจ)
+            </div>
+            @endif
+
+        </div>
     </div>
     <div class="boxmaterial" style="margin-top: 20px;">
         <form action="{{ route('admin.projects.updateProjectPendingSurvey', $project->id) }}" method="POST">
@@ -344,6 +390,9 @@
             </div>
         </div>
     </div>
+
+
+    
 
 
 

@@ -6,28 +6,47 @@
 
     <div class="boxmaterial">
         <div style="display: flex; justify-content: space-between; align-items: center; ">
-            <h3>เบิกวัสดุ</h3>
-            <a href="{{ route('admin.projects.index') }}" class="btn btn-primary">ย้อนกลับ</a>
+            <h3>รายละเอียดการเบิก</h3>
+            <a href="{{ route('admin.projects.index',$project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
         </div>
     </div>
 
     <div class="boxmaterial" style="margin-top: 20px;">
         <form action="{{ route('admin.projects.withdrawstore', $project->id) }}" method="POST">
             @csrf
+            <div class="box-control">
+                <div class="form-group">
+                <label for="withdrawn_by" class="form-label">โครงการ</label>
+                <div class="form-input">
+                    {{ $project->projectname->name }}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="withdrawn_by" class="form-label">ลูกค้า</label>
+                <div class="form-input">
+                    {{ $project->customer->first_name }} {{ $project->customer->last_name }}
+                </div>
+            </div>
 
             <div class="form-group" style="margin-bottom: 20px; max-width: 100%;">
                 <label for="withdrawn_by" class="form-label">เลือกผู้เบิกวัสดุ </label>
                 <select name="withdrawn_by" id="withdrawn_by" class="form-input" required>
                     <option value="">กรุณาเลือกผู้เบิก</option>
                     @foreach($users as $user)
-                    <option value="{{ $user->id }}">{{ $user->name }}</option>
+                    <option value="{{ $user->id }}">{{ $user->name }} {{ $user->last_name }}</option>
                     @endforeach
                 </select>
             </div>
 
-            <button type="submit" class="btn btn-secondary">
-                ยืนยันการเบิกวัสดุ
-            </button>
+           
+            </div>
+            <div style="display: flex; justify-content: flex-end;">
+                <button type="submit" class="btn btn-secondary">
+                    ยืนยันการเบิกวัสดุ
+                </button>
+            </div>
+             
         </form>
     </div>
     <div class="boxmaterial" style="margin-top: 20px;">

@@ -211,6 +211,8 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
         Route::post('{id}/withdraw', [ProjectController::class, 'withdrawstore'])->name('withdrawstore');
         
         Route::get('{id}/installingpage', [ProjectController::class, 'installingpage'])->name('installingpage');
+        Route::post('/project/{id}/assign-installer', [ProjectController::class, 'assignInstalleruser'])->name('assign_installer');
+        Route::delete('/project/{id}/remove-installer', [ProjectController::class, 'removeInstaller'])->name('remove_installer');
 
 
         Route::put('{id}/assign-installer',[ProjectController::class, 'assignInstaller'])->name('assignInstaller');
@@ -245,9 +247,15 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
         Route::delete('/{id}', [ProjectController::class, 'deleteimgtype'])->name('deleteimgtype');
         Route::post('/{id}/restore', [ProjectController::class, 'restoreimgtype'])->name('restoreimgtype');
 
-        Route::get('/projects/{id}/export-pdf', [ProjectController::class, 'exportPdf'])->name('exportPdf');
-        
+        Route::get('/receipt/{id}', [ProjectController::class, 'receipt'])->name('receipt');
+        Route::get('/tax-invoice/{id}', [ProjectController::class, 'taxInvoice'])->name('taxInvoice');
 
+        Route::get('/restockpage/{id}', [ProjectController::class, 'restockpage'])->name('restockpage');
+        Route::post('/processrestock/{id}', [ProjectController::class, 'processrestock'])->name('processrestock');
+
+        Route::put('/productsetname/{id}/update', [ProjectController::class, 'admupdateproductsetname'])->name('admupdateproductsetname');
+        Route::get('/productsetname/{id}/delete', [ProjectController::class, 'deleteproductsetname'])->name('deleteproductsetname');
+        Route::get('/productsetname/{id}/restore', [ProjectController::class, 'restoreproductsetname'])->name('restoreproductsetname');
 
 
 

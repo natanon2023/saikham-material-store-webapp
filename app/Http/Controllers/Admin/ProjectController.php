@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App;
 use App\Http\Controllers\Controller;
 use App\Models\AccessoryType;
 use App\Models\AluminiumProfileType;
@@ -35,8 +36,18 @@ use App\Models\WithdrawalItem;
 use App\Models\ProjectIssue;
 use App\Models\IssueImage;
 use Carbon\Carbon;
-use Barryvdh\DomPDF\Facade\Pdf;
-
+use App\Models\AluminiumItem;
+use App\Models\AluminiumLength;
+use App\Models\GlassItem;
+use App\Models\GlassSize;
+use App\Models\AccessoryItem;
+use App\Models\AssignedInstaller;
+use App\Models\ToolItem;
+use App\Models\ConsumableItem;
+use App\Models\Dealer;
+use App\Models\MaterialPrice;
+use App\Models\Unit;
+use GuzzleHttp\Promise\Create;
 
 class ProjectController extends Controller
 {
@@ -72,6 +83,8 @@ class ProjectController extends Controller
         ];
 
         $currentStatus = $statusColors[$project->status] ?? ['#ccc', 'ไม่ระบุ'];
+
+        
 
         return view("admin.projects.index", compact('project', 'statusColors', 'currentStatus'));
     }
@@ -427,8 +440,6 @@ class ProjectController extends Controller
 
         return redirect()->route('admin.projects.index', $project->id)->with('success', 'เพิ่มโครงการใหม่และนัดหมายการสำรวจหน้างานสำเร็จ');
     }
-
-
 
 
     public function formsurveying($id)
@@ -867,8 +878,8 @@ class ProjectController extends Controller
 
     public function formproductsetname()
     {
-
-        return view('admin.projects.productset.formproductsetname');
+        $productsetnameall = ProductSetName::withTrashed()->get();
+        return view('admin.projects.productset.formproductsetname',compact('productsetnameall'));
     }
 
     public function createproductsetname(Request $request)
@@ -878,7 +889,41 @@ class ProjectController extends Controller
             'name' => $request->name
         ]);
 
-        return redirect()->route('admin.projects.formproductset', $request->id)->with('success', 'เพิ่มชื่อผลิตภัณฑ์สำเร็จ');
+        return redirect()->back()->with('success', 'เพิ่มชื่อผลิตภัณฑ์สำเร็จ');
+    }
+
+
+    public function admupdateproductsetname(Request $request, $id)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255'
+        ]);
+
+        $productsetname = ProductSetName::withTrashed()->findOrFail($id);
+        
+        $productsetname->update([
+            'name' => $request->name
+        ]);
+
+        return redirect()->back()->with('success', 'อัปเดตชื่อผลิตภัณฑ์เรียบร้อยแล้ว');
+    }
+
+    public function deleteproductsetname($id)
+    {
+        $productsetname = ProductSetName::findOrFail($id);
+        
+        $productsetname->delete(); 
+
+        return redirect()->back()->with('success', 'ระงับการใช้งานชื่อผลิตภัณฑ์นี้แล้ว (สามารถกู้คืนได้)');
+    }
+
+    public function restoreproductsetname($id)
+    {
+        $productsetname = ProductSetName::onlyTrashed()->findOrFail($id);
+        
+        $productsetname->restore();
+
+        return redirect()->back()->with('success', 'กู้คืนชื่อผลิตภัณฑ์กลับมาใช้งานเรียบร้อยแล้ว');
     }
 
     public function updatestatussurveying(Request $request, $id)
@@ -925,22 +970,41 @@ class ProjectController extends Controller
             'projectexpenses.type',
             'projectexpenses.creator'
 
+
         ])->find($id);
 
         $projectname = ProjectName::all();
         $customerall = Customer::all();
         $technician = User::where('role', 'technician')->get();
 
-        $canEditCoreInfo = in_array($project->status, [
-            'waiting_survey',
-            'pending_survey',
-            'surveying',
-            'pending_quotation',
-            'waiting_approval'
-        ]);
+        $satatusopen = [
+            'waiting_approval',
+            'approved',
+            'material_planning',
+            'waiting_purchase',
+            'ready_to_withdraw',
+            'materials_withdrawn',
+            'installing',
+            'completed'
+        ];
+
+        $statuspayment = [
+            'completed'
+        ];
+
+        $statusmaterialplanningopen = [
+            'material_planning',
+            'waiting_purchase',
+            'ready_to_withdraw',
+            'materials_withdrawn',
+            'installing',
+            'completed'
+        ];
 
 
-        return view('admin.projects.alldetail.detailpage', compact('project', 'customerall', 'projectname', 'technician', 'canEditCoreInfo'));
+
+
+        return view('admin.projects.alldetail.detailpage', compact('project', 'customerall', 'projectname', 'technician', 'statuspayment', 'satatusopen', 'statusmaterialplanningopen'));
     }
 
     public function addautersurver(Request $request)
@@ -971,13 +1035,12 @@ class ProjectController extends Controller
             'status' => 'waiting_approval'
         ]);
 
-        return redirect()->route('admin.projects.index',$project->id)->with('success', 'เสนอราคาสำเร็จ รอลูกค้าอนุมัติ');
+        return redirect()->route('admin.projects.index', $project->id)->with('success', 'เสนอราคาสำเร็จ รอลูกค้าอนุมัติ');
     }
 
 
-    public function addbid($id)
+    private function getCalculatedProject($id)
     {
-
         $project = Project::with([
             'customer.province',
             'customer.amphure',
@@ -1005,14 +1068,10 @@ class ProjectController extends Controller
             'assignedSurveyor.profile'
         ])->find($id);
 
-        $sumtotolproduct = 0;
-
         foreach ($project->customerneed as $need) {
             $m_w = $need->width / 100;
             $m_h = $need->high / 100;
-
             $needTotal = 0;
-
             $requestlent = max($m_w, $m_h);
 
             foreach ($need->productset->productsetitem as $item) {
@@ -1039,6 +1098,7 @@ class ProjectController extends Controller
                         $qtyuse = ceil($totalneedlen / $len);
                         $selectprice = $stock->price;
                         $selectlot = $stock->lot;
+                        $item->calculated_price_id = $stock->id;
                         $remark = "ใช้อลูมิเนียมยาว {$len} ม. จำนวน {$qtyuse} เส้น";
                     } else {
                         $flatlen = 6;
@@ -1046,11 +1106,10 @@ class ProjectController extends Controller
                         $selectprice = 300;
                         $selectlot = 'ไม่มีของหรือขนาดไม่พอ';
                         $remark = "ใช้ราคาเหมา 300 บ. ต่อ เส้น ({$flatlen} ม.) จำนวน {$qtyuse} เส้น";
+                        $item->calculated_price_id = null;
                     }
                 } elseif ($type == 'กระจก') {
-
                     $needArea = $m_w * $m_h;
-
                     $stock = Price::where('material_id', $material->id)
                         ->where('quantity', '>', 0)
                         ->whereHas('glassSize', function ($q) use ($m_w, $m_h) {
@@ -1061,15 +1120,14 @@ class ProjectController extends Controller
                         ->first();
 
                     if ($stock && $stock->glassSize) {
-
                         $sheetW = $stock->glassSize->width_meter;
                         $sheetH = $stock->glassSize->length_meter;
                         $sheetArea = $sheetW * $sheetH;
 
                         $qtyuse = ceil($needArea / $sheetArea) * 2;
-
                         $selectprice = $stock->price;
                         $selectlot   = $stock->lot;
+                        $item->calculated_price_id = $stock->id;
                         $remark = "ใช้กระจก {$sheetW}×{$sheetH} ม. จำนวน {$qtyuse} แผ่น";
                     } else {
                         $flatW = 2;
@@ -1078,36 +1136,60 @@ class ProjectController extends Controller
                         $qtyuse = ceil($needArea / $flatArea) * 2;
                         $selectprice = 400;
                         $selectlot   = 'ไม่มีของ/ขนาดไม่พอ';
+                        $item->calculated_price_id = null;
                         $remark = "ใช้กระจกเหมา {$flatW}×{$flatH} ม. 400 บ. ต่อ แผ่น จำนวน {$qtyuse} แผ่น";
                     }
                 } else {
                     $stock = Price::where('material_id', $material->id)->where('quantity', '>', 0)->orderBy('id', 'asc')->first();
-
                     if ($stock) {
                         $selectprice = $stock->price;
                         $selectlot = $stock->lot;
                         $qtyuse = 1;
                         $remark = '-';
+                        $item->calculated_price_id = $stock->id;
                     } else {
                         $qtyuse = 1;
                         $selectprice = 100;
                         $selectlot = 'ไม่มีของ';
                         $remark = 'ใช้ราคาเหมา 100 บ.';
+                        $item->calculated_price_id = null;
                     }
                 }
 
                 $total_item_price = $qtyuse * $selectprice;
+
                 $item->calculated_lot = $selectlot;
                 $item->calculated_unit_price = $selectprice;
                 $item->calculated_qty = $qtyuse;
                 $item->calculated_total = $total_item_price;
                 $item->calculated_remark = $remark;
-                $need->calculated_total = $needTotal;
+
                 $needTotal += $total_item_price;
             }
+
+            $need->calculated_total = $needTotal;
         }
 
+        return $project;
+    }
+
+
+    public function addbid($id)
+    {
+        $project = $this->getCalculatedProject($id);
         return view('admin.projects.bid.addbid', compact('project'));
+    }
+
+    public function receipt($id)
+    {
+        $project = $this->getCalculatedProject($id);
+        return view('admin.projects.bid.receipt', compact('project'));
+    }
+
+    public function taxInvoice($id)
+    {
+        $project = $this->getCalculatedProject($id);
+        return view('admin.projects.bid.tax_invoice', compact('project'));
     }
 
 
@@ -1119,153 +1201,27 @@ class ProjectController extends Controller
             'status' => 'approved'
         ]);
 
-        return redirect()->route('admin.projects.index')->with('success', 'ลูกค้าอนุมัติแล้ว');
+        return redirect()->route('admin.projects.index', $project->id)->with('success', 'ลูกค้าอนุมัติแล้ว');
     }
 
-    public function  updatestatusmaterialplanning($id)
+    public function updatestatusmaterialplanning($id)
     {
         $project = Project::find($id);
-
         $project->update([
             'status' => 'material_planning'
         ]);
-
-        return redirect()->route('admin.projects.materialplanningpage', $id)->with('success', 'วางแผนวัสดุ');
+        return redirect()->route('admin.projects.materialplanningpage', $project->id)->with('success', 'วางแผนวัสดุ');
     }
 
     public function materialplanningpage($id)
     {
-        $project = Project::with([
-            'customer.province',
-            'customer.amphure',
-            'customer.tambon',
-            'projectname',
-            'customerneed',
-            'customerneed.productset.productSetName',
-            'customerneed.productset.productsetitem',
-            'projectexpenses',
-            'projectexpenses.type',
-            'customerneed.productset.productsetitem.material',
-            'customerneed.productset.productsetitem.material.aluminiumItem.aluminiumType',
-            'customerneed.productset.productsetitem.material.aluminiumItem.aluminumSurfaceFinish',
-            'customerneed.productset.productsetitem.material.aluminiumItem.aluminiumLengths.price',
-            'customerneed.productset.productsetitem.material.glassItem.glassType',
-            'customerneed.productset.productsetitem.material.glassItem.colourItem',
-            'customerneed.productset.productsetitem.material.glassItem.glassSize.price',
-            'customerneed.productset.productsetitem.material.accessoryItem.accessoryType',
-            'customerneed.productset.productsetitem.material.accessoryItem.aluminumSurfaceFinish',
-            'customerneed.productset.productsetitem.material.accessoryItem.unit',
-            'customerneed.productset.productsetitem.material.consumableItem.unit',
-            'customerneed.productset.productsetitem.material.consumableItem.consumabletype',
-            'customerneed.productset.productsetitem.material.toolItem.toolType',
-            'customerneed.productset.productsetitem.material.price',
-            'assignedSurveyor.profile'
-        ])->find($id);
-
-        $sumtotolproduct = 0;
-
-        foreach ($project->customerneed as $need) {
-            $m_w = $need->width / 100;
-            $m_h = $need->high / 100;
-
-            $needTotal = 0;
-
-            $requestlent = max($m_w, $m_h);
-
-            foreach ($need->productset->productsetitem as $item) {
-                $material = $item->material;
-                $type = $material->material_type;
-
-                $selectprice = 0;
-                $selectlot = '';
-                $remark = '';
-                $qtyuse = 0;
-
-                if ($type == 'อลูมิเนียม') {
-                    $totalneedlen = ($m_w * 2) + ($m_h * 2);
-                    $stock = Price::where('material_id', $material->id)
-                        ->where('quantity', '>', 0)
-                        ->whereHas('aluminiumlength', function ($show) use ($requestlent) {
-                            $show->where('length_meter', '>=', $requestlent);
-                        })
-                        ->orderBy('id', 'asc')
-                        ->first();
-
-                    if ($stock) {
-                        $len = $stock->aluminiumlength->length_meter;
-                        $qtyuse = ceil($totalneedlen / $len);
-                        $selectprice = $stock->price;
-                        $selectlot = $stock->lot;
-                        $remark = "ใช้อลูมิเนียมยาว {$len} ม. จำนวน {$qtyuse} เส้น";
-                    } else {
-                        $flatlen = 6;
-                        $qtyuse = ceil($totalneedlen / $flatlen);
-                        $selectprice = 300;
-                        $selectlot = 'ไม่มีของหรือขนาดไม่พอ';
-                        $remark = "ใช้ราคาเหมา 300 บ. ต่อ เส้น ({$flatlen} ม.) จำนวน {$qtyuse} เส้น";
-                    }
-                } elseif ($type == 'กระจก') {
-
-                    $needArea = $m_w * $m_h;
-
-                    $stock = Price::where('material_id', $material->id)
-                        ->where('quantity', '>', 0)
-                        ->whereHas('glassSize', function ($q) use ($m_w, $m_h) {
-                            $q->where('width_meter', '>=', $m_w)
-                                ->where('length_meter', '>=', $m_h);
-                        })
-                        ->orderBy('id', 'asc')
-                        ->first();
-
-                    if ($stock && $stock->glassSize) {
-
-                        $sheetW = $stock->glassSize->width_meter;
-                        $sheetH = $stock->glassSize->length_meter;
-                        $sheetArea = $sheetW * $sheetH;
-
-                        $qtyuse = ceil($needArea / $sheetArea) * 2;
-
-                        $selectprice = $stock->price;
-                        $selectlot   = $stock->lot;
-                        $remark = "ใช้กระจก {$sheetW}×{$sheetH} ม. จำนวน {$qtyuse} แผ่น";
-                    } else {
-                        $flatW = 2;
-                        $flatH = 2;
-                        $flatArea = $flatW * $flatH;
-                        $qtyuse = ceil($needArea / $flatArea) * 2;
-                        $selectprice = 400;
-                        $selectlot   = 'ไม่มีของ/ขนาดไม่พอ';
-                        $remark = "ใช้กระจกเหมา {$flatW}×{$flatH} ม. 400 บ. ต่อ แผ่น จำนวน {$qtyuse} แผ่น";
-                    }
-                } else {
-                    $stock = Price::where('material_id', $material->id)->where('quantity', '>', 0)->orderBy('id', 'asc')->first();
-
-                    if ($stock) {
-                        $selectprice = $stock->price;
-                        $selectlot = $stock->lot;
-                        $qtyuse = 1;
-                        $remark = '-';
-                    } else {
-                        $qtyuse = 1;
-                        $selectprice = 100;
-                        $selectlot = 'สินค้าหมด';
-                        $remark = 'ใช้ราคาเหมา 100 บ.';
-                    }
-                }
-
-                $total_item_price = $qtyuse * $selectprice;
-                $item->calculated_lot = $selectlot;
-                $item->calculated_unit_price = $selectprice;
-                $item->calculated_qty = $qtyuse;
-                $item->calculated_total = $total_item_price;
-                $item->calculated_remark = $remark;
-                $need->calculated_total = $needTotal;
-                $needTotal += $total_item_price;
-            }
-        }
+        $project = $this->getCalculatedProject($id);
 
         return view('admin.projects.materialplanning.materialplanningpage', compact('project'));
     }
+
+
+
 
     public function  updatestatuswaitingpurchase($id)
     {
@@ -1275,7 +1231,7 @@ class ProjectController extends Controller
             'status' => 'waiting_purchase'
         ]);
 
-        return redirect()->route('admin.projects.index')->with('success', 'วางแผนวัสดุสำเร็จรอซื้อวัสดุ');
+        return redirect()->route('admin.projects.index', $project->id)->with('success', 'วางแผนวัสดุสำเร็จรอซื้อวัสดุ');
     }
 
     public function  updatestatusreadytowithdraw($id)
@@ -1286,100 +1242,13 @@ class ProjectController extends Controller
             'status' => 'ready_to_withdraw'
         ]);
 
-        return redirect()->route('admin.projects.index')->with('success', 'พร้อมวัสดุ');
+        return redirect()->route('admin.projects.index', $project->id)->with('success', 'พร้อมเบิกวัสดุ');
     }
 
 
 
 
-    private function calculateMaterial(Project $project)
-    {
-        foreach ($project->customerneed as $need) {
 
-            $m_w = $need->width / 100;
-            $m_h = $need->high / 100;
-            $needTotal = 0;
-            $requestlent = max($m_w, $m_h);
-
-            foreach ($need->productset->productsetitem as $item) {
-
-                $material = $item->material;
-                $type = $material->material_type;
-
-                $selectprice = 0;
-                $selectlot = '';
-                $remark = '';
-                $qtyuse = 0;
-
-
-                if ($type == 'อลูมิเนียม') {
-
-                    $totalneedlen = ($m_w * 2) + ($m_h * 2);
-
-                    $stock = Price::where('material_id', $material->id)
-                        ->where('quantity', '>', 0)
-                        ->whereHas('aluminiumlength', function ($q) use ($requestlent) {
-                            $q->where('length_meter', '>=', $requestlent);
-                        })
-                        ->orderBy('id')
-                        ->first();
-
-                    if ($stock) {
-                        $len = $stock->aluminiumlength->length_meter;
-                        $qtyuse = ceil($totalneedlen / $len);
-                        $selectprice = $stock->price;
-                        $selectlot = $stock->lot;
-                        $remark = "ใช้อลูมิเนียม {$len} ม. {$qtyuse} เส้น";
-                    } else {
-                        $qtyuse = ceil($totalneedlen / 6);
-                        $selectprice = 300;
-                        $selectlot = 'ไม่มีของ';
-                        $remark = 'ใช้ราคาเหมา';
-                    }
-                } elseif ($type == 'กระจก') {
-
-                    $needArea = $m_w * $m_h;
-
-                    $stock = Price::where('material_id', $material->id)
-                        ->where('quantity', '>', 0)
-                        ->first();
-
-                    if ($stock && $stock->glassSize) {
-                        $area = $stock->glassSize->width_meter * $stock->glassSize->length_meter;
-                        $qtyuse = ceil($needArea / $area) * 2;
-                        $selectprice = $stock->price;
-                        $selectlot = $stock->lot;
-                    } else {
-                        $qtyuse = ceil($needArea / 4) * 2;
-                        $selectprice = 400;
-                        $selectlot = 'ไม่มีของ';
-                    }
-                } else {
-                    $qtyuse = 1;
-                    $stock = Price::where('material_id', $material->id)
-                        ->where('quantity', '>', 0)
-                        ->first();
-
-                    if ($stock) {
-                        $selectprice = $stock->price;
-                        $selectlot = $stock->lot;
-                    }
-                }
-
-                $item->calculated_qty = $qtyuse;
-                $item->calculated_unit_price = $selectprice;
-                $item->calculated_total = $qtyuse * $selectprice;
-                $item->calculated_lot = $selectlot;
-                $item->calculated_remark = $remark;
-
-                $needTotal += $item->calculated_total;
-            }
-
-            $need->calculated_total = $needTotal;
-        }
-
-        return $project;
-    }
 
 
 
@@ -1387,54 +1256,55 @@ class ProjectController extends Controller
 
     public function withdrawpage($id)
     {
-        $project = Project::with(['customerneed.productset.productsetitem.material'])->find($id);
-        $project = $this->calculateMaterial($project);
+        $project = $this->getCalculatedProject($id);
 
         $users = User::all();
 
         return view('admin.projects.withdraw.withdrawpage', compact('project', 'users'));
     }
 
-    public function withdrawstore($id)
+    public function withdrawstore(Request $request, $id)
     {
-        $project = Project::with([
-            'customerneed.productset.productsetitem.material'
-        ])->find($id);
+        $project = $this->getCalculatedProject($id);
 
         $withdrawal = Withdrawal::create([
             'project_id'   => $project->id,
-            'withdrawn_by' => Auth::id(),
+            'withdrawn_by' => $request->withdrawn_by,
             'recorded_by'  => Auth::id(),
         ]);
-
-        $project = $this->calculateMaterial($project);
 
         foreach ($project->customerneed as $need) {
             foreach ($need->productset->productsetitem as $item) {
 
-                $qty = $item->calculated_qty;
+                $qtyToWithdraw = $item->calculated_qty;
 
-                if ($qty <= 0) continue;
+                if ($qtyToWithdraw <= 0 || empty($item->calculated_price_id)) {
+                    continue;
+                }
 
-                $price = Price::where('material_id', $item->material->id)->where('quantity', '>=', $qty)->orderBy('id')->first();
+                $price = Price::find($item->calculated_price_id);
 
                 if ($price) {
+                    $actualDeduct = min($price->sumquantity, $qtyToWithdraw);
 
-                    $price->decrement('quantity', $qty);
+                    if ($actualDeduct > 0) {
 
-                    MaterialLog::create([
-                        'material_id' => $item->material->id,
-                        'price_id'    => $price->id,
-                        'user_id'     => Auth::id(),
-                        'direction'   => 'out',
-                    ]);
+                        $price->decrement('sumquantity', $actualDeduct);
 
-                    WithdrawalItem::create([
-                        'withdrawal_id' => $withdrawal->id,
-                        'material_id'   => $item->material->id,
-                        'lot'           => $price->id,
-                        'quantity'      => $qty,
-                    ]);
+                        MaterialLog::create([
+                            'material_id' => $item->material->id,
+                            'price_id'    => $price->id,
+                            'user_id'     => Auth::id(),
+                            'direction'   => 'out',
+                        ]);
+
+                        WithdrawalItem::create([
+                            'withdrawal_id' => $withdrawal->id,
+                            'material_id'   => $item->material->id,
+                            'lot'           => $price->lot,
+                            'quantity'      => $actualDeduct, 
+                        ]);
+                    }
                 }
             }
         }
@@ -1443,8 +1313,7 @@ class ProjectController extends Controller
             'status' => 'materials_withdrawn'
         ]);
 
-
-        return redirect()->route('admin.projects.index')->with('success', 'เบิกวัสดุสำเร็จ');
+        return redirect()->route('admin.projects.index',$project->id)->with('success', 'เบิกวัสดุสำเร็จเรียบร้อย');
     }
 
     public function assignInstaller(Request $request, $id)
@@ -1455,12 +1324,11 @@ class ProjectController extends Controller
         $end   = $start->copy()->addDays($project->estimated_work_days - 1);
 
         $project->update([
-            'assigned_installer_id'    => $request->assigned_installer_id,
             'installation_start_date'  => $start,
             'installation_end_date'    => $end
         ]);
 
-        return redirect()->route('admin.projects.index')->with('success', 'กำหนดช่างและวันทำงานเรียบร้อย');
+        return redirect()->back()->with('success', 'กำหนดวันทำงานเรียบร้อย');
     }
 
 
@@ -1468,7 +1336,8 @@ class ProjectController extends Controller
     public function installingpage($id)
     {
         $project = Project::with([
-            'customerneed.productset.productsetitem.material'
+            'customerneed.productset.productsetitem.material',
+            'installers'
         ])->find($id);
 
         $technician = User::where('role', 'technician')->get();
@@ -1477,15 +1346,38 @@ class ProjectController extends Controller
         return view('admin.projects.installing.installingpage', compact('project', 'technician'));
     }
 
+    public function assignInstalleruser(Request $request, $id)
+    {
+        $exists = AssignedInstaller::where('project_id', $id)->where('user_id', $request->user_id)->exists();
+
+        if (!$exists) {
+            AssignedInstaller::create([
+                'project_id' => $id,
+                'user_id'    => $request->user_id
+            ]);
+            return redirect()->back()->with('success', 'เพิ่มช่างติดตั้งเรียบร้อยแล้ว');
+        }
+
+        return redirect()->back()->with('error', 'ช่างคนนี้ถูกเพิ่มในงานนี้ไปแล้ว');
+    }
+
+
+    public function removeInstaller(Request $request, $id)
+    {
+        $project = Project::find($id);
+        $project->installers()->detach($request->user_id);
+        return redirect()->back()->with('success', 'ลบช่างติดตั้งออกจากงานเรียบร้อยแล้ว');
+    }
+
     public function updatestatusinstalling($id)
     {
-        $project = Project::findOrFail($id);
+        $project = Project::find($id);
 
         $project->update([
             'status' => 'installing'
         ]);
 
-        return redirect()->route('admin.projects.index')->with('success', 'อัปเดตสถานะเป็น กำลังติดตั้ง');
+        return redirect()->route('admin.projects.index', $project->id)->with('success', 'อัปเดตสถานะเป็น กำลังติดตั้ง');
     }
 
     public function updatestatuscompleted($id)
@@ -1496,7 +1388,7 @@ class ProjectController extends Controller
             'status' => 'completed'
         ]);
 
-        return redirect()->route('admin.projects.index')->with('success', 'อัปเดตสถานะเป็น เสร็จสมบูรณ์');
+        return redirect()->route('admin.projects.index', $project->id)->with('success', 'อัปเดตสถานะเป็น เสร็จสมบูรณ์');
     }
 
     public function updatestatuscancelled($id)
@@ -1591,9 +1483,16 @@ class ProjectController extends Controller
 
     public function createIssue($id)
     {
-        $project = Project::findOrFail($id);
+        $project = Project::find($id);
 
-        return view('admin.projects.issues_create', compact('project'));
+        $withdrawnItems = \App\Models\WithdrawalItem::whereHas('withdrawal', function ($q) use ($id) {
+            $q->where('project_id', $id);
+        })->with('material')->get(); // อย่าลืมสร้าง relation material() ใน WithdrawalItem model ด้วยนะครับ
+
+        // 2. ดึงประวัติปัญหาที่เคยแจ้งไว้มาแสดงสถานะด้านล่าง
+        $issues = \App\Models\ProjectIssue::where('project_id', $id)->orderBy('created_at', 'desc')->get();
+
+        return view('admin.projects.issues_create', compact('project', 'withdrawnItems', 'issues'));
     }
 
 
@@ -1760,25 +1659,129 @@ class ProjectController extends Controller
         return redirect()->back()->with('success', 'กู้คืนข้อมูลเรียบร้อย');
     }
 
-    public function exportPdf($id)
+
+    public function restockpage($id)
     {
-        // ดึงข้อมูลโปรเจกต์ (เหมือนตอนดูหน้าเว็บปกติ)
-        $project = Project::with([
-            'customer.province',
-            'customer.amphure',
-            'customer.tambon',
-            'projectname',
-            'projectexpenses.type',
-            'customerneed.productset.productSetName'
-        ])->find($id);
+        $project = $this->getCalculatedProject($id);
+        $dealers = Dealer::all();
 
-        // สั่งให้ PDF ไปอ่านหน้า Blade ที่เราจะสร้างเฉพาะสำหรับ PDF
-        $pdf = Pdf::loadView('admin.projects.bid.addbid', compact('project'));
-
-        // สั่งใช้ฟอนต์ภาษาไทย
-        $pdf->setOption(['defaultFont' => 'THSarabunNew']);
-
-        // แสดงผลเป็นหน้า PDF บนเบราว์เซอร์
-        return $pdf->stream('Quotation-' . $project->quotation_number . '.pdf');
+        return view('admin.projects.materialplanning.restockmaterials', compact('project', 'dealers'));
     }
+
+    public function processrestock(Request $request, $id)
+    {
+        $restockData = $request->input('restock');
+
+        if ($restockData != null) {
+
+            foreach ($restockData as $material_id => $data) {
+
+                $material = Material::find($material_id);
+
+                if ($material == null) {
+                    continue;
+                }
+
+                $priceColumn = null;
+                $priceItemId = null;
+
+
+                if ($material->material_type == 'อลูมิเนียม') {
+
+                    $aluminiumitem = AluminiumItem::find($material->aluminium_item_id);
+
+                    if ($aluminiumitem == null) {
+                        continue;
+                    }
+
+                    $length_meter = $data['length_meter'];
+
+                    $aluminiumlength = AluminiumLength::where('aluminium_item_id', $aluminiumitem->id)->where('length_meter', $length_meter)->first();
+
+                    if ($aluminiumlength == null) {
+
+                        $aluminiumlength = AluminiumLength::create([
+                            'aluminium_item_id' => $aluminiumitem->id,
+                            'length_meter'      => $length_meter
+                        ]);
+                    }
+
+                    $priceColumn = 'aluminium_length_id';
+                    $priceItemId = $aluminiumlength->id;
+                } else if ($material->material_type == 'กระจก') {
+
+                    $glassitem = GlassItem::find($material->glass_item_id);
+
+                    if ($glassitem == null) {
+                        continue;
+                    }
+
+                    $width_meter  = $data['width_meter'];
+                    $length_meter = $data['length_meter'];
+                    $thickness    = $data['thickness'];
+
+                    $glasssize = GlassSize::where('glass_item_id', $glassitem->id)->where('width_meter', $width_meter)->where('length_meter', $length_meter)->where('thickness', $thickness)->first();
+
+                    if ($glasssize == null) {
+
+                        $glasssize = GlassSize::create([
+                            'glass_item_id' => $glassitem->id,
+                            'width_meter'   => $width_meter,
+                            'length_meter'  => $length_meter,
+                            'thickness'     => $thickness
+                        ]);
+                    }
+
+                    $priceColumn = 'glass_size_id';
+                    $priceItemId = $glasssize->id;
+                } else if ($material->material_type == 'อุปกรณ์เสริม') {
+                    $priceColumn = 'accessory_item_id';
+                    $priceItemId = $material->accessory_item_id;
+                } else if ($material->material_type == 'เครื่องมือช่าง') {
+
+                    $priceColumn = 'tool_item_id';
+                    $priceItemId = $material->tool_item_id;
+                } else if ($material->material_type == 'วัสดุสิ้นเปลือง') {
+
+                    $priceColumn = 'consumable_item_id';
+                    $priceItemId = $material->consumable_item_id;
+                }
+
+
+                $lotCount = Price::where($priceColumn, $priceItemId)->where('dealer_id', $data['dealer_id'])->count();
+
+                $lotNumber = $lotCount + 1;
+
+                $lotName = "ล็อตที่" . $lotNumber;
+
+                $currentStock = Price::where('material_id', $material->id)->sum('quantity');
+                
+                $newSumQuantity = $currentStock + $data['qty'];
+
+
+                $price = Price::create([
+                    'material_id' => $material->id,
+                    $priceColumn  => $priceItemId,
+                    'dealer_id'   => $data['dealer_id'],
+                    'price'       => $data['price'],
+                    'quantity'    => $data['qty'],
+                    'lot'         => $lotName,
+                    'sumquantity' => $newSumQuantity
+                ]);
+
+
+
+                MaterialLog::create([
+                    'material_id' => $material->id,
+                    'price_id'    => $price->id,
+                    'user_id'     => Auth::id(),
+                    'direction'   => 'in'
+                ]);
+            }
+        }
+        return redirect()->back()->with('success', 'เติมสต็อกวัสดุสำเร็จ');
+    }
+
+
+
 }

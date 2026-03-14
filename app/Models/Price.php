@@ -22,7 +22,8 @@ class Price extends Model
         'dealer_id',
         'quantity',
         'price',
-        'lot'
+        'lot',
+        'sumquantity'
     ];
 
     public function dealer()

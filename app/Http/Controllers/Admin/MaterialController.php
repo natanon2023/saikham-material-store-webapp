@@ -590,6 +590,11 @@ class MaterialController extends Controller
         }
 
 
+        $qty = $request->quantity;
+        $stcok = Price::where('material_id', $material->id)->sum('quantity');
+        $sumqty = $stcok + $qty ;
+
+
         $lotNumber = Price::where($priceColumn, $priceItemId)->where('dealer_id', $request->dealer_id)->count() + 1;
 
         $price = Price::create([
@@ -597,8 +602,9 @@ class MaterialController extends Controller
             $priceColumn => $priceItemId,
             'dealer_id'  => $request->dealer_id,
             'price'      => $request->price,
-            'quantity'   => $request->quantity,
-            'lot'        => 'ล็อตที่' . $lotNumber
+            'quantity'   => $qty,
+            'lot'        => 'ล็อตที่' . $lotNumber,
+            'sumquantity' => $sumqty 
         ]);
 
 

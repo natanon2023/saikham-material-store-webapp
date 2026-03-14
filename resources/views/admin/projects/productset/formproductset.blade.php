@@ -4,7 +4,7 @@
 <div class="main-content">
     <div class="boxmaterial" style="display: flex; justify-content: space-between;">
         <h4>เพิ่มผลิตภัณฑ์ใหม่</h4>
-        <a onclick="history.back()" class="btn btn-secondary">ย้อนกลับ</a>
+        <a onclick="history.back()" class="btn btn-primary">ย้อนกลับ</a>
     </div>
 
     <div class="box">
@@ -61,7 +61,7 @@
                     <textarea name="detail" id="" required class="form-input" ></textarea>
                 </div>
                 <div class="form-group">
-                    <button type="submit" class="btn btn-primary">บันทึกข้อมูล</button>
+                    <button type="submit" class="btn  btn-secondary">บันทึกข้อมูล</button>
                 </div>
             </div>
 

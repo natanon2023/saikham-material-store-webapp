@@ -59,8 +59,9 @@
                 <div class="form-group">
                     <label class="form-label">เลือกช่างที่จะไปสำรวจ</label>
                     <select name="assigned_surveyor_id" id="" class="form-select" required>
-                        @foreach ($technician as $tc)
+                        
                         <option value="">เลือกช่างที่จะไปสำรวจ</option>
+                        @foreach ($technician as $tc)
                         <option value="{{ $tc->id }}">{{' ช่าง '.$tc->name }} {{ $tc->last_name }}</option>
                         @endforeach
                     </select>

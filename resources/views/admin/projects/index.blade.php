@@ -46,7 +46,7 @@
                 <div style="color: #FF8C00;"><strong>{{ $project->survey_date }}</strong></div>
                 @endif
 
-                
+
 
                 @if(in_array($project->status, ['materials_withdrawn', 'installing', 'completed']))
                 <div style="color: #888;">วันทำงาน:</div>
@@ -80,26 +80,20 @@
                     @elseif($project->status == 'approved')
                     <form action="{{ route('admin.projects.updatestatusmaterialplanning', $project->id) }}" method="post" style="margin:0;">
                         @csrf
-                        <button class="btn btn-secondary btn-full-text">วางแผนวัสดุ</button>
+                        <button type="submit" class="btn btn-secondary btn-full-text">วางแผนวัสดุ</button>
                     </form>
-
                     @elseif($project->status == 'material_planning')
                     <a href="{{ route('admin.projects.materialplanningpage', $project->id) }}" class="btn btn-secondary btn-full-text">รายการที่จะซื้อ</a>
 
                     @elseif($project->status == 'waiting_purchase')
-                    <form action="{{ route('admin.projects.updatestatusreadytowithdraw', $project->id) }}" method="post" style="margin:0;">
-                        @csrf
-                        <button class="btn btn-secondary btn-full-text">พร้อมเบิกวัสดุ</button>
-                    </form>
-
+                    <a href="{{ route('admin.projects.restockpage', $project->id) }}" class="btn btn-secondary btn-full-text">เติมสต็อกวัสดุ</a>
                     @elseif($project->status == 'ready_to_withdraw')
                     <a href="{{ route('admin.projects.withdrawpage', $project->id) }}" class="btn btn-secondary btn-full-text">เบิกวัสดุ</a>
 
                     @elseif($project->status == 'materials_withdrawn')
-                    <form action="{{ route('admin.projects.updatestatusinstalling', $project->id) }}" method="POST" style="margin: 0;">
-                        @csrf
-                        <button class="btn btn-secondary btn-full-text">เริ่มการติดตั้ง</button>
-                    </form>
+                    <a href="{{ route('admin.projects.installingpage', $project->id) }}" class="btn btn-secondary btn-full-text">กำหนดวันทำงาน</a>
+
+
 
                     @elseif($project->status == 'installing')
                     <a href="{{ route('admin.projects.issues.create', $project->id) }}" class="btn btn-danger btn-full-text">แจ้งปัญหา</a>
@@ -107,9 +101,13 @@
                         @csrf
                         <button type="submit" class="btn btn-success btn-full-text">เสร็จสมบูรณ์</button>
                     </form>
+                    @elseif($project->status == 'completed')
+                    <form action="{{ route('admin.projects.updatestatusinstalling', $project->id) }}" method="POST" style="margin: 0;">
+                        @csrf
+                        <button class="btn btn-danger btn-full-text" style="height: max-content;">ยังติดตั้งไม่สำเร็จ</button>
+                    </form>
                     @endif
                 </div>
-
                 <div>
                     <a href="{{ route('admin.projects.alldetail', $project->id) }}" class="btn btn-primary btn-full-text" title="ดูรายละเอียดเต็ม">
                         ดูรายละเอียดทั้งหมด

@@ -30,7 +30,7 @@ class UserController extends Controller
         }
 
         $users = $query->get();
-        
+
         return view('admin.users.index', compact('users'));
     }
 
@@ -45,34 +45,49 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-
-        
-
-        $user = User::create([
-            'name'         => $request->name,
-            'email'        => $request->email,
-            'password'     => Hash::make($request->password),
-            'role'         => $request->role,
-            'last_name'    => $request->last_name,
-            'nickname'     => $request->nickname,
-            'phone_number' => $request->phone_number,
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed', 
+            'role' => 'required',
+            'phone_number' => 'required',
+            'province_id' => 'required',
+            'amphure_id' => 'required',
+            'tambon_id' => 'required',
+        ], [
+            'email.unique' => 'อีเมลนี้ถูกใช้งานไปแล้ว',
+            'password.confirmed' => 'รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน',
+            'password.min' => 'รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษร',
         ]);
 
+        try {
+            $user = User::create([
+                'name'         => $request->name,
+                'email'        => $request->email,
+                'password'     => Hash::make($request->password),
+                'role'         => $request->role,
+                'last_name'    => $request->last_name,
+                'nickname'     => $request->nickname,
+                'phone_number' => $request->phone_number,
+            ]);
 
-        UserProfile::create([
-            'user_id'      => $user->id,
-            'house_number' => $request->house_number,
-            'moo'          => $request->moo,
-            'alley'        => $request->alley ?? 'ไม่มีข้อมูล',
-            'road'         => $request->road ?? 'ไม่มีข้อมูล',
-            'village'      => $request->village,
-            'province_id'  => $request->province_id,
-            'amphure_id'   => $request->amphure_id,
-            'tambon_id'    => $request->tambon_id,
-            'birth_date'   => $request->birth_date,
-        ]);
+            UserProfile::create([
+                'user_id'      => $user->id,
+                'house_number' => $request->house_number,
+                'moo'          => $request->moo,
+                'alley'        => $request->alley ?? 'ไม่มีข้อมูล',
+                'road'         => $request->road ?? 'ไม่มีข้อมูล',
+                'village'      => $request->village,
+                'province_id'  => $request->province_id,
+                'amphure_id'   => $request->amphure_id,
+                'tambon_id'    => $request->tambon_id,
+                'birth_date'   => $request->birth_date,
+            ]);
 
-        return redirect()->route('admin.users.index')->with('success', 'เพิ่มผู้ใช้สำเร็จแล้ว');
+            return redirect()->route('admin.users.index')->with('success', 'เพิ่มผู้ใช้สำเร็จแล้ว');
+        } catch (\Exception $e) {
+            return back()->withInput()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
     }
 
     public function getAmphures($province_id)
@@ -94,7 +109,7 @@ class UserController extends Controller
         $user = User::with(['profile.province', 'profile.amphure', 'profile.tambon'])->find($id);
         $provinces = ThaiProvince::with(['amphures.tambons'])->get();
         $amphures = ThaiAmphure::with('tambons')->get();
-        return view('admin.users.edit', compact('user','provinces','amphures'));
+        return view('admin.users.edit', compact('user', 'provinces', 'amphures'));
     }
 
 
@@ -213,11 +228,7 @@ class UserController extends Controller
             'profile.amphure',
             'profile.tambon'
         ])->find($id);
-        
+
         return view('admin.users.show', compact('users'));
     }
-
-    
-
-    
 }

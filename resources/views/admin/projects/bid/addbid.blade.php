@@ -44,7 +44,6 @@
         }
     }
 </style>
-
 <div class="main-content">
     
     <div class="boxmaterial hide-on-print" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
@@ -60,13 +59,13 @@
                     <input type="hidden" value="{{ $project->id }}" name="id">
                     <button type="submit" class="btn btn-secondary">ยืนยันการเสนอราคา</button>
                 </form>
-                <button type="button" onclick="window.print()" class="btn btn-danger" style="background-color: #dc3545; color: white;">
-                    <i class="fas fa-print"></i> ส่งออกเป็น PDF
+                <button type="button" onclick="window.print()" class="btn btn-danger" style="background-color: #17a2b8; color: white;">
+                    <i class="fas fa-print"></i> พิมพ์ใบเสนอราคา
                 </button>
             @else
                 <a href="{{ route('admin.projects.alldetail',$project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
-                <button type="button" onclick="window.print()" class="btn btn-danger" style="background-color: #dc3545; color: white;">
-                    <i class="fas fa-print"></i> ส่งออกเป็น PDF
+                <button type="button" onclick="window.print()" class="btn btn-danger" style="background-color: #17a2b8; color: white;">
+                    <i class="fas fa-print"></i> พิมพ์ใบเสนอราคา
                 </button>
             @endif
         </div>
@@ -81,7 +80,7 @@
                 <p>เบอร์มือถือ 0895284181</p>
             </div>
             <div style="text-align: right;">
-                <h4 style="margin: 0 0 5px 0;">ใบเสนอราคา</h4>
+                <h4 style="margin: 0 0 5px 0; color:#17a2b8;">ใบเสนอราคา</h4>
                 <p><strong>เลขที่</strong> {{ $project->quotation_number }} </p>
                 <p><strong>งาน </strong> {{ $project->projectname->name }}</p>
                 <p><strong>วันที่ออก </strong> {{ date('d-m-Y') }}</p>
@@ -178,7 +177,7 @@
                 <tr>
                     <td align="center">{{ $loop->iteration }}</td>
                     <td>{{ $need->productset->productSetName->name }}</td>
-                    <td align="center">{{ $need->location }} ({{ $need->width }} x {{ $need->high }} ซม.)</td>
+                    <td align="center">{{ $need->projectImage->imagetype->name }} ({{ $need->width }} x {{ $need->high }} ซม.)</td>
                     <td align="center">{{ $need->quantity }} ชุด</td>
                     <td align="right">{{ number_format($need->calculated_total, 2) }}</td>
                     <td align="right">{{ number_format($rowTotal, 2) }}</td>
@@ -226,6 +225,19 @@
                     <td align="right"><strong>{{ number_format($sumvattotal, 2) }} บาท</strong></td>
                 </tr>
             </table>
+        </div>
+
+        <div style="margin-top: 40px; display: flex; justify-content: space-between; text-align: center;">
+            <div style="width: 40%;">
+                <br><br>
+                <p>ลงชื่อ <strong style="border-bottom: 1px solid #000000; padding: 0 20px; margin: 0 10px;">ไพร์ยนร์</strong> ผู้เสนอราคา</p>
+                <p>( ไพร์ยนร์ ทรายคำ )</p>
+            </div>
+            <div style="width: 40%;">
+                <br><br>
+                <p>ลงชื่อ <strong style="border-bottom: 1px solid #000000; padding: 0 20px; margin: 0 10px;">{{ $project->customer->first_name}}</strong> ผู้อนุมัติ</p>
+                <p>( {{ $project->customer->first_name.' '.$project->customer->last_name }} )</p>
+            </div>
         </div>
 
         <div style="margin-top: 20px;">
