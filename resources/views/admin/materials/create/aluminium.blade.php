@@ -20,7 +20,7 @@
                     <div class="form-group">
                         <label class="form-label">ประเภทย่อยวัสดุ</label>
                         <div style="display: flex; align-items: center; gap: 8px;">
-                           <select name="aluminium_profile_types_id"  class="form-select">
+                           <select name="aluminium_profile_types_id"  class="form-select" required>
                             <option value="">เลือกประเภทย่อย</option>
                             @foreach ($aluminiumType as $at)
                                 <option value="{{ $at->id }}">{{ $at->name }}</option>
@@ -35,7 +35,7 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">เลือกสีวัสดุ</label>
-                        <select name="aluminum_surface_finish_id" class="form-select">
+                        <select name="aluminum_surface_finish_id" class="form-select" required>
                             <option value="">เลือกสี</option>
                             @foreach ($aluminiumsurface as $af)
                             <option value="{{ $af->id }}">{{ $af->name }}</option>
@@ -44,7 +44,7 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">รูปภาพวัสดุ</label>
-                        <input type="file" name="image_aluminium_item" class="form-input" accept="image/*" capture="camera">
+                        <input type="file" name="image_aluminium_item" class="form-input" accept="image/*" capture="camera" required>
                     </div>
 
                     <div class="form-group">
