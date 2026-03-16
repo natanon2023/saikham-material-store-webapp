@@ -14,13 +14,13 @@
             </div>
         @endif
 
-        <div class="box-create-material" style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="boxmaterial" style="display: flex; justify-content: space-between; align-items: center;">
             เพิ่มชื่อตัวแทนจำหน่าย
             <div>
-                <a href="{{ route('materialstype.trash') }}" class="btn btn-secondary">
+                <a href="{{ route('materialstype.trash') }}" class="btn btn-danger">
                     <i class="fas fa-trash" style="margin-right: 5px;"></i>ถังขยะ
-                    <a href="{{ route('admin.materials.addstockpage') }}" class="btn btn-secondary">ย้อนกลับ</a>
                 </a>
+                <a href="{{ route('admin.materials.addstockpage') }}" class="btn btn-primary">ย้อนกลับ</a>
             </div>
         </div>
         <div class="box">
@@ -49,10 +49,10 @@
         </div>
 
         <div style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
-            <div style="background-color: white; padding: 20px; width: auto; border: 1px solid #79c4f6;">
+            <div style="background-color: white; padding: 20px; width: auto; ">
                 ตัวแทนจำหน่ายทั้งหมด {{ $dealers->count() }} ประเภท
             </div>
-            <div style="background-color: white; padding: 20px; width: min-content; border: 1px solid #79c4f6;">
+            <div style="background-color: white; padding: 20px; width: min-content; ">
                 <form action="{{ route('admin.materalstype.createdealer') }}" method="get">
                     <div class="box-control" style="display: flex; align-items: center; gap: 10px;">
                         <div class="form-group" style="margin: 0; flex: 1;">
@@ -60,11 +60,11 @@
                                 placeholder="ค้นหา" style="padding: 8px 12px; font-size: 14px;">
                         </div>
 
-                        <button class="btn btn-primary" type="submit" style="padding: 8px 15px; font-size: 14px;">
+                        <button class="btn  btn-secondary" type="submit" style="padding: 8px 15px; font-size: 14px;">
                             <i class="fa fa-search"></i> ค้นหา
                         </button>
 
-                        <a class="btn btn-secondary" href="{{route('admin.materalstype.createdealer')}}"
+                        <a class="btn btn-primary" href="{{route('admin.materalstype.createdealer')}}"
                             style="padding: 8px 12px; font-size: 14px;">
                             <i class="fa fa-refresh"></i> ล้าง
                         </a>

@@ -88,12 +88,15 @@
                     @elseif($project->status == 'waiting_purchase')
                     <a href="{{ route('admin.projects.restockpage', $project->id) }}" class="btn btn-secondary btn-full-text">เติมสต็อกวัสดุ</a>
                     @elseif($project->status == 'ready_to_withdraw')
-                    <a href="{{ route('admin.projects.withdrawpage', $project->id) }}" class="btn btn-secondary btn-full-text">เบิกวัสดุ</a>
-
+                        <a href="{{ route('admin.projects.installingpage', $project->id) }}" class="btn btn-secondary btn-full-text">กำหนดวันทำงาน</a>
+                        @if ($project->installers->count() > 0) 
+                            <a href="{{ route('admin.projects.withdrawpage', $project->id) }}" class="btn btn-secondary btn-full-text">เบิกวัสดุ</a>
+                        @endif
                     @elseif($project->status == 'materials_withdrawn')
-                    <a href="{{ route('admin.projects.installingpage', $project->id) }}" class="btn btn-secondary btn-full-text">กำหนดวันทำงาน</a>
-
-
+                        <form action="{{ route('admin.projects.updatestatusinstalling', $project->id) }}" method="POST" style="margin: 0;">
+                            @csrf
+                                <button class="btn btn-secondary btn-full-text" style="height: max-content;">เริ่มการติดตั้ง</button>
+                        </form>
 
                     @elseif($project->status == 'installing')
                     <a href="{{ route('admin.projects.issues.create', $project->id) }}" class="btn btn-danger btn-full-text">แจ้งปัญหา</a>

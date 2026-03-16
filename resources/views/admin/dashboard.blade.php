@@ -22,8 +22,8 @@
     .progress-bar { background: #dc3545; height: 100%; }
 </style>
 
-<div class="main-content boxmaterial" >
-    <div style="margin-bottom: 25px;">
+<div class="main-content" >
+    <div style="margin-bottom: 25px; " class="boxmaterial">
         <h2 style="color: #333; font-weight: bold;">Dashboard</h2>
         <p style="color: #666;">ภาพรวมผลประกอบการและการปฏิบัติงาน</p>
     </div>
@@ -69,7 +69,7 @@
 
     </div>
 
-    <div class="boxmaterial" style="background: white;  padding: 20px;">
+    <!-- <div class="boxmaterial" style="background: white;  padding: 20px;">
         <h4 style="color: #dc3545; margin-bottom: 15px;">สต็อกวัสดุเหลือน้อย (ต่ำกว่า 10 ชิ้น)</h4>
         
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
@@ -89,7 +89,7 @@
             </div>
             @endforelse
         </div>
-    </div>
+    </div> -->
 </div>
 
 <script>

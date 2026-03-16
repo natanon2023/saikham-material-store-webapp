@@ -34,7 +34,7 @@ class MaterialController extends Controller
 {
     public function index(Request $request)
     {
-        
+
         $query = Material::with([
             'aluminiumItem.aluminiumType',
             'aluminiumItem.aluminumSurfaceFinish',
@@ -55,7 +55,7 @@ class MaterialController extends Controller
 
         ])->orderBy('id', 'desc');
 
-        if($request->filled('material_type')){
+        if ($request->filled('material_type')) {
             $typematerial = [
                 'aluminum'   => 'อลูมิเนียม',
                 'glass'      => 'กระจก',
@@ -69,10 +69,8 @@ class MaterialController extends Controller
             if (array_key_exists($type, $typematerial)) {
                 $query->where('material_type', $typematerial[$type]);
             }
-
-            
         }
-        
+
         $material = $query->get();
 
 
@@ -239,9 +237,8 @@ class MaterialController extends Controller
     }
 
 
-    public function showdetailmaterial(Request $request,$id)
+    public function showdetailmaterial(Request $request, $id)
     {
-
         $material = Material::with([
             'aluminiumItem.aluminiumType',
             'aluminiumItem.aluminumSurfaceFinish',
@@ -258,22 +255,20 @@ class MaterialController extends Controller
             'consumableItem.consumabletype',
             'user',
             'price',
-            'materialLogs.user'
-        ])->find($id);
+        ])->findOrFail($id);
 
-        $query = MaterialLog::with([
-            'user',
-            'price'
-        ])->where('material_id',$id);
+        $logquery = MaterialLog::with(['user', 'price'])->where('material_id', $id)->orderBy('created_at', 'desc'); // เรียงจากล่าสุดไปเก่าสุด
 
-        if($request->filled('direction')){
-            $query->where('direction',$request->direction);
+        if ($request->filled('direction')) {
+
+            $directionTypes = ['in', 'out']; 
+
+            if (in_array($request->direction, $directionTypes)) {
+                $logquery->where('direction', $request->direction);
+            }
         }
 
-        $filleddirection = $query->get();
-
-        $material->setRelation('materialLogs', $filleddirection);
-
+        $material->setRelation('materialLogs', $logquery->get());
 
         return view('admin.materials.show', compact('material'));
     }
@@ -592,7 +587,7 @@ class MaterialController extends Controller
 
         $qty = $request->quantity;
         $stcok = Price::where('material_id', $material->id)->sum('quantity');
-        $sumqty = $stcok + $qty ;
+        $sumqty = $stcok + $qty;
 
 
         $lotNumber = Price::where($priceColumn, $priceItemId)->where('dealer_id', $request->dealer_id)->count() + 1;
@@ -604,7 +599,7 @@ class MaterialController extends Controller
             'price'      => $request->price,
             'quantity'   => $qty,
             'lot'        => 'ล็อตที่' . $lotNumber,
-            'sumquantity' => $sumqty 
+            'sumquantity' => $sumqty
         ]);
 
 
@@ -659,7 +654,7 @@ class MaterialController extends Controller
 
         $editLogs = StockEditLog::where('price_id', $price->id)->orderBy('created_at', 'desc')->get();
 
-        return view('admin.materials.stock.formeditsatock', compact( 'price', 'material','dealers','editLogs'));
+        return view('admin.materials.stock.formeditsatock', compact('price', 'material', 'dealers', 'editLogs'));
     }
 
 

@@ -16,10 +16,10 @@
         <div class="box" style="margin-top: 20px; padding : 20px;">
             <strong>ประเภทวัสดุ :</strong>{{ $material->material_type }} |
             <strong>ผู้เพิ่มข้อมูล :</strong> {{ $material->user->name }} |
-            <strong>วันที่เพิ่มข้อมูล : </strong>{{ $material->created_at }}
+            <strong>วันที่เพิ่มข้อมูล : </strong> {{ $material->created_at->locale('th')->translatedFormat('d F') }} {{ $material->created_at->year + 543 }}
         </div>
 
-        
+
 
         <div>
             @if ($material->material_type === 'อลูมิเนียม')
@@ -40,7 +40,12 @@
 
 
                         <div>
+                            @if ($material->price->sum('quantity') > 0)
                             <p class="stockbox1">{{ $material->price->sum('quantity') }} เส้น</p>
+                            @endif
+                            <div class="stockbox1" style="background-color: #C94A4A;">
+                                หมดสต็อก
+                            </div>
                         </div>
 
                     </div>
@@ -207,27 +212,29 @@
         </div>
     </div>
 
-    <div class="control-boxsearch">
-            <div class="boxsearch">
-                <form action="{{ route('admin.materials.showdetailmaterial', $material->id) }}" method="GET" style="display:flex; gap:10px; align-items:center;">
-                    <select name="direction" class="form-select">
-                        <option value="">ทั้งหมด</option>
-                        <option value="in" {{ request('direction') == 'in' ? 'selected' : '' }}>
-                            เข้า
-                        </option>
-                        <option value="out" {{ request('direction') == 'out' ? 'selected' : '' }}>
-                            ออก
-                        </option>
-                    </select>
+    
 
-                    <button type="submit" class="btn btn-secondary">ค้นหา</button>
-                    <a href="{{ route('admin.materials.showdetailmaterial', $material->id) }}" class="btn btn-primary">รีเซ็ต</a>
-                </form>
-            </div>
-    </div>
 
-    <div style="margin-top: 20px; padding : 20px; background-color: white;">
+    <div style="margin-top: 20px; padding : 20px; background-color: white; display: flex; justify-content: space-between; align-items:center;">
         <strong>รายการการเคลื่อนไหวของวัสดุ</strong>
+        <div style="display:flex; gap:10px; align-items:center;">
+                <a href="{{ route('admin.materials.showdetailmaterial', $material->id) }}"
+                    class="btn {{ request('direction') == '' ? 'btn-primary' : 'btn-secondary' }}">
+                    ดูทั้งหมด
+                </a>
+
+                <a href="{{ route('admin.materials.showdetailmaterial', ['id' => $material->id, 'direction' => 'in']) }}"
+                    class="btn {{ request('direction') == 'in' ? 'btn-primary' : 'btn-secondary' }}"
+                    style=" {{ request('direction') == 'in' ? 'background-color: #bcffafff; color: #000000' : '' }}">
+                    รายการรับเข้า
+                </a>
+
+                <a href="{{ route('admin.materials.showdetailmaterial', ['id' => $material->id, 'direction' => 'out']) }}"
+                    class="btn {{ request('direction') == 'out' ? 'btn-primary' : 'btn-secondary' }}"
+                    style=" {{ request('direction') == 'out' ? 'background-color: #ffafafff; color: #040404;' : '' }}">
+                    รายการเบิกออก
+                </a>
+            </div>
     </div>
     <table style="text-align: center;">
         <tr>
@@ -259,7 +266,9 @@
                 </div>
                 @endif
             </td>
-            <td>{{ $log->created_at }}</td>
+            <td>
+                {{ $log->created_at->locale('th')->translatedFormat('d F') }} {{ $log->created_at->year + 543 }} เวลา {{ $log->created_at->format('H:i') }} น.
+            </td>
             <td>
                 @if ($log->material->material_type == 'อลูมิเนียม')
                 <img src="data:image/jpeg;base64,{{ base64_encode($log->material->aluminiumItem->image_aluminium_item) }}" class="imgposition4">

@@ -47,14 +47,10 @@
                         <td>
                             @if($m->material_type == 'อลูมิเนียม')
                                 {{ $m->aluminiumItem->aluminiumType->name ?? '-' }} |
-                                {{ $m->aluminiumItem->aluminumSurfaceFinish->name ?? '-' }} |
-                                ยาว {{ $m->aluminiumItem->aluminiumLengths->length_meter }} เมตร |
-                                หนา {{ $m->aluminiumItem->aluminiumLengths->thickness }} มิลลิเมตร
+                                {{ $m->aluminiumItem->aluminumSurfaceFinish->name ?? '-' }} 
                             @elseif($m->material_type == 'กระจก')
                                 {{ $m->glassItem->glassType->name ?? '-' }} |
                                 {{ $m->glassItem->colourItem->name ?? '-' }}
-                                ขนาด({{ $m->glassItem->glassSizes->width_meter }}) * ( {{ $m->glassItem->glassSizes->length_meter }} ) เมตร |
-                                หนา {{ $m->glassItem->glassSizes->thickness }} มิลลิเมตร
                             @elseif($m->material_type == 'อุปกรณ์เสริม')
                                 {{ $m->accessoryItem->accessoryType->name ?? '-' }}
                             @elseif($m->material_type == 'เครื่องมือช่าง')

@@ -63,7 +63,9 @@
                 </div>
                 @endif
             </td>
-            <td>{{ $log->created_at }}</td>
+            <td>
+                {{ $log->created_at->locale('th')->translatedFormat('d F') }} {{ $log->created_at->year + 543 }} เวลา {{ $log->created_at->format('H:i') }} น.
+            </td>
             <td>
                 @if ($log->material->material_type == 'อลูมิเนียม')
                 <img src="data:image/jpeg;base64,{{ base64_encode($log->material->aluminiumItem->image_aluminium_item) }}" class="imgposition4">

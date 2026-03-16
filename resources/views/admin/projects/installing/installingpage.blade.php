@@ -61,12 +61,7 @@
     <div class="boxmaterial">
         <div style="margin-bottom: 20px; display: flex; justify-content: space-between;">
             รายชื่อช่างติดตั้ง
-            @if ($project->installers->count() > 0)
-            <form action="{{ route('admin.projects.updatestatusinstalling', $project->id) }}" method="POST" style="margin: 0;">
-                @csrf
-                <button class="btn btn-secondary" style="height: max-content;">เริ่มการติดตั้ง</button>
-            </form>
-            @endif
+            
         </div>
         <table>
             <tr align="center">
