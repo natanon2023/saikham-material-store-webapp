@@ -241,9 +241,28 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
         Route::get('restore-expense/{id}', [ProjectController::class, 'restoreexpense'])->name('restoreexpense');
         Route::put('expense/update/{id}', [ProjectController::class, 'updateexpense'])->name('updateexpense');
 
-
+        Route::get('/{id}/choosetypeissues', [ProjectController::class, 'choosetypeissues'])->name('choosetypeissues');
         Route::get('/admin/projects/{id}/issues/create', [ProjectController::class, 'createIssue'])->name('issues.create');
+        Route::get('/admin/projects/{id}/issues/generalissues', [ProjectController::class, 'generalissues'])->name('generalissues');
         Route::post('/admin/projects/{id}/issues', [ProjectController::class, 'storeIssue'])->name('issues.store');
+        Route::post('/admin/projects/{id}/storegeneralissues', [ProjectController::class, 'storegeneralissues'])->name('storegeneralissues');
+
+        Route::get('/manageproblemsindex', [ProjectController::class, 'manageproblemsindex'])->name('manageproblemsindex');
+        Route::get('projects/issues/{project_id}/detail', [ProjectController::class, 'issuedetail'])->name('issues.detail');
+        Route::delete('projects/issues/{id}', [ProjectController::class, 'destroyissue'])->name('issues.destroy');
+        Route::post('projects/issues/{id}/restore', [ProjectController::class, 'restoreissue'])->name('issues.restore');
+
+        Route::get('projects/issues/{project_id}/showissuedetail', [ProjectController::class, 'showissuedetail'])->name('showissuedetail');
+        Route::get('projects/issues/{id}/edit', [ProjectController::class, 'editIssue'])->name('issues.edit');
+        Route::post('projects/issues/{id}/update', [ProjectController::class, 'updateIssue'])->name('issues.update');
+        Route::get('projects/issues/{id}/refill', [ProjectController::class, 'refillIssue'])->name('issues.refill');
+        Route::post('projects/issues/{id}/refill-store', [ProjectController::class, 'storeRefillIssue'])->name('issues.refill.store');
+        Route::post('projects/issues/{id}/refill-undo', [ProjectController::class, 'undoRefillIssue'])->name('issues.refill.undo');
+        Route::post('projects/issues/{id}/updateIssuegeneralproblems', [ProjectController::class, 'updateIssuegeneralproblems'])->name('issues.updateIssuegeneralproblems');
+        Route::post('projects/issues/{id}/updateresolved', [ProjectController::class, 'updateresolved'])->name('updateresolved');
+        Route::post('projects/issues/{id}/undoIssuegeneralproblems', [ProjectController::class, 'undoIssuegeneralproblems'])->name('undoIssuegeneralproblems');
+
+
 
         Route::get('adminfulleventcalendarpage',[ProjectController::class,'adminfulleventcalendarpage'])->name('adminfulleventcalendarpage');
 

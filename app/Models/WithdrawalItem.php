@@ -26,5 +26,9 @@ class WithdrawalItem extends Model
         return $this->belongsTo(Material::class, 'material_id');
     }
 
+    public function withdrawalitem(){
+        return $this->hasMany(ProjectIssue::class, 'withdrawal_item_damaged');
+    }
+
     
 }

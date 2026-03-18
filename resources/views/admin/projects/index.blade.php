@@ -131,7 +131,7 @@
                             <a href="{{ route('admin.projects.withdrawpage', $project->id) }}" class="btn btn-secondary btn-full-text">เบิกวัสดุ</a>
                         @else
                             <button class="btn btn-secondary btn-full-text" style="height: max-content; opacity: 0.6; cursor: not-allowed;" disabled>
-                                รอถึงกำหนดวันที่ติดตั้งจึงจะสามารถเบิกของได้ (
+                                รอถึงวันทำงานจึงจะสามารถเบิกของได้ (
                                 {{ $project->installation_start_date 
                                     ? \Carbon\Carbon::parse($project->installation_start_date)
                                     ->locale('th') 
@@ -153,7 +153,7 @@
                             </form>
                         @else
                             <button class="btn btn-secondary btn-full-text" style="height: max-content; opacity: 0.6; cursor: not-allowed;" disabled>
-                                รอถึงกำหนดวันที่ติดตั้ง (
+                                รอถึงวันทำงานจึงจะสามารถเริ่มติดตั้งได้ (
                                 {{ $project->installation_start_date 
                                     ? \Carbon\Carbon::parse($project->installation_start_date)
                                     ->locale('th') 
@@ -166,7 +166,7 @@
                         @endif
 
                     @elseif($project->status == 'installing')
-                    <a href="{{ route('admin.projects.issues.create', $project->id) }}" class="btn btn-danger btn-full-text">แจ้งปัญหา</a>
+                    <a href="{{ route('admin.projects.choosetypeissues', $project->id) }}" class="btn btn-danger btn-full-text">แจ้งปัญหา</a>
                     <form action="{{ route('admin.projects.updatestatuscompleted', $project->id) }}" method="POST" style="margin: 0;">
                         @csrf
                         <button type="submit" class="btn btn-success btn-full-text">เสร็จสมบูรณ์</button>

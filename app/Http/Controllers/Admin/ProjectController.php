@@ -792,7 +792,7 @@ class ProjectController extends Controller
 
     public function updateprojectimage(Request $request, $id)
     {
-        $projectImage = Projectimages::findOrFail($id);
+        $projectImage = Projectimages::find($id);
         $projectImage->image_type = $request->image_type;
         $projectImage->description = $request->description;
 
@@ -1052,7 +1052,7 @@ class ProjectController extends Controller
             'name' => 'required|string|max:255'
         ]);
 
-        $productsetname = ProductSetName::withTrashed()->findOrFail($id);
+        $productsetname = ProductSetName::withTrashed()->find($id);
 
         $productsetname->update([
             'name' => $request->name
@@ -1063,7 +1063,7 @@ class ProjectController extends Controller
 
     public function deleteproductsetname($id)
     {
-        $productsetname = ProductSetName::findOrFail($id);
+        $productsetname = ProductSetName::find($id);
 
         $productsetname->delete();
 
@@ -1072,7 +1072,7 @@ class ProjectController extends Controller
 
     public function restoreproductsetname($id)
     {
-        $productsetname = ProductSetName::onlyTrashed()->findOrFail($id);
+        $productsetname = ProductSetName::onlyTrashed()->find($id);
 
         $productsetname->restore();
 
@@ -1752,7 +1752,7 @@ class ProjectController extends Controller
 
     public function updatestatuscompleted($id)
     {
-        $project = Project::findOrFail($id);
+        $project = Project::find($id);
 
         $project->update([
             'status' => 'completed'
@@ -1763,7 +1763,7 @@ class ProjectController extends Controller
 
     public function updatestatuscancelled($id)
     {
-        $project = Project::findOrFail($id);
+        $project = Project::find($id);
 
         $project->update([
             'status' => 'cancelled'
@@ -1857,36 +1857,63 @@ class ProjectController extends Controller
 
         $withdrawnItems = WithdrawalItem::whereHas('withdrawal', function ($q) use ($id) {
             $q->where('project_id', $id);
-        })->with('material')->get();
+        })->with([
+            'material.aluminiumItem.aluminiumType',
+            'material.aluminiumItem.aluminumSurfaceFinish',
+            'material.aluminiumItem.aluminiumLengths',
+            'material.glassItem.glassType',
+            'material.glassItem.colourItem',
+            'material.glassItem.glassSize',
+            'material.accessoryItem.accessoryType',
+            'material.accessoryItem.aluminumSurfaceFinish',
+            'material.consumableItem.consumabletype',
+            'material.toolItem.toolType'
+        ])->get();
+        
         $issues = ProjectIssue::where('project_id', $id)->orderBy('created_at', 'desc')->get();
 
-        return view('admin.projects.issues_create', compact('project', 'withdrawnItems', 'issues'));
+        return view('admin.projects.issues.issues_create', compact('project', 'withdrawnItems', 'issues'));
     }
 
 
     public function storeIssue(Request $request, $project_id)
     {
+        if (!$request->hasFile('image_data') || !$request->file('image_data')->isValid()) {
+            return redirect()->back()->with('error', 'กรุณาแนบรูปภาพหลักฐานที่ถูกต้อง');
+        }
+
+        $withdrawalItem = WithdrawalItem::find($request->withdrawal_item_damaged);
+        
+        if (!$withdrawalItem) {
+            return redirect()->back()->with('error', 'ไม่พบข้อมูลรายการวัสดุที่เลือก');
+        }
+
+        if ($request->damaged_amount > $withdrawalItem->quantity) {
+            return redirect()->back()->with('error', 'จำนวนที่แจ้งเสียมากกว่าจำนวนที่มีอยู่');
+        }
+
+        $file = $request->file('image_data');
+        $imageData = file_get_contents($file->getRealPath());
+
         $issue = ProjectIssue::create([
             'project_id'  => $project_id,
             'reported_by' => Auth::id(),
-            'category'    => $request->category,
-            'title'       => $request->title,
+            'category'    => 'material_problems',
             'description' => $request->description,
             'status'      => 'pending',
+            'withdrawal_item_damaged' => $request->withdrawal_item_damaged,
+            'damaged_amount' => $request->damaged_amount,
         ]);
 
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $file) {
-                $imageData = file_get_contents($file->getRealPath());
+        IssueImage::create([
+            'issue_id'   => $issue->id,
+            'image_data' => $imageData,
+        ]);
 
-                IssueImage::create([
-                    'issue_id'   => $issue->id,
-                    'image_data' => $imageData,
-                ]);
-            }
-        }
+        $withdrawalItem->quantity -= $request->damaged_amount;
+        $withdrawalItem->save();
 
-        return redirect()->back()->with('success', 'รายงานปัญหาและบันทึกรูปภาพสำเร็จ');
+        return redirect()->back()->with('success', 'รายงานปัญหาและปรับยอดวัสดุเรียบร้อยแล้ว');
     }
 
     public function adminfulleventcalendarpage()
@@ -2054,7 +2081,7 @@ class ProjectController extends Controller
                         $item->is_complete = true;
                     } else {
                         $item->is_complete = false;
-                        $allComplete = false; // 
+                        $allComplete = false; 
                     }
 
                     $purchaseItems[] = $item;
@@ -2222,4 +2249,258 @@ class ProjectController extends Controller
 
         return view('admin.projects.materialplanning.restockform', compact('project', 'groupedMaterials', 'dealers'));
     }
+
+    public function choosetypeissues($id){
+        $projects = Project::find($id);
+        return view('admin.projects.issues.choosetypeissues',compact('projects'));
+    }
+
+    public function generalissues($id){
+        $project = Project::find($id);
+        $issues = ProjectIssue::where('project_id', $id)->orderBy('created_at', 'desc')->get();
+        return view('admin.projects.issues.generalissues',compact('project','issues'));
+    }
+
+    public function storegeneralissues(Request $request, $project_id)
+    {
+        
+        ProjectIssue::create([
+            'project_id'  => $project_id,
+            'reported_by' => Auth::id(),
+            'category'    => 'general_problems',
+            'description' => $request->description,
+            'status'      => 'pending'
+        ]);
+
+        
+        return redirect()->back()->with('success', 'รายงานปัญหาและบันทึกรูปภาพสำเร็จ');
+    }
+
+   public function manageproblemsindex(){
+        $issues = ProjectIssue::with([
+            'project.customer',
+            'project.projectname',
+        ])->latest()->get();
+
+        $groupedIssues = $issues->groupBy('project_id');
+
+        $statusColors = [
+            'pending_survey' => ['#D4AF37', 'นัดสำรวจ'],
+            'waiting_survey' => ['#FF8C00', 'รอวันสำรวจ'],
+            'surveying' => ['#1E90FF', 'กำลังสำรวจ'],
+            'pending_quotation' => ['#E91E63', 'รอเสนอราคา'],
+            'waiting_approval' => ['#9C27B0', 'รออนุมัติ'],
+            'approved' => ['#78d37b', 'อนุมัติและชำระเงินแล้ว'],
+            'material_planning' => ['#00CED1', 'วางแผนวัสดุ'],
+            'waiting_purchase' => ['#FF4500', 'รอสั่งซื้อ'],
+            'ready_to_withdraw' => ['#008080', 'พร้อมเบิก'],
+            'materials_withdrawn' => ['#8B4513', 'เบิกวัสดุแล้ว'],
+            'installing' => ['#4CAF50', 'กำลังติดตั้ง'],
+            'completed' => ['#708090', 'เสร็จสิ้น'],
+            'cancelled' => ['#DC143C', 'ยกเลิก']
+        ];
+
+        return view('admin.projects.issues.manageproblemsindex', compact('groupedIssues', 'statusColors'));
+    }
+
+    public function issuedetail(Request $request, $project_id)
+    {
+        $project = Project::with('projectname')->find($project_id);
+        $query = ProjectIssue::withTrashed()->with([
+                'reporter', 
+                'images', 
+                'withdrawalitemdamaged.material.aluminiumItem.aluminiumType',
+                'withdrawalitemdamaged.material.aluminiumItem.aluminumSurfaceFinish',
+                'withdrawalitemdamaged.material.aluminiumItem.aluminiumLengths',
+                'withdrawalitemdamaged.material.glassItem.glassType',
+                'withdrawalitemdamaged.material.glassItem.colourItem',
+                'withdrawalitemdamaged.material.glassItem.glassSize',
+                'withdrawalitemdamaged.material.accessoryItem.accessoryType',
+                'withdrawalitemdamaged.material.accessoryItem.aluminumSurfaceFinish',
+                'withdrawalitemdamaged.material.consumableItem.consumabletype',
+                'withdrawalitemdamaged.material.toolItem.toolType'
+            ])->where('project_id', $project_id);
+
+
+        $issues = $query->latest()->get();
+
+        return view('admin.projects.issues.issuedetail', compact('project', 'issues'));
+    }
+
+    public function destroyissue($id)
+    {
+        ProjectIssue::find($id)->delete();
+        return back();
+    }
+
+    public function restoreissue($id)
+    {
+        ProjectIssue::withTrashed()->find($id)->restore();
+        return back();
+    }
+
+    public function showissuedetail($id)
+    {
+        $issue = ProjectIssue::with([
+            'project.projectname',
+            'reporter',
+            'images',
+            'withdrawalitemdamaged.material.aluminiumItem.aluminiumType',
+            'withdrawalitemdamaged.material.aluminiumItem.aluminumSurfaceFinish',
+            'withdrawalitemdamaged.material.aluminiumItem.aluminiumLengths',
+            'withdrawalitemdamaged.material.glassItem.glassType',
+            'withdrawalitemdamaged.material.glassItem.colourItem',
+            'withdrawalitemdamaged.material.glassItem.glassSize',
+            'withdrawalitemdamaged.material.accessoryItem.accessoryType',
+            'withdrawalitemdamaged.material.accessoryItem.aluminumSurfaceFinish',
+            'withdrawalitemdamaged.material.consumableItem.consumabletype',
+            'withdrawalitemdamaged.material.toolItem.toolType'
+        ])->find($id);
+
+        return view('admin.projects.issues.showissuedetail', compact('issue'));
+    }
+
+    
+    public function editIssue($id)
+    {
+        $issue = ProjectIssue::find($id);
+        $project = Project::find($issue->project_id);
+
+        $withdrawnItems = WithdrawalItem::whereHas('withdrawal', function ($q) use ($project) {
+            $q->where('project_id', $project->id);
+        })->with([
+            'material.aluminiumItem.aluminiumType',
+            'material.aluminiumItem.aluminumSurfaceFinish',
+            'material.aluminiumItem.aluminiumLengths',
+            'material.glassItem.glassType',
+            'material.glassItem.colourItem',
+            'material.glassItem.glassSize',
+            'material.accessoryItem.accessoryType',
+            'material.accessoryItem.aluminumSurfaceFinish',
+            'material.consumableItem.consumabletype',
+            'material.toolItem.toolType'
+        ])->get();
+
+        return view('admin.projects.issues.issues_edit', compact('issue', 'project', 'withdrawnItems'));
+    }
+
+    public function updateIssue(Request $request, $id)
+    {
+        $issue = ProjectIssue::find($id);
+        $withdrawalItem = WithdrawalItem::find($request->withdrawal_item_damaged);
+
+        $difference = $issue->damaged_amount - $request->damaged_amount;
+        
+        if ($request->damaged_amount > ($withdrawalItem->quantity + $issue->damaged_amount)) {
+            return redirect()->back()->with('error', 'จำนวนที่แจ้งเสียมากกว่าจำนวนที่มีอยู่ทั้งหมด');
+        }
+
+        $withdrawalItem->quantity += $difference;
+        $withdrawalItem->save();
+
+        $issue->update([
+            'description' => $request->description,
+            'withdrawal_item_damaged' => $request->withdrawal_item_damaged,
+            'damaged_amount' => $request->damaged_amount,
+        ]);
+
+        if ($request->hasFile('image_data') && $request->file('image_data')->isValid()) {
+            $file = $request->file('image_data');
+            $imageData = file_get_contents($file->getRealPath());
+
+            $issueImage = IssueImage::where('issue_id', $issue->id)->first();
+            if ($issueImage) {
+                $issueImage->update(['image_data' => $imageData]);
+            } else {
+                IssueImage::create([
+                    'issue_id'   => $issue->id,
+                    'image_data' => $imageData,
+                ]);
+            }
+        }
+
+        return redirect()->route('admin.projects.issues.detail', $issue->project_id)->with('success', 'แก้ไขข้อมูลปัญหาเรียบร้อยแล้ว');
+    }
+
+    public function refillIssue($id)
+    {
+        $issue = ProjectIssue::find($id);
+        $project = Project::find($issue->project_id);
+        
+        return view('admin.projects.issues.issues_refill', compact('issue', 'project'));
+    }
+
+    public function storeRefillIssue(Request $request, $id)
+    {
+        $issue = ProjectIssue::find($id);
+        $withdrawalItem = WithdrawalItem::find($issue->withdrawal_item_damaged);
+
+        $withdrawalItem->quantity += $request->refill_amount;
+        $withdrawalItem->save();
+
+        $issue->update([
+            'status' => 'resolved',
+            'refilled_amount' => $request->refill_amount
+        ]);
+
+        return redirect()->route('admin.projects.issues.detail', $issue->project_id)->with('success', 'เติมวัสดุและอัปเดตสถานะเสร็จสิ้นเรียบร้อยแล้ว');
+    }
+
+    public function undoRefillIssue($id)
+    {
+        $issue = ProjectIssue::find($id);
+        $withdrawalItem = WithdrawalItem::find($issue->withdrawal_item_damaged);
+
+        $withdrawalItem->quantity -= $issue->refilled_amount;
+        $withdrawalItem->save();
+
+        $issue->update([
+            'status' => 'in_progress',
+            'refilled_amount' => null
+        ]);
+
+        return redirect()->back()->with('success', 'ยกเลิกการเติมวัสดุเรียบร้อยแล้ว สามารถกดเติมใหม่ได้');
+    }
+
+
+
+    public function updateIssuegeneralproblems(Request $request, $id)
+    {
+        $issue = ProjectIssue::find($id);
+
+        $issue->update([
+            'description' => $request->description
+        ]);
+
+        return redirect()->route('admin.projects.issues.detail', $issue->project_id)->with('success', 'แก้ไขข้อมูลปัญหาเรียบร้อยแล้ว');
+    }
+
+
+    public function updateresolved($id){
+        $issue = ProjectIssue::find($id);
+
+        $issue->update([
+            'status' => 'resolved'
+        ]);
+
+        return redirect()->route('admin.projects.issues.detail', $issue->project_id)->with('success', 'แก้ไขข้อมูลปัญหาเรียบร้อยแล้ว');
+
+    }
+
+    public function undoIssuegeneralproblems($id)
+    {
+        $issue = ProjectIssue::find($id);
+
+        $issue->update([
+            'status' => 'in_progress'
+        ]);
+
+        return redirect()->back()->with('success', 'ยกเลิกเรียบร้อยแล้ว');
+    }
+
+    
+
+
+
+
 }
