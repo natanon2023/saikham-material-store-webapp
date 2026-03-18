@@ -46,36 +46,57 @@
 </style>
 
 @php 
-    $quotation = \App\Models\Quotation::where('project_id', $project->id)->latest()->first(); 
+    $quotation = \App\Models\Quotation::where('project_id', $project->id)->latest()->first();
+    if ($quotation) {
+        $totalExpenses   = $quotation->total_expense_amount;
+        $sumProductTotal = $quotation->total_product_amount;
+        $totalLabor      = $quotation->total_labor_amount;
+        $sevic           = $quotation->service_charge_amount;
+        $sumincome       = $totalExpenses + $sumProductTotal + $totalLabor + $sevic;
+        $pricevat        = $quotation->vat_amount;
+        $sumvattotal     = $quotation->grand_total;
+    } else {
+        $totalExpenses = 0;
+        foreach ($project->projectexpenses as $expense) {
+            $totalExpenses += $expense->amount;
+        }
+
+        $totalLabor = $project->labor_cost_surveying + ($project->estimated_work_days * $project->daily_labor_rate);
+
+        $sumProductTotal = 0;
+        foreach ($project->customerneed as $need) {
+            $sumProductTotal += ($need->quantity * $need->calculated_total);
+        }
+
+        $sumtotal    = $sumProductTotal + $totalExpenses + $totalLabor;
+        $sevic       = $sumtotal * 0.20;
+        $sumincome   = $sumtotal + $sevic;
+        $pricevat    = $sumincome * 0.07;
+        $sumvattotal = $sumincome + $pricevat;
+    }
 @endphp
 
 <div class="main-content">
-    
     <div class="boxmaterial hide-on-print" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
         <div>
             <h3 style="margin: 0;">ออกใบเสนอราคา</h3>
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
-            
-            @if ($project->status == 'pending_quotation')
-                <a href="{{ route('admin.projects.index',$project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
-                <form action="{{ route('admin.projects.satatuswaitingapproval') }}" method="post" style="margin: 0;">
+            <a href="{{ route('admin.projects.alldetail', $project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
+            @if (in_array($project->status,$statusopenqtc))
+                <form action="{{ route('admin.projects.reviseQuotation', $project->id) }}" method="POST" style="margin: 0;" onsubmit="return confirm('คุณแน่ใจหรือไม่ที่จะขอแก้ไขใบเสนอราคา?\n\nระบบจะทำการลบใบเสนอราคาฉบับนี้ทิ้ง เพื่อให้คุณกลับไปแก้ไขรายการสินค้าและออกบิลใหม่ได้');">
                     @csrf
-                    <input type="hidden" value="{{ $project->id }}" name="id">
-                    <button type="submit" class="btn btn-secondary">ยืนยันการเสนอราคา</button>
+                    <button type="submit" class="btn btn-warning" >
+                        ขอแก้ไขใบเสนอราคา
+                    </button>
                 </form>
-                <button type="button" onclick="window.print()" class="btn btn-danger" style="background-color: #17a2b8; color: white;">
-                    <i class="fas fa-print"></i> พิมพ์ใบเสนอราคา
-                </button>
-            @else
-                <a href="{{ route('admin.projects.alldetail',$project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
-                <button type="button" onclick="window.print()" class="btn btn-danger" style="background-color: #17a2b8; color: white;">
-                    <i class="fas fa-print"></i> พิมพ์ใบเสนอราคา
-                </button>
             @endif
+            <button type="button" onclick="window.print()" class="btn" style="background-color: #17a2b8; color: white;">
+                <i class="fas fa-print"></i> พิมพ์ใบเสนอราคา
+            </button>
         </div>
     </div>
-    
+
     <div class="box" style="padding: 30px;">
         <div style="display: flex; justify-content: space-between;">
             <div>
@@ -86,30 +107,34 @@
             </div>
             <div style="text-align: right;">
                 <h4 style="margin: 0 0 5px 0; color:#17a2b8;">ใบเสนอราคา</h4>
-                <p><strong>เลขที่</strong> {{ $quotation ? $quotation->quotation_number : ($project->quotation_number ?? '-') }} </p>
-                <p><strong>งาน </strong> {{ $project->projectname->name }}</p>
-                <p><strong>วันที่ออก </strong> {{ $quotation ? \Carbon\Carbon::parse($quotation->created_at)->locale('th')->translatedFormat('d F').' '.(Carbon\Carbon::parse($quotation->created_at)->year + 543) : Carbon\Carbon::now()->locale('th')->translatedFormat('d F').' '.(Carbon\Carbon::now()->year + 543) }}</p>
+                <p><strong>เลขที่</strong> {{ $project->quotation_number ?? '-' }}</p>
+                <p><strong>งาน </strong> {{ $project->projectname->name ?? '-' }}</p>
+                <p><strong>วันที่ออก </strong>
+                    @if($quotation && $quotation->created_at)
+                        {{ \Carbon\Carbon::parse($quotation->created_at)->locale('th')->translatedFormat('d F') . ' ' . (\Carbon\Carbon::parse($quotation->created_at)->year + 543) }}
+                    @else
+                        {{ \Carbon\Carbon::now()->locale('th')->translatedFormat('d F') . ' ' . (\Carbon\Carbon::now()->year + 543) }}
+                    @endif
+                </p>
                 <p><strong>ผู้ขาย</strong> ไพร์ยนร์ ทรายคำ</p>
             </div>
         </div>
         <hr>
-
         <div style="display: flex; justify-content: space-between; margin-top: 5px; margin-bottom: 10px;">
             <div>
                 <h4 style="margin: 0 0 5px 0;"><strong>ลูกค้า</strong></h4>
-                <p>{{ $project->customer->first_name.' '.$project->customer->last_name }}</p>
+                <p>{{ $project->customer->first_name ?? '-' }} {{ $project->customer->last_name ?? '-' }}</p>
                 <p>
-                    {{ $project->customer->house_number }}
-                    ต.{{ $project->customer->tambon->name_th}}
-                    อ.{{ $project->customer->amphure->name_th }}
-                    จ.{{ $project->customer->province->name_th}}
-                    {{ $project->customer->tambon->zip_code }}
+                    {{ $project->customer->house_number ?? '-' }}
+                    ต.{{ $project->customer->tambon->name_th ?? '-' }}
+                    อ.{{ $project->customer->amphure->name_th ?? '-' }}
+                    จ.{{ $project->customer->province->name_th ?? '-' }}
+                    {{ $project->customer->tambon->zip_code ?? '-' }}
                 </p>
-                <p>เบอร์มือถือ {{ $project->customer->phone }} | เลขประจำตัวผู้เสียภาษี {{ $project->customer->tax_id_number }}</p>
+                <p>เบอร์มือถือ {{ $project->customer->phone ?? '-' }} | เลขประจำตัวผู้เสียภาษี {{ $project->customer->tax_id_number ?? '-' }}</p>
             </div>
         </div>
         <hr>
-
         <h3 style="margin-top: 15px; color: black;">ค่าใช้จ่ายอื่นๆ</h3>
         <table width="100%" border="1" cellspacing="0" cellpadding="5" style="border-collapse: collapse;">
             <tr align="center" style="background-color: #f2f2f2 !important;">
@@ -117,24 +142,22 @@
                 <td>ประเภทค่าใช้จ่าย</td>
                 <td width="20%">จำนวนเงิน (บาท)</td>
             </tr>
-            @php $totalExpenses = 0; @endphp
-            @foreach($project->projectexpenses as $expense)
-                @php $totalExpenses += $expense->amount; @endphp
+            @forelse($project->projectexpenses as $expense)
                 <tr>
                     <td align="center">{{ $loop->iteration }}</td>
                     <td>{{ $expense->type?->name }}</td>
                     <td align="right">{{ number_format($expense->amount, 2) }}</td>
                 </tr>
-            @endforeach
+                
+            @empty
+                <tr><td colspan="3" align="center">ไม่มีรายการค่าใช้จ่ายเพิ่มเติม</td></tr>
+            @endforelse
             <tr style="background-color: #f9f9f9 !important;">
                 <td colspan="2" align="right"><strong>รวม</strong></td>
                 <td align="right">
                     <strong>{{ number_format($project->projectexpenses->sum('amount'), 2) }} บาท</strong>
                 </td>
             </tr>
-            @if($project->projectexpenses->isEmpty())
-                <tr><td colspan="3" align="center">ไม่มีรายการค่าใช้จ่ายเพิ่มเติม</td></tr>
-            @endif
         </table>
 
         <h3 style="margin-top: 15px; color: black;">ค่าแรงช่าง</h3>
@@ -144,7 +167,7 @@
                 <td>รายการ</td>
                 <td>จำนวนวันทำงาน</td>
                 <td>อัตราค่าแรงต่อวัน</td>
-                <td>ค่าแรงต่อวันรวม</td>
+                <td>ค่าแรงรวม</td>
             </tr>
             <tr>
                 <td align="center">1</td>
@@ -160,9 +183,6 @@
                 <td align="center">{{ number_format($project->daily_labor_rate, 2) }}</td>
                 <td align="right">{{ number_format($project->estimated_work_days * $project->daily_labor_rate, 2) }}</td>
             </tr>
-            @php 
-                $totalLabor = $project->labor_cost_surveying + ($project->estimated_work_days * $project->daily_labor_rate); 
-            @endphp
             <tr style="background-color: #f9f9f9 !important;">
                 <td colspan="4" align="right"><strong>รวม</strong></td>
                 <td align="right"><strong>{{ number_format($totalLabor, 2) }} บาท</strong></td>
@@ -178,61 +198,42 @@
                 <td width="10%">จำนวน</td>
                 <td width="10%">ราคาต่อชุด</td>
             </tr>
-            @php $sumProductTotal = 0; @endphp
+            
+
             @if($quotation && $quotation->items->count() > 0)
+            @php $grandTotal = 0; @endphp
                 @foreach ($quotation->items as $item)
+                    @php $grandTotal += $item->total_price; @endphp
                     <tr>
                         <td align="center">{{ $loop->iteration }}</td>
-                        <td>{{ $item->name }}</td>
+                        <td>{{ $item->item_name }}</td>          
                         <td align="center">{{ $item->description }}</td>
-                        <td align="center">{{ $item->qty }} ชุด</td>
+                        <td align="center">{{ $item->quantity }} ชุด</td> 
                         <td align="right">{{ number_format($item->unit_price, 2) }}</td>
-                        
                     </tr>
+                    
                 @endforeach
-                
+                    <tr style="background-color: #f9f9f9 !important;">
+                        <td colspan="4" align="right"><strong>รวม</strong></td>
+                        <td align="right"><strong>{{ number_format($grandTotal, 2) }} บาท</strong></td>  
+                    </tr>
             @else
                 @foreach ($project->customerneed as $need)
-                    @php 
-                        $rowTotal = $need->quantity * $need->calculated_total;
-                        $sumProductTotal += $rowTotal; 
-                    @endphp
+                    @php $rowTotal = $need->quantity * $need->calculated_total; @endphp
                     <tr>
                         <td align="center">{{ $loop->iteration }}</td>
                         <td>{{ $need->productset->productSetName->name }}</td>
                         <td align="center">{{ $need->projectImage->imagetype->name ?? '-' }} ({{ $need->width }} x {{ $need->height }} ซม.)</td>
                         <td align="center">{{ $need->quantity }} ชุด</td>
                         <td align="right">{{ number_format($need->calculated_total, 2) }}</td>
+                        <td align="right">{{ number_format($rowTotal, 2) }}</td>
                     </tr>
                 @endforeach
-                    <tr style="background-color: #f9f9f9 !important;">
-                        <td colspan="4" align="right"><strong>รวม</strong></td>
-                        <td align="right"><strong>{{ number_format($sumProductTotal, 2) }} บาท</strong></td>  
-                    </tr>
             @endif
         </table>
 
         <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
             <table width="40%" border="0" cellspacing="0" cellpadding="5">
-                @php
-                    if($quotation) {
-                        $totalExpenses = $quotation->total_expense;
-                        $sumProductTotal = $quotation->total_product;
-                        $totalLabor = $quotation->total_labor;
-                        $sevic = $quotation->service_charge;
-                        $sumincome = ($sumProductTotal + $totalExpenses + $totalLabor) + $sevic;
-                        $pricevat = $quotation->vat_amount;
-                        $sumvattotal = $quotation->grand_total;
-                    } else {
-                        $sumtotal = $sumProductTotal + $totalExpenses + $totalLabor;
-                        $income = 0.20;
-                        $sevic = $sumtotal * $income;
-                        $sumincome = $sumtotal + $sevic;
-                        $vatPercent = 0.07;
-                        $pricevat = $sumincome * $vatPercent;
-                        $sumvattotal = $sumincome + $pricevat;
-                    }
-                @endphp
                 <tr>
                     <td align="right"><strong>ค่าใช้จ่ายอื่นๆ</strong></td>
                     <td align="right">{{ number_format($totalExpenses, 2) }} บาท</td>
@@ -272,8 +273,8 @@
             </div>
             <div style="width: 40%;">
                 <br><br>
-                <p>ลงชื่อ <strong style="border-bottom: 1px solid #000000; padding: 0 20px; margin: 0 10px;">{{ $project->customer->first_name}}</strong> ผู้อนุมัติ</p>
-                <p>( {{ $project->customer->first_name.' '.$project->customer->last_name }} )</p>
+                <p>ลงชื่อ <strong style="border-bottom: 1px solid #000000; padding: 0 20px; margin: 0 10px;">{{ $project->customer->first_name ?? '' }}</strong> ผู้อนุมัติ</p>
+                <p>( {{ ($project->customer->first_name ?? '') . ' ' . ($project->customer->last_name ?? '') }} )</p>
             </div>
         </div>
 
@@ -281,14 +282,14 @@
             <p><strong>หมายเหตุ:</strong> ยืนยันราคาภายใน 7 วัน</p>
         </div>
     </div>
-    
+
     <div class="page-break"></div>
-    
+
     <div class="boxmaterial">
         <h3>ข้อมูลสต็อกวัสดุเพื่อการเสนอราคา (แบบละเอียด)</h3>
         <hr>
 
-        @if($quotation && class_exists('\App\Models\QuotationMaterial') && $quotation->quotationMaterials()->exists())
+        @if($quotation && $quotation->quotationMaterials->count() > 0)
             <table border="1" width="100%" cellpadding="5" cellspacing="0" style="border-collapse: collapse; margin-top: 20px;">
                 <thead style="background-color: #000000 !important; color: white;">
                     <tr align="center">
@@ -313,7 +314,6 @@
                         <td align="center">{{ $mat->remark }}</td>
                     </tr>
                     @endforeach
-                    
                 </tbody>
             </table>
         @else
@@ -322,7 +322,6 @@
                 <h4 style="margin: 0;">ชุดงาน: {{ $need->productset->productSetName->name }} ({{ $need->width }} × {{ $need->height ?? $need->high }} ซม.)</h4>
                 <h4 style="margin: 0;">ราคาต่อชุด : {{ number_format($need->calculated_total, 2) }} บาท</h4>
             </div>
-
             <table border="1" width="100%" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
                 <thead style="background-color: #000000 !important; color: white;">
                     <tr align="center">
@@ -341,17 +340,17 @@
                     <tr>
                         <td align="center"><b>{{ $mat->material_type }}</b></td>
                         <td align="center">
-                            @if($mat->aluminiumItem) 
+                            @if($mat->aluminiumItem)
                                 {{ $mat->aluminiumItem->aluminiumType->name ?? 'ไม่ระบุประเภท' }} <br> สี {{ $mat->aluminiumItem->aluminumSurfaceFinish->name ?? '-' }}
-                            @elseif($mat->glassItem) 
-                                {{ optional($mat->glassItem->glassType)->name ?? 'กระจก' }} <br> 
+                            @elseif($mat->glassItem)
+                                {{ optional($mat->glassItem->glassType)->name ?? 'กระจก' }} <br>
                                 สี {{ optional($mat->glassItem->colourItem)->name ?? '-' }}
-                            @elseif($mat->accessoryItem) 
+                            @elseif($mat->accessoryItem)
                                 {{ $mat->accessoryItem->accessoryType->name ?? '-' }}
-                            @elseif($mat->consumableItem) 
+                            @elseif($mat->consumableItem)
                                 {{ $mat->consumableItem->consumabletype->name ?? '-' }}
                             @else
-                                {{ $mat->name }} 
+                                {{ $mat->name }}
                             @endif
                         </td>
                         <td align="center">{{ $item->calculated_lot }}</td>

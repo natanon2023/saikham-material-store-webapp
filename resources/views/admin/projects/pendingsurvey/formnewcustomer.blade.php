@@ -8,7 +8,7 @@
     @include('components.successanderror')
     <div class="boxmaterial" style="display: flex; justify-content :space-between">
         <h3>เพิ่มข้อมูลค้าใหม่</h3>
-        <a href="{{ url()->previous() }}" class="btn btn-primary">ย้อนกลับ</a>
+        <a href="{{ route('admin.projects.formpendingsurvey') }}" class="btn btn-primary">ย้อนกลับ</a>
     </div>
 
     <div class="box">

@@ -2,6 +2,7 @@
 
 @section('content')
 <div class="main-content">
+    @include('components.successanderror')
     <div class="boxmaterial" style="display: flex; justify-content: space-between; align-items: center;">
         <h3>เพิ่มรูปภาพงาน</h3>
         <a href="{{ route('admin.projects.alldetail',$project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
@@ -28,6 +29,7 @@
                         </a>  
                     </div>
                 </div>
+
 
                 <div class="form-group">
                     <label for="" class="form-label">ไฟล์ภาพ</label>

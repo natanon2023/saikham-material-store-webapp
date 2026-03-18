@@ -28,7 +28,7 @@
                 </div>
                 @elseif ($project->status == 'approved')
                 <div style="background-color: #78d37b;" class="boxstatusproject">
-                    อนุมัติแล้ว
+                    อนุมัติและชำระเงินแล้ว
                 </div>
                 @elseif ($project->status == 'material_planning')
                 <div style="background-color: #00CED1;" class="boxstatusproject">
@@ -82,7 +82,7 @@
                     <h5>ใบเสนอราคา</h5>
                     <p style="margin: 5px 0 0 0; font-size: 13px; color: #666;">รายละเอียดและยอดประเมิน</p>
                 </div>
-                <a href="{{ route('admin.projects.addbid', $project->id) }}" class="btn btn-secondary" style="height:max-content; background-color: #17a2b8; border: none; padding: 8px 15px; ">
+                <a href="{{ route('admin.projects.addbiddocument', $project->id) }}" class="btn btn-secondary" style="height:max-content; background-color: #17a2b8; border: none; padding: 8px 15px; ">
                     เปิดเอกสาร
                 </a>
             </div>
@@ -90,13 +90,13 @@
             @endif
 
 
-            @if (in_array($project->status,$statusmaterialplanningopen))
+            @if (in_array($project->status,$statusmaterialplanningopen) && $project->project_purchases != null)
             <div style="flex: 1; min-width: 250px; border: 1px solid #61b8c2;  padding: 15px;  display: flex; align-items: center; justify-content: space-between;">
                 <div>
                     <h5>ใบสั่งซื้อวัสดุ</h5>
                     <p style="margin: 5px 0 0 0; font-size: 13px; color: #666;">รายการวัสดุที่ต้องซื้อเพิ่ม</p>
                 </div>
-                <a href="{{ route('admin.projects.materialplanningpage', $project->id) }}" class="btn btn-secondary" style="height:max-content; background-color: #00CED1; border: none; padding: 8px 15px; ">
+                <a href="{{ route('admin.projects.materialplanningpagedocument', $project->id) }}" class="btn btn-secondary" style="height:max-content; background-color: #00CED1; border: none; padding: 8px 15px; ">
                     เปิดเอกสาร
                 </a>
             </div>
@@ -125,13 +125,14 @@
             @endif
 
             @if (!in_array($project->status, $satatusopen) && !in_array($project->status, $statuspayment) && !in_array($project->status, $statusmaterialplanningopen))
-            <div style="width: 100%; text-align: center; padding: 20px; background-color: #f8f9fa; border-radius: 8px; color: #6c757d;">
-                <i class="fas fa-info-circle"></i> โปรเจกต์นี้ยังไม่อยู่ในขั้นตอนการออกเอกสาร (กรุณาอัปเดตสถานะการสำรวจ)
+            <div style="width: 100%; text-align: center; padding: 20px; ">
+                โปรเจกต์นี้ยังไม่อยู่ในขั้นตอนการออกเอกสาร (กรุณาอัปเดตสถานะการสำรวจ)
             </div>
             @endif
 
         </div>
     </div>
+    @if (in_array($project->status,$satatuswaiting))
     <div class="boxmaterial" style="margin-top: 20px;">
         <form action="{{ route('admin.projects.updateProjectPendingSurvey', $project->id) }}" method="POST">
             @csrf
@@ -224,7 +225,15 @@
                 <td>{{ $loop->iteration }}</td>
                 <td>{{ $expense->type->name }}</td>
                 <td>{{number_format($expense->amount,2).' บาท'  }}</td>
-                <td>{{ $expense->expense_date }}</td>
+                <td>
+                    {{ $expense->expense_date
+                        ? \Carbon\Carbon::parse($expense->expense_date)
+                        ->locale('th') 
+                        ->addYears(543) 
+                        ->isoFormat('D MMMM YYYY') 
+                        : 'ยังไม่ได้กำหนดวันทำงาน' 
+                    }}
+                </td>
                 <td>{{ $expense->description ?? '-' }}</td>
                 <td>{{ $expense->creator->name }}</td>
 
@@ -353,6 +362,7 @@
                         <th>ตำแหน่งที่จะติดตั้ง</th>
                         <th>ขนาด (กว้าง * สูง)</th>
                         <th>จำนวน</th>
+                        <th>หมายเหตุ</th>
                         <th>จัดการ</th>
                     </tr>
                     @foreach ($project->customerneed as $customerneed)
@@ -361,8 +371,11 @@
                         <td>{{ $customerneed->productset->productSetName->name }}</td>
                         <td><img src="data:image/jpeg;base64,{{ base64_encode($customerneed->productset->product_image) }}" class="project-image1"></td>
                         <td>{{ $customerneed->projectImage->imagetype->name  }}</td>
-                        <td>{{ $customerneed->width.' * '.$customerneed->high.' ซม.' }}</td>
+                        <td>{{ $customerneed->width.' * '.$customerneed->height.' ซม.' }}</td>
                         <td>{{ $customerneed->quantity.' ชุด' }}</td>
+                        <td>
+                            {{ $customerneed->note_need ?? 'ไม่มี'}}
+                        </td>
                         <td>
                             <div style="display: flex; justify-content: center; align-items: center; gap: 5px;">
                                 <a href="{{ route('admin.projects.editformcustomerneed',$customerneed->id) }}" class="btn-icon btn-edit" title="แก้ไข">
@@ -390,7 +403,159 @@
             </div>
         </div>
     </div>
+    @endif
 
+    @if (in_array($project->status,$satatusonline))
+    <div class="boxmaterial" style="margin-top: 20px; margin-bottom: 20px;">
+        <div style="display: flex; justify-content:  space-between; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+            <p style="margin-bottom: 20px; ">ข้อมูลส่วนตัวและที่อยู่ลูกค้า</p>
+            <a href="{{ route('admin.projects.projecteditcustomer', ['id' => $project->customer->id, 'project_id' => $project->id]) }}" class=" btn-icon btn-edit" title="แก้ไข">
+                        <i class="fas fa-edit"></i>
+            </a>
+        </div>
+        
+            <div class="detail-grid" style="margin-top: 20px;;">
+                <div>
+                    <span class="label">เลขประจำตัวผู้เสียภาษี</span>
+                    <span class="value">
+                    {{ $project->customer->tax_id_number ?? '-' }}
+                    </span>
+                </div>
+
+                <div>
+                    <span class="label">ชื่อ-นามสกุล</span>
+                    <span class="value">
+                        {{ $project->customer->prefix ?? '' }}{{ $project->customer->first_name }} {{ $project->customer->last_name }}
+                    </span>
+                </div>
+
+                <div>
+                    <span class="label">เพศ</span>
+                    <span class="value">{{ $project->customer->gender ?? '-' }}</span>
+                </div>
+
+                <div>
+                    <span class="label">เบอร์โทร</span>
+                    <span class="value">{{ $project->customer->phone ?? '-' }}</span>
+                </div>
+
+                <div>
+                    <span class="label">อีเมล</span>
+                    <span class="value">{{ $project->customer->email ?? '-' }}</span>
+                </div>
+
+                <div class="full">
+                    <span class="label">ที่อยู่</span>
+                    <span class="value">
+                        เลขที่ {{ $project->customer->house_number ?? '-' }}
+                        {{ $project->customer->village ? 'หมู่ '.$project->customer->village : '' }}
+                        {{ $project->customer->house_name ?? '' }}
+                        {{ $project->customer->alley ? 'ซอย '.$project->customer->alley : '' }}
+                        {{ $project->customer->road ? 'ถนน '.$project->customer->road : '' }} <br>
+                        ต.{{ $project->customer->tambon->name_th ?? '-' }}
+                        อ.{{ $project->customer->amphure->name_th ?? '-' }}
+                        จ.{{ $project->customer->province->name_th ?? '-' }}
+                        {{ $project->customer->tambon->zip_code ?? '-' }}
+                    </span>
+                </div>
+            </div>
+    </div>
+
+    <div class="boxmaterial">
+        <div style="border-bottom: 2px solid #eee;">
+            <p style="margin-bottom: 20px; ">รายละเอียดงาน : {{ $project->projectname->name ?? '-' }}</p>
+        </div>
+        <div class="detail-grid" style="margin-top: 20px;;">
+
+                <div>
+                    <span class="label">อัตราค่าแรงต่อวัน</span>
+                    <span class="value">
+                        {{ $project->daily_labor_rate ?? '' }}
+                    </span>
+                </div>
+
+                <div>
+                    <span class="label">จำนวนวันทำงานที่ประเมิน</span>
+                    <span class="value">{{ $project->estimated_work_days.' วัน' ?? '' }}</span>
+                </div>
+
+        </div>
+        <div style="border-bottom: 2px solid #eee; ">
+            <p style="margin-bottom: 20px; margin-top: 20px;">ความต้องการของลูกค้า</p>
+        </div>
+
+        <div>
+            @foreach ($project->customerneed as $customerneed)
+            <div>
+            <p style="margin-bottom: 20px; margin-top: 20px;">ชุดที่ {{ $loop->iteration }}</p>
+                <div style="display: flex; flex-direction: row; flex-wrap: wrap;" class="imgpositionneed">
+                    @if($customerneed->productset && $customerneed->productset->product_image)
+                    <div style="flex: 1;">
+                        <img src="data:image/jpeg;base64,{{ base64_encode($customerneed->productset->product_image) }}" alt="Product Image">
+                        <span style="font-size: 12px; color: gray; display: block; text-align: center; margin-bottom: 5px;">รูปแบบสินค้า</span>
+                    </div>
+                    @endif
+
+                    @if($customerneed->projectImage && $customerneed->projectImage->image_path)
+                    <div style="flex: 1;">
+                        <img src="data:image/jpeg;base64,{{ base64_encode($customerneed->projectImage->image_path) }}" alt="Location Image">
+                        <span style="font-size: 12px; color: gray; display: block; text-align: center; margin-bottom: 5px;">หน้างานจริง</span>
+                    </div>
+                    @endif
+
+                    @if($customerneed)
+                    <div style="flex: 1;">
+                        
+                        <img src="data:image/jpeg;base64,{{ base64_encode($customerneed->installation_image) }}" alt="Location Image">
+                        <span style="font-size: 12px; color: gray; display: block; text-align: center; margin-bottom: 5px;">พื้นที่ว่างที่จะติด</span>
+                    </div>
+                    @endif
+                </div>
+                <div class=" box-control" style=" margin-top: 50px; border-bottom: 2px solid #eee; padding-bottom: 20px;">
+
+                        <div>
+                            <span class="label">ชุดผลิตภัณฑ์</span>
+                            <span class="value">
+                                {{ $customerneed->productset->productSetName->name.'|'.'อลูมิเนียม'.$customerneed->productset->aluminumSurfaceFinish->name.'|'.'กระจก'.$customerneed->productset->glasscolouritem->name  ?? '' }}
+                            </span>
+                        </div>
+
+                        <div>
+                            <span class="label" >ตำแหน่งที่จะติดตั้ง</span>
+                            <span class="value">{{ $customerneed->projectImage->imagetype->name ?? 'ไม่มีข้อมูล' }}</span>
+                        </div>
+
+                        <div>
+                            <span class="label" >ขนาดกว้าง*สูง (ซม.)</span>
+                            <span class="value">{{ $customerneed->	width ?? 'ไม่มีข้อมูล' }}*{{ $customerneed->height ?? 'ไม่มีข้อมูล' }}</span>
+                        </div>
+
+
+                        <div>
+                            <span class="label" >หมายเหตุหรือความต้องการเบื้องต้น (ถ้ามี)</span>
+                            <span class="value">{{ $customerneed->note_need ?? 'ไม่มีข้อมูล' }}</span>
+                        </div>
+
+                </div>
+                
+            </div>
+            @endforeach
+        </div>
+
+
+
+
+
+
+               
+    </div>
+
+
+
+
+
+
+    @endif
 
     
 

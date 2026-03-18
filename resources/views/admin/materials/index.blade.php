@@ -40,8 +40,10 @@
 
     </div>
 
+   <div style="margin-top: 20px;">
     @include('components.successanderror')
 
+   </div> 
     <div style="margin-top:20px;">
         จำนวนรายการวัสดุและอุปกรณ์ทั้งหมด : <span>{{ $material->count() }}</span> รายการ
     </div>

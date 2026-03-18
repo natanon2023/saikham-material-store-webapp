@@ -15,34 +15,48 @@
         <a href="{{ route('admin.projects.alldetail',$project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
         @endif
     </div>
-    <div style="flex: 1.5; min-width: 400px; display: flex; gap: 20px; background: #f9f9f9; padding: 20px;  border: 1px solid #ddd; margin-bottom:15px;">
+    
+    <div class="image-preview-group" style="display: flex; gap: 20px; background: #f9f9f9; padding: 20px; border: 1px solid #ddd; margin-bottom:15px; flex-wrap: wrap;">
 
-        <div style="flex: 1; text-align: center;">
-            <h4 style="color: #555; margin-bottom: 10px;">แบบผลิตภัณฑ์</h4>
-            <div style="height: 300px; border: 2px dashed #ccc;  display: flex; align-items: center; justify-content: center; background: #fff; overflow: hidden;">
-                <span id="text-product" style="color: #999;">ยังไม่ได้เลือก</span>
-                <img id="preview-product" src="" style="max-width: 100%; max-height: 100%; display: none; object-fit: contain;">
+        <div class="preview-column" style="flex: 1; text-align: center; min-width: 250px;">
+            <h4 class="preview-title" style="color: #555; margin-bottom: 10px;">แบบผลิตภัณฑ์</h4>
+            <div class="preview-box" style="height: 300px; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; background: #fff; overflow: hidden;">
+                <span id="text-product" class="preview-placeholder" style="color: #999;">ยังไม่ได้เลือก</span>
+                <img id="preview-product" src="" class="preview-image" style="max-width: 90%; max-height: 90%; display: none; object-fit: contain;">
             </div>
         </div>
 
-        <div style="flex: 1; text-align: center;">
-            <h4 style="color: #555; margin-bottom: 10px;">ภาพหน้างาน (ตำแหน่งติดตั้ง)</h4>
-            <div style="height: 300px; border: 2px dashed #ccc;  display: flex; align-items: center; justify-content: center; background: #fff; overflow: hidden;">
-                <span id="text-location" style="color: #999;">ยังไม่ได้เลือก</span>
-                <img id="preview-location" src="" style="max-width: 100%; max-height: 100%; display: none; object-fit: contain;">
+        <div class="preview-column" style="flex: 1; text-align: center; min-width: 250px;">
+            <h4 class="preview-title" style="color: #555; margin-bottom: 10px;">ภาพหน้างาน (ตำแหน่งติดตั้ง)</h4>
+            <div class="preview-box" style="height: 300px; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; background: #fff; overflow: hidden;">
+                <span id="text-location" class="preview-placeholder" style="color: #999;">ยังไม่ได้เลือก</span>
+                <img id="preview-location" src="" class="preview-image" style="max-width: 90%; max-height: 90%; display: none; object-fit: contain;">
+            </div>
+        </div>
+
+        <div class="preview-column" style="flex: 1; text-align: center; min-width: 250px;">
+            <h4 class="preview-title" style="color: #555; margin-bottom: 10px;">ภาพพื้นที่ว่างที่จะติดตั้ง</h4>
+            <div class="preview-box" style="height: 300px; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; background: #fff; overflow: hidden;">
+                @php
+                    // แปลงรูปเดิมจากฐานข้อมูลมาโชว์ ถ้ามีรูปให้โชว์รูป ซ่อนข้อความ
+                    $existImg = $customerNeed->installation_image ? 'data:image/jpeg;base64,' . base64_encode($customerNeed->installation_image) : '';
+                @endphp
+                
+                <span id="text-detail" class="preview-placeholder" style="color: #999; {{ $existImg ? 'display: none;' : '' }}">ยังไม่ได้เลือก</span>
+                <img id="preview-detail" src="{{ $existImg }}" class="preview-image" style="max-width: 90%; max-height: 90%; {{ $existImg ? 'display: block;' : 'display: none;' }} object-fit: contain;">
             </div>
         </div>
 
     </div>
 
     <div class="box">
-        <form action="{{ route('admin.projects.updatecustomerneed', $customerNeed->id) }}" method="post">
+        <form action="{{ route('admin.projects.updatecustomerneed', $customerNeed->id) }}" method="post" enctype="multipart/form-data">
             @csrf
             @method('PUT')
             <input type="hidden" value="{{ $project->id }}" name="project_id">
 
-            <div class="box-control">
-                    <div class="form-group">
+            <div class="box-control" style="display: flex; gap: 30px; flex-wrap: wrap;">
+                    <div class="form-group" style="flex: 1; min-width: 300px;">
                         <label class="form-label">เลือกชุดผลิตภัณฑ์</label>
                         <select name="product_set_id" id="select-product" class="form-select" required>
                             <option value="" data-img="">เลือกชุดผลิตภัณฑ์</option>
@@ -57,7 +71,7 @@
                         </select>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group" style="flex: 1; min-width: 300px;">
                         <label class="form-label">ตำแหน่งที่จะติดตั้ง</label>
                         <select name="location" id="select-location" class="form-input" required>
                             <option value="" data-img="">เลือกตำแหน่งที่จะติดตั้ง</option>
@@ -72,28 +86,30 @@
                         </select>
                     </div>
 
+                    <div class="form-group" style="flex: 1; min-width: 300px;">
+                        <label class="form-label">ภาพพื้นที่ว่างที่จะติดตั้ง (เลือกใหม่เพื่อเปลี่ยนภาพ)</label>
+                        <input type="file" name="installation_image" class="form-input" accept="image/*" onchange="simplePreview(this)">
+                    </div>
+
                     <div class="form-group">
-                        <label class="form-label">ความกว้าง (เซนติเมตร)</label>
+                        <label for="" class="form-label">ความกว้าง (เซนติเมตร)</label>
                         <input type="number" step="0.01" class="form-input" name="width" value="{{ $customerNeed->width }}" required>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">ความสูง (เซนติเมตร)</label>
-                        <input type="number" step="0.01" class="form-input" name="high" value="{{ $customerNeed->high }}" required>
+                        <label for="" class="form-label">ความสูง (เซนติเมตร)</label>
+                        <input type="number" step="0.01" class="form-input" name="height" value="{{ $customerNeed->height }}" required>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">จำนวน (ชุด)</label>
-                        <input type="number" class="form-input" name="quantity" value="{{ $customerNeed->quantity }}" required>
+                        <label for="" class="form-label">หมายเหตุหรือความต้องการเบื้องต้น (ถ้ามี)</label>
+                        <textarea name="note_need" class="form-input" >{{ $customerNeed->note_need }}</textarea>
                     </div>
+
                     
-                    <div class="form-group" style=" margin-top: 10px;">
-                        <button class="btn btn-secondary" type="submit" style="padding: 10px 30px;">อัพเดทข้อมูล</button>
+                    <div class="form-group" style="width: 100%; margin-top: 10px;">
+                        <button class="btn btn-secondary" type="submit" style="padding: 10px 30px;">อัปเดตข้อมูล</button>
                     </div>
-                </div>
-
-                
-
             </div>
         </form>
     </div>
@@ -123,11 +139,26 @@
 
             selectBox.addEventListener('change', updateImage);
 
-            updateImage();
+            updateImage(); // ทำงานทันทีตอนโหลดหน้าเพื่อให้ดึงรูปที่มีอยู่แล้วมาโชว์
         }
 
         setupImagePreview('select-product', 'preview-product', 'text-product');
         setupImagePreview('select-location', 'preview-location', 'text-location');
     });
+
+    // พรีวิวรูปภาพจากการเลือกไฟล์ใหม่
+    function simplePreview(input) {
+        if (input.files && input.files[0]) {
+            var reader = new FileReader(); 
+
+            reader.onload = function(e) {
+                document.getElementById('preview-detail').src = e.target.result;
+                document.getElementById('preview-detail').style.display = 'block';
+                document.getElementById('text-detail').style.display = 'none';
+            };
+
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
 </script>
 @endsection

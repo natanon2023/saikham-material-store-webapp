@@ -9,6 +9,8 @@
         <a href="{{ route('admin.projects.index',$project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
     </div>
 
+
+
     <form method="POST" action="{{ route('admin.projects.assignInstaller', $project->id) }}">
         @csrf
         @method('PUT')
@@ -33,10 +35,42 @@
 
     </form>
 
+    <div class="boxmaterial" style="margin-top: 20px;">
+        <h3 style="margin-top: 0; color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+            ระยะเวลาทำงาน {{ $project->estimated_work_days }} วัน
+        </h3>
+
+        <div class="box-control" style="display: flex; gap: 20px; margin-top: 15px;">
+            
+            <div style="flex: 1; background-color: #f9f9f9; padding: 15px;  border-left: 4px solid #b5ffc6;">
+                <span style="font-size: 0.85em; color: #666; display: block;">วันเริ่มงาน</span>
+                {{ $project->installation_start_date 
+                        ? \Carbon\Carbon::parse($project->installation_start_date)
+                        ->locale('th') 
+                        ->addYears(543) 
+                        ->isoFormat('D MMMM YYYY') 
+                        : 'ยังไม่ได้กำหนดวันทำงาน' 
+                }}
+            </div>
+
+            <div style="flex: 1; background-color: #f9f9f9; padding: 15px;  border-left: 4px solid #ffa7b0;">
+                <span style="font-size: 0.85em; color: #666; display: block;">วันจบงาน</span>
+                {{ $project->installation_end_date 
+                        ? \Carbon\Carbon::parse($project->installation_end_date)
+                        ->locale('th') 
+                        ->addYears(543) 
+                        ->isoFormat('D MMMM YYYY') 
+                        : 'ยังไม่ได้กำหนดวันทำงาน' 
+                }}
+            </div>
+
+        </div>
+    </div>
+
 
     <div class="boxmaterial" style="margin-top: 20px; margin-bottom: 10px;">
         <h3>เลือกช่างติดตั้ง</h3>
-        <form action="{{ route('admin.projects.assign_installer', $project->id) }}" method="POST">
+        <form action="{{ route('admin.projects.assignInstalleruser', $project->id) }}" method="POST">
             @csrf
             <div class="box-control">
                 <div class="form-group">
@@ -61,7 +95,6 @@
     <div class="boxmaterial">
         <div style="margin-bottom: 20px; display: flex; justify-content: space-between;">
             รายชื่อช่างติดตั้ง
-            
         </div>
         <table>
             <tr align="center">
@@ -72,13 +105,13 @@
             @foreach ($project->installers as $installer)
             <tr>
                 <td align="center">{{ $loop->iteration }}</td>
-                <td>ช่าง {{ $installer->name }} {{ $installer->last_name }}</td>
+                <td align="center">ช่าง {{ $installer->name }} {{ $installer->last_name }}</td>
                 <td align="center">
-                    <form action="{{ route('admin.projects.remove_installer',$project->id) }}" method="post">
-                        @method('DELETE')
+                    <form action="{{ route('admin.projects.removeinstaller', $installer->pivot->id) }}" method="POST">
                         @csrf
-                        <button type="submit" class="btn-icon btn-delete" title="ลบ">
-                            <i class="fas fa-trash"></i>
+                        @method('DELETE')
+                        <button type="submit" class="btn-icon btn-delete" title="ลบ" onclick="return confirm('ลบเฉพาะช่างคนนี้ใช่หรือไม่?')">
+                            <i class="fas fa-trash" ></i>
                         </button>
                     </form>
                 </td>

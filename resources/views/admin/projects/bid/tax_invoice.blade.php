@@ -14,15 +14,11 @@
 </style>
 
 @php 
-    $totalExpenses = 0; 
-    foreach($project->projectexpenses as $expense) { $totalExpenses += $expense->amount; }
-    $totalLabor = $project->labor_cost_surveying + ($project->estimated_work_days * $project->daily_labor_rate);
-    $sumProductTotal = 0;
-    foreach ($project->customerneed as $need) { $sumProductTotal += ($need->quantity * $need->calculated_total); }
-    $sumtotal = $sumProductTotal + $totalExpenses + $totalLabor;
-    $sumincome = $sumtotal + ($sumtotal * 0.20);
-    $pricevat = $sumincome * 0.07;
-    $sumvattotal = $sumincome + $pricevat;
+    $sumvattotal = $project->quotation->grand_total;
+
+    $pricevat = $project->quotation->vat_amount;
+
+    $sumincome = $sumvattotal-$pricevat;
 @endphp
 
 <div class="main-content">

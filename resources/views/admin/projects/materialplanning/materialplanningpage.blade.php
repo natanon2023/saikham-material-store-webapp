@@ -61,7 +61,7 @@
     <div class="boxmaterial" style="margin-top: 20px;">
         <div style="text-align: center; margin-bottom: 20px;">
             <h3 style="margin-bottom: 5px;">รายการวัสดุที่ต้องสั่งซื้อเพิ่ม</h3>
-            <p style="margin: 0;"><strong>งาน:</strong> {{ $project->projectname->name }} | <strong>วันที่พิมพ์:</strong> {{ date('d/m/Y') }}</p>
+            <p style="margin: 0;"><strong>งาน:</strong> {{ $project->projectname->name }} | <strong>วันที่พิมพ์:</strong> {{ Carbon\Carbon::now()->locale('th')->translatedFormat('d F') }} {{ Carbon\Carbon::now()->year + 543 }}</p>
         </div>
         <hr>
 
@@ -103,12 +103,12 @@
                     <td align="center">
                         @if($mat->aluminiumItem)
                         {{ $mat->aluminiumItem->aluminiumType->name ?? '-' }} <br>
-                        สี {{ $mat->aluminiumItem->aluminumSurfaceFinish->name ?? '-' }}
-
+                        {{ $mat->aluminiumItem->aluminumSurfaceFinish->name ?? '-' }}
+                        ยาว 6 เมตร
                         @elseif($mat->glassItem)
                         {{ $mat->glassItem->glassType->name ?? '-' }} <br>
-                        สี {{ $mat->glassItem->colourItem->name ?? '-' }}
-
+                        สี{{ $mat->glassItem->colourItem->name ?? '-' }}<br>
+                        ขนาด 2*2 เมตร
                         @elseif($mat->accessoryItem)
                         {{ $mat->accessoryItem->accessoryType->name ?? '-' }}
 

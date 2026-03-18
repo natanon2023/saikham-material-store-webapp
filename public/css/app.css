@@ -1412,6 +1412,36 @@ datalist {
     margin: 10px;
 }
 
+.imgpositionneed {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); 
+    gap: 15px; 
+    width: 100%;
+    margin-top: 10px;
+}
+
+
+.imgpositionneed img {
+    width: 100%; 
+    height: 220px; 
+    object-fit: cover; 
+    border: 1px solid #ddd; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+}
+
+@media (max-width: 992px) {
+    .imgpositionneed {
+        grid-template-columns: repeat(2, 1fr); 
+    }
+}
+
+@media (max-width: 768px) {
+    .imgpositionneed {
+        grid-template-columns: 1fr;
+    }
+}
+
+
 .control-position{
     display: flex;
     flex-direction: row;
@@ -1911,4 +1941,97 @@ datalist {
     height:60px;
     object-fit:cover;
     border:1px solid #ddd;
+}
+
+.status-stepper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding: 20px;
+}
+
+.step-item {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.step-item:not(:last-child)::after {
+    content: '';
+    width: 30px;
+    height: 2px;
+    background: #e0e0e0;
+    margin: 0 10px;
+}
+
+.step-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 0 4px rgba(0,0,0,0.03);
+}
+
+.step-label {
+    font-size: 0.85rem;
+    margin-left: 8px;
+    color: #555;
+    white-space: nowrap;
+}
+
+.step-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.image-preview-group {
+    display: flex;
+    flex-wrap: wrap; 
+    gap: 20px;
+    background: #f9f9f9;
+    padding: 20px;
+    border: 1px solid #ddd;
+    margin-bottom: 15px;
+}
+
+.preview-column {
+    flex: 1; 
+    min-width: 250px; 
+    text-align: center;
+}
+
+.preview-title {
+    color: #555;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+.preview-box {
+    height: 300px;
+    border: 2px dashed #ccc;
+    display: flex;
+    
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    overflow: hidden;
+    position: relative;
+    transition: border-color 0.3s;
+}
+
+.preview-box:hover {
+    border-color: #aaa;
+}
+
+.preview-placeholder {
+    color: #999;
+    font-size: 0.9em;
+}
+
+.preview-image {
+    max-width: 90%; 
+    max-height: 90%;
+    display: none;
+    object-fit: contain;
 }

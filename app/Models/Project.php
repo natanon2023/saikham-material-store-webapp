@@ -93,8 +93,20 @@ class Project extends Model
         return $this->hasMany(Withdrawal::class)->orderBy('created_at', 'desc');
     }
 
+    
+
+    public function projectPurchase()
+    {
+        return $this->hasOne(ProjectPurchase::class, 'project_id');
+    }
+
     public function installers()
     {
-        return $this->belongsToMany(User::class, 'assigned_installers', 'project_id', 'user_id')->withTimestamps(); 
+        return $this->belongsToMany(User::class, 'assigned_installers', 'project_id', 'user_id')->withPivot('id') ->withTimestamps();
+    }
+
+    public function quotation()
+    {
+        return $this->hasOne(Quotation::class,'project_id');
     }
 }

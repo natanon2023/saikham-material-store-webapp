@@ -9,7 +9,7 @@
     <div class="boxmaterial customer-detail">
         <div  style="display: flex; justify-content :space-between; margin-bottom: 20px;">
             <h3>รายละเอียดข้อมูล</h3>
-            <a href="{{ route('admin.projects.formnewcustomer') }}" class="btn btn-primary">ย้อนกลับ</a>
+            <a href="{{ request('project_id') ? route('admin.projects.alldetail', request('project_id')) : '#' }}" class="btn btn-primary">ย้อนกลับ</a>
         </div>
 
         <div class="detail-grid">
@@ -66,10 +66,10 @@
     
 
     <div class="box">
-        <form action="{{ route('admin.projects.updatecustomer', $customer->id) }}" method="post">
+        <form action="{{ route('admin.projects.updatecustomerproject', $customer->id) }}" method="post">
             @csrf
             @method('PUT')
-            <input type="hidden" name="redirect_to" value="{{ url()->previous() }}">
+            <input type="hidden" name="project_id" value="{{ request('project_id') }}">
 
             <div class="box-control">
                 <div class="form-group">

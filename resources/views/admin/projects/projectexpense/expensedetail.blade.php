@@ -35,7 +35,15 @@
                 <td>{{ $loop->iteration }}</td>
                 <td>{{ $expense->type->name }}</td>
                 <td>{{number_format($expense->amount,2).' บาท'  }}</td>
-                <td>{{ $expense->expense_date }}</td>
+                <td>
+                    {{ $expense->expense_date
+                        ? \Carbon\Carbon::parse($expense->expense_date)
+                        ->locale('th') 
+                        ->addYears(543) 
+                        ->isoFormat('D MMMM YYYY') 
+                        : 'ยังไม่ได้กำหนดวันทำงาน' 
+                    }}
+                </td>
                 <td>{{ $expense->description ?? '-' }}</td>
                 <td>{{ $expense->creator->name }}</td>
 

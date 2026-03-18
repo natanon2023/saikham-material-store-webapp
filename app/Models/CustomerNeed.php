@@ -18,7 +18,9 @@ class CustomerNeed extends Model
         'quantity',
         'created_by',
         'width',
-        'high'
+        'height',
+        'installation_image',
+        'note_need'
     ];
 
     public function creator()

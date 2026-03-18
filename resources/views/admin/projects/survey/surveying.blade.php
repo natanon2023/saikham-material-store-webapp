@@ -33,7 +33,7 @@
                 <div class="boxmaterial" style="width: 800px;">
                     <div class="form-group">
                         <label for="homeimg" class="form-label">รูปภาพบ้าน</label>
-                        <input type="file" name="homeimg" id="homeimg" class="form-input" accept="image/*">
+                        <input type="file" name="homeimg" id="homeimg" class="form-input" accept="image/*" required>
 
                         <label for="daily_labor_rate" class="form-label" style="margin-top: 10px;">อัตราค่าแรงต่อวัน</label>
                         <input type="number" name="daily_labor_rate" id="daily_labor_rate" class="form-input" value="{{ $project->daily_labor_rate ?? '' }}" min="0" step="0.01" required>
@@ -112,6 +112,7 @@
                     <th>ตำแหน่งที่จะติดตั้ง</th>
                     <th>ขนาด (กว้าง * สูง)</th>
                     <th>จำนวน</th>
+                    <th>หมายเหตุ</th>
                     <th>จัดการ</th>
                 </tr>
                 @foreach ($project->customerneed as $customerneed)
@@ -120,8 +121,11 @@
                     <td>{{ $customerneed->productset->productSetName->name }}</td>
                     <td><img src="data:image/jpeg;base64,{{ base64_encode($customerneed->productset->product_image) }}" class="project-image1"></td>
                     <td>{{ $customerneed->projectImage->imagetype->name }}</td>
-                    <td>{{ $customerneed->width.' * '.$customerneed->high.' ซม.' }}</td>
+                    <td>{{ $customerneed->width.' * '.$customerneed->height.' ซม.' }}</td>
                     <td>{{ $customerneed->quantity.' ชุด' }}</td>
+                    <td>
+                        {{ $customerneed->note_need ?? 'ไม่มี' }}
+                    </td>
                     <td>
                         <div style="display: flex; justify-content: center; align-items: center; gap: 5px;">
                             <a href="{{ route('admin.projects.editformcustomerneed',$customerneed->id) }}" class="btn-icon btn-edit" title="แก้ไข">

@@ -119,6 +119,9 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
         Route::put('/customer/update/{id}', [ProjectController::class, 'updatecustomer'])->name('updatecustomer');
         Route::get('/customer/delete/{id}', [ProjectController::class, 'deletecustomer'])->name('deletecustomer');
         Route::get('/customer/restore/{id}', [ProjectController::class, 'restorecustomer'])->name('restorecustomer');
+
+        Route::get('/customer/projecteditcustomer/{id}', [ProjectController::class, 'projecteditcustomer'])->name('projecteditcustomer');
+        Route::put('/customer/updatecustomerproject/{id}', [ProjectController::class, 'updatecustomerproject'])->name('updatecustomerproject');
         
 
         Route::get('/formprojectexpense/{id}',[ProjectController::class,'formprojectexpense'])->name('formprojectexpense');
@@ -197,11 +200,14 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
         Route::post('/addautersurver',[ProjectController::class,'addautersurver'])->name('addautersurver');
 
         Route::get('/addbid/{id}',[ProjectController::class,'addbid'])->name('addbid');
+        Route::get('/addbiddocument/{id}',[ProjectController::class,'addbiddocument'])->name('addbiddocument');
+        Route::post('/projects/{id}/revise-quotation', [ProjectController::class, 'reviseQuotation'])->name('reviseQuotation');
 
         Route::post('{id}/approved',[ProjectController::class,'updatestatusapproved']) ->name('updatestatusapproved');
 
         Route::post('{id}/materialplanning',[ProjectController::class,'updatestatusmaterialplanning']) ->name('updatestatusmaterialplanning');
         Route::get('/materialplanningpage/{id}',[ProjectController::class,'materialplanningpage'])->name('materialplanningpage');
+        Route::get('/materialplanningpagedocument/{id}',[ProjectController::class,'materialplanningpagedocument'])->name('materialplanningpagedocument');
 
         Route::post('{id}/waitingpurchase', [ProjectController::class, 'updatestatuswaitingpurchase'])->name('updatestatuswaitingpurchase');
 
@@ -211,8 +217,8 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
         Route::post('{id}/withdraw', [ProjectController::class, 'withdrawstore'])->name('withdrawstore');
         
         Route::get('{id}/installingpage', [ProjectController::class, 'installingpage'])->name('installingpage');
-        Route::post('/project/{id}/assign-installer', [ProjectController::class, 'assignInstalleruser'])->name('assign_installer');
-        Route::delete('/project/{id}/remove-installer', [ProjectController::class, 'removeInstaller'])->name('remove_installer');
+        Route::post('/project/{id}/assign-installer', [ProjectController::class, 'assignInstalleruser'])->name('assignInstalleruser');
+        Route::delete('/project/{id}/remove-installer', [ProjectController::class, 'removeInstaller'])->name('removeinstaller');
 
 
         Route::put('{id}/assign-installer',[ProjectController::class, 'assignInstaller'])->name('assignInstaller');
@@ -251,6 +257,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
         Route::get('/tax-invoice/{id}', [ProjectController::class, 'taxInvoice'])->name('taxInvoice');
 
         Route::get('/restockpage/{id}', [ProjectController::class, 'restockpage'])->name('restockpage');
+        Route::post('/restockform/{id}', [ProjectController::class, 'restockForm'])->name('restockform');
         Route::post('/processrestock/{id}', [ProjectController::class, 'processrestock'])->name('processrestock');
 
         Route::put('/productsetname/{id}/update', [ProjectController::class, 'admupdateproductsetname'])->name('admupdateproductsetname');

@@ -55,7 +55,7 @@ class DashboardController extends Controller
             'surveying'           => 'กำลังสำรวจ',
             'pending_quotation'   => 'รอเสนอราคา',
             'waiting_approval'    => 'รออนุมัติ',
-            'approved'            => 'อนุมัติแล้ว',
+            'approved'            => 'อนุมัติและชำระเงินแล้ว',
             'material_planning'   => 'วางแผนวัสดุ',
             'waiting_purchase'    => 'รอสั่งซื้อ',
             'ready_to_withdraw'   => 'พร้อมเบิก',

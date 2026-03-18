@@ -43,14 +43,52 @@
 
                 @if (in_array($project->status, ['pending_survey', 'waiting_survey', 'surveying']))
                 <div style="color: #888;">วันนัดสำรวจ:</div>
-                <div style="color: #FF8C00;"><strong>{{ $project->survey_date }}</strong></div>
+                <div style="color: #FF8C00;">
+                    <strong>
+                        {{ $project->survey_date
+                            ? \Carbon\Carbon::parse($project->survey_date)
+                            ->locale('th') 
+                            ->addYears(543) 
+                            ->isoFormat('D MMMM YYYY') 
+                            : 'ยังไม่ได้กำหนดวันทำงาน' 
+                        }}
+                    </strong>
+                </div>
                 @endif
 
 
 
-                @if(in_array($project->status, ['materials_withdrawn', 'installing', 'completed']))
+                @if(in_array($project->status, ['materials_withdrawn', 'installing', 'completed','ready_to_withdraw']))
                 <div style="color: #888;">วันทำงาน:</div>
-                <div style="color: #4CAF50;"><strong>วันที่ {{ $project->installation_start_date }} ถึง {{ $project->installation_end_date ?? 'ยังไม่ได้กำหนด' }}</strong></div>
+                    @if ($project->installation_start_date != null && $project->installation_end_date != null)
+                    <div style="color: #4CAF50;">
+                        <strong>
+                            วันที่ 
+                            {{ $project->installation_start_date 
+                                    ? \Carbon\Carbon::parse($project->installation_start_date)
+                                    ->locale('th') 
+                                    ->addYears(543) 
+                                    ->isoFormat('D MMMM YYYY') 
+                                    : 'ยังไม่ได้กำหนดวันทำงาน' 
+                            }}
+                            ถึง วันที่
+                            {{ $project->installation_end_date 
+                                    ? \Carbon\Carbon::parse($project->installation_end_date)
+                                    ->locale('th') 
+                                    ->addYears(543) 
+                                    ->isoFormat('D MMMM YYYY') 
+                                    : 'ยังไม่ได้กำหนดวันทำงาน' 
+                            }}
+                        </strong>
+                    </div>
+                    @else
+                        
+                        <div style="color: #4CAF50;">
+                            <strong>
+                                ยังไม่ได้กำหนดวันทำงาน
+                            </strong>
+                        </div>
+                    @endif
                 @endif
             </div>
 
@@ -88,15 +126,44 @@
                     @elseif($project->status == 'waiting_purchase')
                     <a href="{{ route('admin.projects.restockpage', $project->id) }}" class="btn btn-secondary btn-full-text">เติมสต็อกวัสดุ</a>
                     @elseif($project->status == 'ready_to_withdraw')
-                        <a href="{{ route('admin.projects.installingpage', $project->id) }}" class="btn btn-secondary btn-full-text">กำหนดวันทำงาน</a>
-                        @if ($project->installers->count() > 0) 
+                        
+                        @if(!empty($project->installation_start_date) && now()->format('Y-m-d') >= $project->installation_start_date && $project->installers->count() > 0 && $project->installation_start_date != null )
                             <a href="{{ route('admin.projects.withdrawpage', $project->id) }}" class="btn btn-secondary btn-full-text">เบิกวัสดุ</a>
+                        @else
+                            <button class="btn btn-secondary btn-full-text" style="height: max-content; opacity: 0.6; cursor: not-allowed;" disabled>
+                                รอถึงกำหนดวันที่ติดตั้งจึงจะสามารถเบิกของได้ (
+                                {{ $project->installation_start_date 
+                                    ? \Carbon\Carbon::parse($project->installation_start_date)
+                                    ->locale('th') 
+                                    ->addYears(543) 
+                                    ->isoFormat('D MMMM YYYY') 
+                                    : 'ยังไม่ได้กำหนดวันทำงาน' 
+                                }}
+                                )
+                            </button>
                         @endif
+                        <a href="{{ route('admin.projects.installingpage', $project->id) }}" class="btn btn-secondary btn-full-text">กำหนดวันทำงาน</a>
                     @elseif($project->status == 'materials_withdrawn')
-                        <form action="{{ route('admin.projects.updatestatusinstalling', $project->id) }}" method="POST" style="margin: 0;">
-                            @csrf
-                                <button class="btn btn-secondary btn-full-text" style="height: max-content;">เริ่มการติดตั้ง</button>
-                        </form>
+                        @if(!empty($project->installation_start_date) && now()->format('Y-m-d') >= $project->installation_start_date)
+                            <form action="{{ route('admin.projects.updatestatusinstalling', $project->id) }}" method="POST" style="margin: 0;">
+                                @csrf
+                                <button type="submit" class="btn btn-secondary btn-full-text" style="height: max-content;">
+                                    เริ่มการติดตั้ง
+                                </button>
+                            </form>
+                        @else
+                            <button class="btn btn-secondary btn-full-text" style="height: max-content; opacity: 0.6; cursor: not-allowed;" disabled>
+                                รอถึงกำหนดวันที่ติดตั้ง (
+                                {{ $project->installation_start_date 
+                                    ? \Carbon\Carbon::parse($project->installation_start_date)
+                                    ->locale('th') 
+                                    ->addYears(543) 
+                                    ->isoFormat('D MMMM YYYY') 
+                                    : 'ยังไม่ได้กำหนดวันทำงาน' 
+                                }}
+                                )
+                            </button>
+                        @endif
 
                     @elseif($project->status == 'installing')
                     <a href="{{ route('admin.projects.issues.create', $project->id) }}" class="btn btn-danger btn-full-text">แจ้งปัญหา</a>
