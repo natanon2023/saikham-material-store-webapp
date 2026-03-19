@@ -121,7 +121,7 @@
                 ({{ $log->price->dealer->name }})
             </td>
             <td>
-                {{ $log->price->quantity }}
+                {{ $log->quantitylog }}
             </td>
             <td>
                 {{ $log->price->price }}

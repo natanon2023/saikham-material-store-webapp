@@ -42,10 +42,12 @@
                         <div>
                             @if ($material->price->sum('quantity') > 0)
                             <p class="stockbox1">{{ $material->price->sum('quantity') }} เส้น</p>
-                            @endif
+                            @elseif ($material->price->sum('quantity') <= 0)
                             <div class="stockbox1" style="background-color: #C94A4A;">
                                 หมดสต็อก
                             </div>
+                            @endif
+                            
                         </div>
 
                     </div>
@@ -83,7 +85,13 @@
                         </div>
 
                         <div>
+                            @if ($material->price->sum('quantity') > 0)
                             <p class="stockbox1">{{ $material->price->sum('quantity') }} แผ่น</p>
+                            @elseif ($material->price->sum('quantity') <= 0)
+                            <div class="stockbox1" style="background-color: #C94A4A;">
+                                หมดสต็อก
+                            </div>
+                            @endif
                         </div>
                     </div>
 
@@ -119,8 +127,16 @@
                         </div>
 
                         <div>
+                            
+                            @if ($material->price->sum('quantity') > 0)
                             <p class="stockbox1">{{ $material->price->sum('quantity') }} {{ $material->accessoryItem->unit->name }}</p>
+                            @elseif ($material->price->sum('quantity') <= 0)
+                            <div class="stockbox1" style="background-color: #C94A4A;">
+                                หมดสต็อก
+                            </div>
+                            @endif
                         </div>
+
                     </div>
 
                     <div class="dt-text2">
@@ -154,7 +170,14 @@
                         </div>
 
                         <div>
+                            @if ($material->price->sum('quantity') > 0)
                             <p class="stockbox1">{{ $material->price->sum('quantity') }} {{ $material->toolItem->unit->name }}</p>
+                            @elseif ($material->price->sum('quantity') <= 0)
+                            <div class="stockbox1" style="background-color: #C94A4A;">
+                                หมดสต็อก
+                            </div>
+                            @endif
+                            
                         </div>
                     </div>
 
@@ -189,7 +212,13 @@
                         </div>
 
                         <div>
+                            @if ($material->price->sum('quantity') > 0)
                             <p class="stockbox1">{{ $material->price->sum('quantity') }} {{ $material->consumableItem->unit->name }}</p>
+                            @elseif ($material->price->sum('quantity') <= 0)
+                            <div class="stockbox1" style="background-color: #C94A4A;">
+                                หมดสต็อก
+                            </div>
+                            @endif
                         </div>
                     </div>
 
@@ -324,7 +353,7 @@
                 ({{ $log->price->dealer->name }})
             </td>
             <td>
-                {{ $log->price->quantity }}
+                {{ $log->quantitylog }}
             </td>
             <td>
                 {{ $log->price->price }}

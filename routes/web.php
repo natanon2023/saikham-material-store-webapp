@@ -214,7 +214,6 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
         Route::post('{id}/readytowithdraw', [ProjectController::class, 'updatestatusreadytowithdraw']) ->name('updatestatusreadytowithdraw');
 
         Route::get('{id}/withdraw', [ProjectController::class, 'withdrawpage'])->name('withdrawpage');
-        Route::post('{id}/withdraw', [ProjectController::class, 'withdrawstore'])->name('withdrawstore');
         
         Route::get('{id}/installingpage', [ProjectController::class, 'installingpage'])->name('installingpage');
         Route::post('/project/{id}/assign-installer', [ProjectController::class, 'assignInstalleruser'])->name('assignInstalleruser');
@@ -289,6 +288,12 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
 
         Route::delete('projects/{id}/destroy', [ProjectController::class, 'destroy'])->name('destroy');
         Route::post('projects/{id}/restore', [ProjectController::class, 'restore'])->name('restore');
+
+        Route::post('projects/{id}/cancelwithdrawal', [ProjectController::class, 'cancelWithdrawal'])->name('cancelWithdrawal');
+
+
+        Route::post('projects/{id}/withdraw/form', [ProjectController::class, 'withdrawform'])->name('withdrawform');
+        Route::post('projects/{id}/withdraw/store', [ProjectController::class, 'withdrawstore'])->name('withdrawstore');
 
 
 

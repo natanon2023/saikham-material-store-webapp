@@ -119,7 +119,7 @@
                     @elseif($project->status == 'waiting_approval')
                     <form action="{{ route('admin.projects.updatestatusapproved', $project->id) }}" method="post" style="margin:0;">
                         @csrf
-                        <button class="btn btn-secondary btn-full-text">ลูกค้าอนุมัติ</button>
+                        <button class="btn btn-secondary btn-full-text">ลูกค้าอนุมัติและชำระเงินแล้ว</button>
                     </form>
 
                     @elseif($project->status == 'approved')
@@ -132,44 +132,43 @@
 
                     @elseif($project->status == 'waiting_purchase')
                     <a href="{{ route('admin.projects.restockpage', $project->id) }}" class="btn btn-secondary btn-full-text">เติมสต็อกวัสดุ</a>
+                    
                     @elseif($project->status == 'ready_to_withdraw')
-
-                    @if(!empty($project->installation_start_date) && now()->format('Y-m-d') >= $project->installation_start_date && $project->installers->count() > 0 && $project->installation_start_date != null )
-                    <a href="{{ route('admin.projects.withdrawpage', $project->id) }}" class="btn btn-secondary btn-full-text">เบิกวัสดุ</a>
-                    @else
-                    <button class="btn btn-secondary btn-full-text" style="height: max-content; opacity: 0.6; cursor: not-allowed;" disabled>
-                        รอถึงวันทำงานจึงจะสามารถเบิกของได้ (
-                        {{ $project->installation_start_date 
-                                    ? \Carbon\Carbon::parse($project->installation_start_date)
-                                    ->locale('th') 
-                                    ->addYears(543) 
-                                    ->isoFormat('D MMMM YYYY') 
-                                    : 'ยังไม่ได้กำหนดวันทำงาน' 
-                                }}
-                        )
-                    </button>
+                        @if(!empty($project->installation_start_date) && now()->format('Y-m-d') >= $project->installation_start_date && $project->installers->count() > 0 && $project->installation_start_date != null )
+                        <a href="{{ route('admin.projects.withdrawpage', $project->id) }}" class="btn btn-secondary btn-full-text">เบิกวัสดุ</a>
+                        @else
+                        <button class="btn btn-secondary btn-full-text" style="height: max-content; opacity: 0.6; cursor: not-allowed;" disabled>
+                            รอวันทำงานเบิกของได้
+                        </button>
                     @endif
                     <a href="{{ route('admin.projects.installingpage', $project->id) }}" class="btn btn-secondary btn-full-text">กำหนดวันทำงาน</a>
                     @elseif($project->status == 'materials_withdrawn')
-                    @if(!empty($project->installation_start_date) && now()->format('Y-m-d') >= $project->installation_start_date)
-                    <form action="{{ route('admin.projects.updatestatusinstalling', $project->id) }}" method="POST" style="margin: 0;">
-                        @csrf
-                        <button type="submit" class="btn btn-secondary btn-full-text" style="height: max-content;">
-                            เริ่มการติดตั้ง
+                        <form action="{{ route('admin.projects.cancelWithdrawal', $project->id) }}" method="POST" style="margin: 0;" onsubmit="return confirm('ยืนยันการยกเลิกการเบิก? ระบบจะคืนจำนวนวัสดุทั้งหมดกลับเข้าคลังและเปลี่ยนสถานะเป็นพร้อมเบิก');">
+                            @csrf
+                            <button type="submit" class="btn btn-warning btn-full-text" style="height: max-content;">
+                                ยกเลิกการเบิกวัสดุ
+                            </button>
+                        </form>
+                        @if(!empty($project->installation_start_date) && now()->format('Y-m-d') >= $project->installation_start_date)
+                        <form action="{{ route('admin.projects.updatestatusinstalling', $project->id) }}" method="POST" style="margin: 0;">
+                            @csrf
+                            <button type="submit" class="btn btn-secondary btn-full-text" style="height: max-content;">
+                                เริ่มการติดตั้ง
+                            </button>
+                        </form>
+                        @else
+                        <button class="btn btn-secondary btn-full-text" style="height: max-content; opacity: 0.6; cursor: not-allowed;" disabled>
+                            รอถึงวันทำงานจึงจะสามารถเริ่มติดตั้งได้ (
+                            {{ $project->installation_start_date 
+                                        ? \Carbon\Carbon::parse($project->installation_start_date)
+                                        ->locale('th') 
+                                        ->addYears(543) 
+                                        ->isoFormat('D MMMM YYYY') 
+                                        : 'ยังไม่ได้กำหนดวันทำงาน' 
+                                    }}
+                            )
                         </button>
-                    </form>
-                    @else
-                    <button class="btn btn-secondary btn-full-text" style="height: max-content; opacity: 0.6; cursor: not-allowed;" disabled>
-                        รอถึงวันทำงานจึงจะสามารถเริ่มติดตั้งได้ (
-                        {{ $project->installation_start_date 
-                                    ? \Carbon\Carbon::parse($project->installation_start_date)
-                                    ->locale('th') 
-                                    ->addYears(543) 
-                                    ->isoFormat('D MMMM YYYY') 
-                                    : 'ยังไม่ได้กำหนดวันทำงาน' 
-                                }}
-                        )
-                    </button>
+
                     @endif
 
                     @elseif($project->status == 'installing')

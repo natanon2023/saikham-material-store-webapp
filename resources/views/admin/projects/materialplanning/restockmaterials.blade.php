@@ -39,24 +39,24 @@
             </thead>
 
             <tbody>
-                @foreach ($purchaseItems as $item)
+                @forelse ($purchaseItems as $item)
                     @php $mat = $item->material; @endphp
                     <tr style="border-bottom: 1px solid #eee;">
                         <td align="center">
                             @if(!$item->is_complete)
                                 <input type="checkbox" name="selected_materials[]" value="{{ $mat->id }}" class="item-checkbox" style="transform: scale(1.2); cursor: pointer;">
                             @else
-                                <i class="fa-solid fa-circle-check" style="color: #1e8e3e;"></i>
+                                <i class="fa-solid fa-circle-check" style="color: #1e8e3e; font-size: 1.2rem;"></i>
                             @endif
                         </td>
                         <td align="center">
-                            @if ($mat->material_type == 'อลูมิเนียม')
+                            @if ($mat->material_type == 'อลูมิเนียม' && !empty($mat->aluminiumItem->image_aluminium_item))
                                 <img src="data:image/png;base64,{{ base64_encode($mat->aluminiumItem->image_aluminium_item) }}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
-                            @elseif ($mat->material_type == 'กระจก')
+                            @elseif ($mat->material_type == 'กระจก' && !empty($mat->glassItem->image_glass_item))
                                 <img src="data:image/png;base64,{{ base64_encode($mat->glassItem->image_glass_item) }}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
-                            @elseif ($mat->material_type == 'อุปกรณ์เสริม')
+                            @elseif ($mat->material_type == 'อุปกรณ์เสริม' && !empty($mat->accessoryItem->image_accessory_item))
                                 <img src="data:image/png;base64,{{ base64_encode($mat->accessoryItem->image_accessory_item) }}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
-                            @elseif ($mat->material_type == 'วัสดุสิ้นเปลือง')
+                            @elseif ($mat->material_type == 'วัสดุสิ้นเปลือง' && !empty($mat->consumableItem->image_consumable_item))
                                 <img src="data:image/png;base64,{{ base64_encode($mat->consumableItem->image_consumable_item) }}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
                             @else
                                 <div style="width: 50px; height: 50px; background-color: #f3f3f3; display: flex; justify-content: center; align-items: center; color: #bbb; font-size: 0.7em; border-radius: 4px;">ไม่มีรูป</div>
@@ -65,28 +65,25 @@
                         <td>
                             <b style="color: #333;">{{ $mat->material_type }}</b><br>
                             <small style="color: #666;">
-                                @if($mat->aluminiumItem)
-                                    {{ $mat->aluminiumItem->aluminiumType->name ?? '-' }} ({{ $mat->aluminiumItem->aluminumSurfaceFinish->name ?? '-' }})
-                                @elseif($mat->glassItem)
-                                    {{ $mat->glassItem->glassType->name ?? '-' }} ({{ $mat->glassItem->colourItem->name ?? '-' }})
-                                @elseif($mat->accessoryItem)
-                                    {{ $mat->accessoryItem->accessoryType->name ?? '-' }}
-                                @elseif($mat->consumableItem)
-                                    {{ $mat->consumableItem->consumabletype->name ?? '-' }}
-                                @endif
+                                {{ $item->description ?? 'ไม่มีรายละเอียด' }}
                             </small>
                         </td>
+
                         <td align="center"><b>{{ (float) $item->quantity }}</b></td>
                         <td align="center">{{ $item->current_stock }}</td>
                         <td align="center">
                             @if($item->is_complete)
-                                <span style="color: #1e8e3e; font-size: 0.9em;">ครบแล้ว</span>
+                                <span style="color: #ffff; font-size: 0.9em; font-weight: bold;  background-color: #1e8e3e; padding:10px; border-radius:20px;">ครบแล้ว</span>
                             @else
-                                <span style="color: #d93025; font-size: 0.9em;">ยังไม่ครบ</span>
+                                <span style="color: #ffffff; font-size: 0.9em; font-weight: bold ; background-color: #d93025; padding:10px;  border-radius:20px;" >ยังไม่ครบ</span>
                             @endif
                         </td>
                     </tr>
-                @endforeach
+                @empty
+                    <tr>
+                        <td colspan="6" align="center" style="padding: 20px; color: #888;">ไม่มีรายการสั่งซื้อวัสดุ</td>
+                    </tr>
+                @endforelse
             </tbody>
         </table>
 
@@ -98,8 +95,6 @@
             </div>
         @endif
     </form>
-
-    
 </div>
 
 <script>

@@ -20,7 +20,8 @@ class MaterialLog extends Model
         'direction',
         'quantity',
         'lot',
-        'price_id'
+        'price_id',
+        'quantitylog'
     ];
 
     protected $casts = [

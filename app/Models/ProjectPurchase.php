@@ -12,7 +12,6 @@ class ProjectPurchase extends Model
     protected $fillable = [
         'project_id',
         'total_amount',
-        'status',
     ];
 
     public function project()

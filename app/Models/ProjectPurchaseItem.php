@@ -16,6 +16,7 @@ class ProjectPurchaseItem extends Model
         'unit_price',
         'total_price',
         'remark',
+        'description'
     ];
 
     public function projectPurchase()

@@ -1,6 +1,7 @@
 @extends('layouts.admin')
 
 @section('content')
+
 <style>
     @media print {
         * {
@@ -8,7 +9,19 @@
             print-color-adjust: exact !important;
             text-shadow: none !important;
         }
-        span, p, h1, h2, h3, h4, h5, h6, b, strong, td, th {
+
+        span,
+        p,
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6,
+        b,
+        strong,
+        td,
+        th {
             background-color: transparent !important;
         }
 
@@ -17,27 +30,44 @@
             color: inherit !important;
         }
 
-        .sidebar, .navbar, header, footer, .hide-on-print, .btn {
+        .sidebar,
+        .navbar,
+        header,
+        footer,
+        .hide-on-print,
+        .btn {
             display: none !important;
         }
 
-        body, .main-content {
+        body,
+        .main-content {
             background-color: white !important;
             margin: 0 !important;
             padding: 0 !important;
-            font-size: 14px !important; 
+            font-size: 14px !important;
         }
 
-        .box, .boxmaterial {
+        .box,
+        .boxmaterial {
             box-shadow: none !important;
             border: none !important;
-            padding: 0 !important; 
+            padding: 0 !important;
             margin: 0 !important;
         }
 
-        h3, h4 { margin-top: 10px !important; margin-bottom: 5px !important; }
-        p { margin-bottom: 2px !important; }
-        hr { margin: 5px 0 !important; }
+        h3,
+        h4 {
+            margin-top: 10px !important;
+            margin-bottom: 5px !important;
+        }
+
+        p {
+            margin-bottom: 2px !important;
+        }
+
+        hr {
+            margin: 5px 0 !important;
+        }
 
         .page-break {
             page-break-before: always;
@@ -45,37 +75,35 @@
     }
 </style>
 
-@php 
-    $quotation = \App\Models\Quotation::where('project_id', $project->id)->latest()->first(); 
+@php
+$quotation = \App\Models\Quotation::where('project_id', $project->id)->latest()->first();
 @endphp
 
 <div class="main-content">
-    
     <div class="boxmaterial hide-on-print" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
         <div>
             <h3 style="margin: 0;">ออกใบเสนอราคา</h3>
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
-            
             @if ($project->status == 'pending_quotation')
-                <a href="{{ route('admin.projects.index',$project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
-                <form action="{{ route('admin.projects.satatuswaitingapproval') }}" method="post" style="margin: 0;">
-                    @csrf
-                    <input type="hidden" value="{{ $project->id }}" name="id">
-                    <button type="submit" class="btn btn-secondary">ยืนยันการเสนอราคา</button>
-                </form>
-                <button type="button" onclick="window.print()" class="btn btn-danger" style="background-color: #17a2b8; color: white;">
-                    <i class="fas fa-print"></i> พิมพ์ใบเสนอราคา
-                </button>
+            <a href="{{ route('admin.projects.index',$project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
+            <form action="{{ route('admin.projects.satatuswaitingapproval') }}" method="post" style="margin: 0;">
+                @csrf
+                <input type="hidden" value="{{ $project->id }}" name="id">
+                <button type="submit" class="btn btn-secondary">ยืนยันการเสนอราคา</button>
+            </form>
+            <button type="button" onclick="window.print()" class="btn btn-danger" style="background-color: #17a2b8; color: white;">
+                <i class="fas fa-print"></i> พิมพ์ใบเสนอราคา
+            </button>
             @else
-                <a href="{{ route('admin.projects.alldetail',$project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
-                <button type="button" onclick="window.print()" class="btn btn-danger" style="background-color: #17a2b8; color: white;">
-                    <i class="fas fa-print"></i> พิมพ์ใบเสนอราคา
-                </button>
+            <a href="{{ route('admin.projects.alldetail',$project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
+            <button type="button" onclick="window.print()" class="btn btn-danger" style="background-color: #17a2b8; color: white;">
+                <i class="fas fa-print"></i> พิมพ์ใบเสนอราคา
+            </button>
             @endif
         </div>
     </div>
-    
+
     <div class="box" style="padding: 30px;">
         <div style="display: flex; justify-content: space-between;">
             <div>
@@ -119,12 +147,12 @@
             </tr>
             @php $totalExpenses = 0; @endphp
             @foreach($project->projectexpenses as $expense)
-                @php $totalExpenses += $expense->amount; @endphp
-                <tr>
-                    <td align="center">{{ $loop->iteration }}</td>
-                    <td>{{ $expense->type?->name }}</td>
-                    <td align="right">{{ number_format($expense->amount, 2) }}</td>
-                </tr>
+            @php $totalExpenses += $expense->amount; @endphp
+            <tr>
+                <td align="center">{{ $loop->iteration }}</td>
+                <td>{{ $expense->type?->name }}</td>
+                <td align="right">{{ number_format($expense->amount, 2) }}</td>
+            </tr>
             @endforeach
             <tr style="background-color: #f9f9f9 !important;">
                 <td colspan="2" align="right"><strong>รวม</strong></td>
@@ -133,7 +161,9 @@
                 </td>
             </tr>
             @if($project->projectexpenses->isEmpty())
-                <tr><td colspan="3" align="center">ไม่มีรายการค่าใช้จ่ายเพิ่มเติม</td></tr>
+            <tr>
+                <td colspan="3" align="center">ไม่มีรายการค่าใช้จ่ายเพิ่มเติม</td>
+            </tr>
             @endif
         </table>
 
@@ -160,8 +190,8 @@
                 <td align="center">{{ number_format($project->daily_labor_rate, 2) }}</td>
                 <td align="right">{{ number_format($project->estimated_work_days * $project->daily_labor_rate, 2) }}</td>
             </tr>
-            @php 
-                $totalLabor = $project->labor_cost_surveying + ($project->estimated_work_days * $project->daily_labor_rate); 
+            @php
+            $totalLabor = $project->labor_cost_surveying + ($project->estimated_work_days * $project->daily_labor_rate);
             @endphp
             <tr style="background-color: #f9f9f9 !important;">
                 <td colspan="4" align="right"><strong>รวม</strong></td>
@@ -179,59 +209,60 @@
                 <td width="10%">ราคาต่อชุด</td>
             </tr>
             @php $sumProductTotal = 0; @endphp
+
             @if($quotation && $quotation->items->count() > 0)
-                @foreach ($quotation->items as $item)
-                    <tr>
-                        <td align="center">{{ $loop->iteration }}</td>
-                        <td>{{ $item->name }}</td>
-                        <td align="center">{{ $item->description }}</td>
-                        <td align="center">{{ $item->qty }} ชุด</td>
-                        <td align="right">{{ number_format($item->unit_price, 2) }}</td>
-                        
-                    </tr>
-                @endforeach
-                
+            @foreach ($quotation->items as $item)
+            @php $sumProductTotal += ($item->qty * $item->unit_price); @endphp
+            <tr>
+                <td align="center">{{ $loop->iteration }}</td>
+                <td>{{ $item->name }}</td>
+                <td align="center">{{ $item->description }}</td>
+                <td align="center">{{ $item->qty }} ชุด</td>
+                <td align="right">{{ number_format($item->unit_price, 2) }}</td>
+            </tr>
+            @endforeach
             @else
-                @foreach ($project->customerneed as $need)
-                    @php 
-                        $rowTotal = $need->quantity * $need->calculated_total;
-                        $sumProductTotal += $rowTotal; 
-                    @endphp
-                    <tr>
-                        <td align="center">{{ $loop->iteration }}</td>
-                        <td>{{ $need->productset->productSetName->name }}</td>
-                        <td align="center">{{ $need->projectImage->imagetype->name ?? '-' }} ({{ $need->width }} x {{ $need->height }} ซม.)</td>
-                        <td align="center">{{ $need->quantity }} ชุด</td>
-                        <td align="right">{{ number_format($need->calculated_total, 2) }}</td>
-                    </tr>
-                @endforeach
-                    <tr style="background-color: #f9f9f9 !important;">
-                        <td colspan="4" align="right"><strong>รวม</strong></td>
-                        <td align="right"><strong>{{ number_format($sumProductTotal, 2) }} บาท</strong></td>  
-                    </tr>
+            @foreach ($project->customerneed as $need)
+            @php
+            $rowTotal = $need->calculated_total;
+            $sumProductTotal += ($need->quantity * $rowTotal);
+            @endphp
+            <tr>
+                <td align="center">{{ $loop->iteration }}</td>
+                <td>{{ $need->productset->productSetName->name }}</td>
+                <td align="center">{{ $need->projectImage->imagetype->name ?? '-' }} ({{ $need->width }} x {{ $need->height }} ซม.)</td>
+                <td align="center">{{ $need->quantity }} ชุด</td>
+                <td align="right">{{ number_format($rowTotal, 2) }}</td>
+            </tr>
+            @endforeach
             @endif
+
+            <tr style="background-color: #f9f9f9 !important;">
+                <td colspan="4" align="right"><strong>รวม</strong></td>
+                <td align="right"><strong>{{ number_format($sumProductTotal, 2) }} บาท</strong></td>
+            </tr>
         </table>
 
         <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
             <table width="40%" border="0" cellspacing="0" cellpadding="5">
                 @php
-                    if($quotation) {
-                        $totalExpenses = $quotation->total_expense;
-                        $sumProductTotal = $quotation->total_product;
-                        $totalLabor = $quotation->total_labor;
-                        $sevic = $quotation->service_charge;
-                        $sumincome = ($sumProductTotal + $totalExpenses + $totalLabor) + $sevic;
-                        $pricevat = $quotation->vat_amount;
-                        $sumvattotal = $quotation->grand_total;
-                    } else {
-                        $sumtotal = $sumProductTotal + $totalExpenses + $totalLabor;
-                        $income = 0.20;
-                        $sevic = $sumtotal * $income;
-                        $sumincome = $sumtotal + $sevic;
-                        $vatPercent = 0.07;
-                        $pricevat = $sumincome * $vatPercent;
-                        $sumvattotal = $sumincome + $pricevat;
-                    }
+                if($quotation) {
+                $totalExpenses = $quotation->total_expense;
+                $sumProductTotal = $quotation->total_product;
+                $totalLabor = $quotation->total_labor;
+                $sevic = $quotation->service_charge;
+                $sumincome = ($sumProductTotal + $totalExpenses + $totalLabor) + $sevic;
+                $pricevat = $quotation->vat_amount;
+                $sumvattotal = $quotation->grand_total;
+                } else {
+                $sumtotal = $sumProductTotal + $totalExpenses + $totalLabor;
+                $income = 0.20;
+                $sevic = $sumtotal * $income;
+                $sumincome = $sumtotal + $sevic;
+                $vatPercent = 0.07;
+                $pricevat = $sumincome * $vatPercent;
+                $sumvattotal = $sumincome + $pricevat;
+                }
                 @endphp
                 <tr>
                     <td align="right"><strong>ค่าใช้จ่ายอื่นๆ</strong></td>
@@ -281,91 +312,79 @@
             <p><strong>หมายเหตุ:</strong> ยืนยันราคาภายใน 7 วัน</p>
         </div>
     </div>
-    
+
     <div class="page-break"></div>
-    
+
     <div class="boxmaterial">
         <h3>ข้อมูลสต็อกวัสดุเพื่อการเสนอราคา (แบบละเอียด)</h3>
         <hr>
 
         @if($quotation && class_exists('\App\Models\QuotationMaterial') && $quotation->quotationMaterials()->exists())
-            <table border="1" width="100%" cellpadding="5" cellspacing="0" style="border-collapse: collapse; margin-top: 20px;">
-                <thead style="background-color: #000000 !important; color: white;">
-                    <tr align="center">
-                        <th>ประเภท</th>
-                        <th>รายละเอียด</th>
-                        <th>ล็อต</th>
-                        <th>ราคา/หน่วย</th>
-                        <th>จำนวนใช้</th>
-                        <th>ราคารวม</th>
-                        <th>หมายเหตุ</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($quotation->quotationMaterials as $mat)
-                    <tr>
-                        <td align="center"><b>{{ $mat->material_type }}</b></td>
-                        <td align="center">{{ $mat->description }}</td>
-                        <td align="center">{{ $mat->lot_number }}</td>
-                        <td align="right">{{ number_format($mat->unit_price, 2) }}</td>
-                        <td align="center">{{ $mat->quantity }}</td>
-                        <td align="right"><b>{{ number_format($mat->total_price, 2) }}</b></td>
-                        <td align="center">{{ $mat->remark }}</td>
-                    </tr>
-                    @endforeach
-                    
-                </tbody>
-            </table>
-        @else
-            @foreach ($project->customerneed as $need)
-            <div style="display: flex; justify-content: space-between; margin-top:15px; margin-bottom: 10px;">
-                <h4 style="margin: 0;">ชุดงาน: {{ $need->productset->productSetName->name }} ({{ $need->width }} × {{ $need->height ?? $need->high }} ซม.)</h4>
-                <h4 style="margin: 0;">ราคาต่อชุด : {{ number_format($need->calculated_total, 2) }} บาท</h4>
-            </div>
+        <table border="1" width="100%" cellpadding="5" cellspacing="0" style="border-collapse: collapse; margin-top: 20px;">
+            <thead style="background-color: #000000 !important; color: white;">
+                <tr align="center">
+                    <th>ประเภท</th>
+                    <th>รายละเอียด</th>
+                    <th>ล็อต</th>
+                    <th>ราคา/หน่วย</th>
+                    <th>จำนวนใช้</th>
+                    <th>ราคารวม</th>
+                    <th>หมายเหตุ</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($quotation->quotationMaterials as $mat)
+                <tr>
+                    <td align="center"><b>{{ $mat->material_type }}</b></td>
+                    <td align="center">{{ $mat->description }}</td>
+                    <td align="center">{{ $mat->lot_number }}</td>
+                    <td align="right">{{ number_format($mat->unit_price, 2) }}</td>
+                    <td align="center">{{ $mat->quantity }}</td>
+                    <td align="right"><b>{{ number_format($mat->total_price, 2) }}</b></td>
+                    <td align="center">{{ $mat->remark }}</td>
+                </tr>
+                @endforeach
 
-            <table border="1" width="100%" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
-                <thead style="background-color: #000000 !important; color: white;">
-                    <tr align="center">
-                        <th>ประเภท</th>
-                        <th>รายละเอียด</th>
-                        <th>ล็อต</th>
-                        <th>ราคา/หน่วย</th>
-                        <th>จำนวนใช้</th>
-                        <th>ราคารวม</th>
-                        <th>หมายเหตุ</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($need->productset->productsetitem->sortBy('material.material_type') as $item)
-                    @php $mat = $item->material; @endphp
-                    <tr>
-                        <td align="center"><b>{{ $mat->material_type }}</b></td>
-                        <td align="center">
-                            @if($mat->aluminiumItem) 
-                                {{ $mat->aluminiumItem->aluminiumType->name ?? 'ไม่ระบุประเภท' }} <br> สี {{ $mat->aluminiumItem->aluminumSurfaceFinish->name ?? '-' }}
-                            @elseif($mat->glassItem) 
-                                {{ optional($mat->glassItem->glassType)->name ?? 'กระจก' }} <br> 
-                                สี {{ optional($mat->glassItem->colourItem)->name ?? '-' }}
-                            @elseif($mat->accessoryItem) 
-                                {{ $mat->accessoryItem->accessoryType->name ?? '-' }}
-                            @elseif($mat->consumableItem) 
-                                {{ $mat->consumableItem->consumabletype->name ?? '-' }}
-                            @else
-                                {{ $mat->name }} 
-                            @endif
-                        </td>
-                        <td align="center">{{ $item->calculated_lot }}</td>
-                        <td align="right">{{ number_format($item->calculated_unit_price, 2) }}</td>
-                        <td align="center">{{ $item->calculated_qty }}</td>
-                        <td align="right"><b>{{ number_format($item->calculated_total, 2) }}</b></td>
-                        <td align="center">{{ $item->calculated_remark }}</td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-            @endforeach
+            </tbody>
+        </table>
+        @else
+        @foreach ($project->customerneed as $need)
+        <div style="display: flex; justify-content: space-between; margin-top:15px; margin-bottom: 10px;">
+            <h4 style="margin: 0;">ชุดงาน: {{ $need->productset->productSetName->name }} ({{ $need->width }} × {{ $need->height ?? $need->high }} ซม.)</h4>
+            <h4 style="margin: 0;">ราคาต่อชุด : {{ number_format($need->calculated_total, 2) }} บาท</h4>
+        </div>
+
+        <table border="1" width="100%" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
+            <thead style="background-color: #000000 !important; color: white;">
+                <tr align="center">
+                    <th>ประเภท</th>
+                    <th>รายละเอียด</th>
+                    <th>ล็อต</th>
+                    <th>ราคา/หน่วย</th>
+                    <th>จำนวนใช้</th>
+                    <th>ราคารวม</th>
+                    <th>หมายเหตุ</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($need->productset->productsetitem->sortBy('material.material_type') as $item)
+                <tr>
+                    <td align="center"><b>{{ $item->calculated_material_type }}</b></td>
+                    <td align="center">{{ $item->calculated_description }}</td>
+                    <td align="center">{{ $item->calculated_lot }}</td>
+                    <td align="right">{{ number_format($item->calculated_unit_price, 2) }}</td>
+                    <td align="center">{{ $item->calculated_qty }}</td>
+                    <td align="right"><b>{{ number_format($item->calculated_total, 2) }}</b></td>
+                    <td align="center">{{ $item->calculated_remark }}</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+        @endforeach
         @endif
     </div>
+
+
 
 </div>
 @endsection

@@ -585,21 +585,18 @@ class MaterialController extends Controller
         }
 
 
-        $qty = $request->quantity;
-        $stcok = Price::where('material_id', $material->id)->sum('quantity');
-        $sumqty = $stcok + $qty;
-
 
         $lotNumber = Price::where($priceColumn, $priceItemId)->where('dealer_id', $request->dealer_id)->count() + 1;
 
+
+        $qty = $request->quantity;
         $price = Price::create([
             'material_id' => $material->id,
             $priceColumn => $priceItemId,
             'dealer_id'  => $request->dealer_id,
             'price'      => $request->price,
             'quantity'   => $qty,
-            'lot'        => 'ล็อตที่' . $lotNumber,
-            'sumquantity' => $sumqty
+            'lot'        => 'ล็อตที่' . $lotNumber
         ]);
 
 
@@ -608,6 +605,7 @@ class MaterialController extends Controller
             'price_id'    => $price->id,
             'user_id'     => Auth::id(),
             'direction'   => 'in',
+            'quantitylog'   => $qty,
         ]);
 
         return redirect()->back()->with('success', 'เพิ่มจำนวนสต็อกสำเร็จ');

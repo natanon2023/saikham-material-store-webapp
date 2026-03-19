@@ -65,78 +65,47 @@
         </div>
         <hr>
 
-        @php 
-            $grandTotalBuy = 0; 
-        @endphp
-
-        @foreach ($project->customerneed as $need)
         @php
-            $sumbuy = $need->productset->productsetitem->whereIn('calculated_lot', ['ไม่มีของหรือขนาดไม่พอ', 'ไม่มีของ/ขนาดไม่พอ', 'ไม่มีของ'])->sum('calculated_total');
-            $grandTotalBuy += $sumbuy;
+            $itemsToBuy = collect();
+            if($quotation) {
+                $itemsToBuy = $quotation->quotationMaterials->whereIn('lot_number', ['ไม่มีของหรือขนาดไม่พอ', 'ไม่มีของ/ขนาดไม่พอ', 'ไม่มีของ']);
+            }
+            $grandTotalBuy = $itemsToBuy->sum('total_price');
         @endphp
 
-        <div style=" display: flex; justify-content: space-between; align-items: flex-end; margin-top:20px; margin-bottom: 10px;">
-            <h4 style="margin: 0;">ชุดงาน: {{ $need->productset->productSetName->name }}</h4>
-            <h4 style="margin: 0;">
-                รวม : {{ number_format($sumbuy,2) }} บาท
-            </h4>
-        </div>
-
-        <table border="1" width="100%" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
+        <table border="1" width="100%" cellpadding="5" cellspacing="0" style="border-collapse: collapse; margin-top: 20px;">
             <thead style="background:#333; color:#fff; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
                 <tr align="center">
+                    <th>ลำดับ</th>
                     <th>ประเภท</th>
                     <th>รายละเอียด</th>
                     <th>ราคา/หน่วย</th>
                     <th>จำนวนใช้</th>
                     <th>ราคารวม</th>
+                    <th>หมายเหตุ</th>
                 </tr>
             </thead>
 
             <tbody>
-                @foreach ($need->productset->productsetitem->whereIn('calculated_lot', ['ไม่มีของหรือขนาดไม่พอ', 'ไม่มีของ/ขนาดไม่พอ', 'ไม่มีของ'])->sortBy('material.material_type') as $item)
-                @php $mat = $item->material; @endphp
-                <tr>
-                    <td align="center">
-                        <b>{{ $mat->material_type }}</b>
-                    </td>
-                    <td align="center">
-                        @if($mat->aluminiumItem)
-                        {{ $mat->aluminiumItem->aluminiumType->name ?? '-' }} <br>
-                        {{ $mat->aluminiumItem->aluminumSurfaceFinish->name ?? '-' }}
-                        ยาว 6 เมตร
-                        @elseif($mat->glassItem)
-                        {{ $mat->glassItem->glassType->name ?? '-' }} <br>
-                        สี{{ $mat->glassItem->colourItem->name ?? '-' }}<br>
-                        ขนาด 2*2 เมตร
-                        @elseif($mat->accessoryItem)
-                        {{ $mat->accessoryItem->accessoryType->name ?? '-' }}
-
-                        @elseif($mat->consumableItem)
-                        {{ $mat->consumableItem->consumabletype->name ?? '-' }}
-
-                        @endif
-                    </td>
-                    <td align="right">
-                        {{ number_format($item->calculated_unit_price, 2) }}
-                    </td>
-                    <td align="center">
-                        {{ $item->calculated_qty }}
-                    </td>
-                    <td align="right">
-                        <b>{{ number_format($item->calculated_total, 2) }}</b>
-                    </td>
-                </tr>
-                @endforeach
-
-                @if($need->productset->productsetitem->whereIn('calculated_lot', ['ไม่มีของหรือขนาดไม่พอ', 'ไม่มีของ/ขนาดไม่พอ', 'ไม่มีของ'])->isEmpty())
-                <tr>
-                    <td colspan="6" align="center" style="color: gray;">มีวัสดุครบในสต็อกแล้ว (ไม่ต้องสั่งซื้อเพิ่ม)</td>
-                </tr>
+                @if($itemsToBuy->isNotEmpty())
+                    @foreach ($itemsToBuy as $item)
+                    <tr>
+                        <td align="center">{{ $loop->iteration }}</td>
+                        <td align="center"><b>{{ $item->material_type }}</b></td>
+                        <td align="center">{{ $item->description }}</td>
+                        <td align="right">{{ number_format($item->unit_price, 2) }}</td>
+                        <td align="center">{{ $item->quantity }}</td>
+                        <td align="right"><b>{{ number_format($item->total_price, 2) }}</b></td>
+                        <td align="center">{{ $item->remark }}</td>
+                    </tr>
+                    @endforeach
+                @else
+                    <tr>
+                        <td colspan="7" align="center" style="color: gray; padding: 20px;">มีวัสดุครบในสต็อกแล้ว (ไม่ต้องสั่งซื้อเพิ่ม)</td>
+                    </tr>
                 @endif
             </tbody>
         </table>
-        @endforeach
 
         <div style="margin-top: 30px; display: flex; justify-content: flex-end;">
             <table width="40%" border="1" cellspacing="0" cellpadding="8" style="border-collapse: collapse;">
@@ -159,6 +128,5 @@
         @endif
         
     </div>
-
 </div>
 @endsection

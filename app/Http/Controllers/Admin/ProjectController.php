@@ -88,7 +88,7 @@ class ProjectController extends Controller
             'cancelled' => ['#DC143C', 'ยกเลิก']
         ];
 
-        $currentStatus = $statusColors[$project->status == 'cancelled'] ?? ['#DC143C', 'ยกเลิก'];
+        $currentStatus = $statusColors[$project->status ] ?? ['#ffff', 'ไม่ระบุ'];
 
 
 
@@ -1383,6 +1383,7 @@ class ProjectController extends Controller
                 $selectlot = '';
                 $remark = '';
                 $qtyuse = 0;
+                $description = ''; 
 
                 if ($type == 'อลูมิเนียม') {
                     $totalneedlen = ($m_w * 2) + ($m_h * 2);
@@ -1401,13 +1402,20 @@ class ProjectController extends Controller
                         $selectlot = $stock->lot;
                         $item->calculated_price_id = $stock->id;
                         $remark = "ใช้อลูมิเนียมยาว {$len} ม. จำนวน {$qtyuse} เส้น";
+                        
+                        $aluName = $material->aluminiumItem->aluminiumType->name ?? '';
+                        $aluColor = $material->aluminiumItem->aluminumSurfaceFinish->name ?? '';
+                        $description = "อลูมิเนียม {$aluName} สี{$aluColor} (ความยาว {$len} ม.)";
                     } else {
                         $flatlen = 6;
                         $qtyuse = ceil($totalneedlen / $flatlen);
                         $selectprice = 300;
-                        $selectlot = 'ไม่มีของหรือขนาดไม่พอ';
+                        $selectlot = 'ไม่มีของ';
                         $remark = "ใช้ราคาเหมา 300 บ. ต่อ เส้น ({$flatlen} ม.) จำนวน {$qtyuse} เส้น";
                         $item->calculated_price_id = null;
+                        
+                        $aluName = $material->aluminiumItem->aluminiumType->name ?? '';
+                        $description = "อลูมิเนียม {$aluName} (ราคาเหมา ความยาว {$flatlen} ม.)";
                     }
                 } elseif ($type == 'กระจก') {
                     $needArea = $m_w * $m_h;
@@ -1430,15 +1438,22 @@ class ProjectController extends Controller
                         $selectlot   = $stock->lot;
                         $item->calculated_price_id = $stock->id;
                         $remark = "ใช้กระจก {$sheetW}×{$sheetH} ม. จำนวน {$qtyuse} แผ่น";
+
+                        $glassName = $material->glassItem->glassType->name ?? '';
+                        $glassColor = $material->glassItem->colourItem->name ?? '';
+                        $description = "กระจก{$glassName} สี{$glassColor} (ขนาด {$sheetW}x{$sheetH} ม.)";
                     } else {
                         $flatW = 2;
                         $flatH = 2;
                         $flatArea = $flatW * $flatH;
                         $qtyuse = ceil($needArea / $flatArea) * 2;
                         $selectprice = 400;
-                        $selectlot   = 'ไม่มีของหรือขนาดไม่พอ';
+                        $selectlot   = 'ไม่มีของ';
                         $item->calculated_price_id = null;
                         $remark = "ใช้กระจกเหมา {$flatW}×{$flatH} ม. 400 บ. ต่อ แผ่น จำนวน {$qtyuse} แผ่น";
+
+                        $glassName = $material->glassItem->glassType->name ?? '';
+                        $description = "กระจก{$glassName} (ราคาเหมา {$flatW}x{$flatH} ม.)";
                     }
                 } else {
                     $stock = Price::where('material_id', $material->id)->where('quantity', '>', 0)->orderBy('id', 'asc')->first();
@@ -1455,10 +1470,24 @@ class ProjectController extends Controller
                         $remark = 'ใช้ราคาเหมา 100 บ.';
                         $item->calculated_price_id = null;
                     }
+                    if ($type == 'อุปกรณ์เสริม') {
+                        $accName = $material->accessoryItem->accessoryType->name ?? '';
+                        $description = "อุปกรณ์เสริม: {$accName}";
+                    } elseif ($type == 'วัสดุสิ้นเปลือง') {
+                        $conName = $material->consumableItem->consumabletype->name ?? '';
+                        $description = "วัสดุสิ้นเปลือง: {$conName}";
+                    } elseif ($type == 'เครื่องมือช่าง') {
+                        $toolName = $material->toolItem->toolType->name ?? '';
+                        $description = "เครื่องมือช่าง: {$toolName}";
+                    } else {
+                        $description = "วัสดุอื่นๆ";
+                    }
                 }
 
                 $total_item_price = $qtyuse * $selectprice;
-
+                $item->calculated_description = $description;
+                $item->calculated_material_type = $type;
+                
                 $item->calculated_lot = $selectlot;
                 $item->calculated_unit_price = $selectprice;
                 $item->calculated_qty = $qtyuse;
@@ -1539,9 +1568,10 @@ class ProjectController extends Controller
 
     public function materialplanningpage($id)
     {
-        $project = $this->getCalculatedProject($id);
+        $project = $this->qerydataproject($id);
+        $quotation = Quotation::with('quotationMaterials')->where('project_id', $id)->latest()->first();
 
-        return view('admin.projects.materialplanning.materialplanningpage', compact('project'));
+        return view('admin.projects.materialplanning.materialplanningpage', compact('project','quotation'));
     }
 
     public function materialplanningpagedocument($id)
@@ -1581,14 +1611,14 @@ class ProjectController extends Controller
         if (count($itemsToBuy) > 0) {
             $purchase = ProjectPurchase::create([
                 'project_id' => $project->id,
-                'total_amount' => $grandTotal,
-                'status' => 'pending'
+                'total_amount' => $grandTotal
             ]);
 
             foreach ($itemsToBuy as $item) {
                 ProjectPurchaseItem::create([
                     'project_purchase_id' => $purchase->id,
                     'material_id' => $item->material_id,
+                    'description' => $item->calculated_description,
                     'quantity' => $item->calculated_qty,
                     'unit_price' => $item->calculated_unit_price,
                     'total_price' => $item->calculated_total,
@@ -1628,63 +1658,110 @@ class ProjectController extends Controller
     {
         $project = $this->getCalculatedProject($id);
 
+        $withdrawnItems = WithdrawalItem::whereHas('withdrawal', function($q) use ($id) {
+            $q->where('project_id', $id);
+        })->get();
+
+        $withdrawnSummary = [];
+        foreach($withdrawnItems as $wItem) {
+            if(!isset($withdrawnSummary[$wItem->material_id])) {
+                $withdrawnSummary[$wItem->material_id] = 0;
+            }
+            $withdrawnSummary[$wItem->material_id] += $wItem->quantity;
+        }
+
+        return view('admin.projects.withdraw.withdrawpage', compact('project','withdrawnSummary'));
+    }
+
+    public function withdrawform(Request $request,$id){
+        $selecteditems = $request->input('selected_items');
+
+        if (empty($selecteditems)) {
+            return redirect()->back()->with('error', 'กรุณาเลือกวัสดุอย่างน้อย 1 รายการ');
+        }
+
+        $project = $this->getCalculatedProject($id);
         $users = User::all();
 
-        return view('admin.projects.withdraw.withdrawpage', compact('project', 'users'));
+        $itemstowithdraw = [];
+        foreach ($project->customerneed as $need) {
+            foreach ($need->productset->productsetitem as $item) {
+                if (in_array($item->id, $selecteditems)) {
+                    $itemstowithdraw[] = $item;
+                }
+            }
+        }
+
+        return view('admin.projects.withdraw.withdrawform', compact('project', 'itemstowithdraw', 'users', 'selecteditems'));
+
     }
 
     public function withdrawstore(Request $request, $id)
     {
+        $selecteditems = $request->input('selected_items');
+        $withdrawnby = $request->input('withdrawn_by');
+
+        if (empty($selecteditems) or empty($withdrawnby)) {
+            return redirect()->back()->with('error', 'กรุณาเลือกวัสดุและช่างผู้เบิก');
+        }
+
         $project = $this->getCalculatedProject($id);
+        $totalReadyToWithdraw = 0;
+        foreach ($project->customerneed as $need) {
+            foreach ($need->productset->productsetitem as $item) {
+                if (!empty($item->calculated_price_id)) {
+                    $totalReadyToWithdraw++;
+                }
+            }
+        }
 
         $withdrawal = Withdrawal::create([
             'project_id'   => $project->id,
-            'withdrawn_by' => $request->withdrawn_by,
+            'withdrawn_by' => $withdrawnby,
             'recorded_by'  => Auth::id(),
         ]);
 
         foreach ($project->customerneed as $need) {
             foreach ($need->productset->productsetitem as $item) {
+                if (in_array($item->id, $selecteditems)) {
+                    $qtytowithdraw = $item->calculated_qty;
 
-                $qtyToWithdraw = $item->calculated_qty;
+                    if ($qtytowithdraw > 0 and !empty($item->calculated_price_id)) {
+                        $price = Price::find($item->calculated_price_id);
 
-                if ($qtyToWithdraw <= 0 || empty($item->calculated_price_id)) {
-                    continue;
-                }
+                        if ($price) {
+                            $actualdeduct = min($price->quantity, $qtytowithdraw);
 
-                $price = Price::find($item->calculated_price_id);
+                            if ($actualdeduct > 0) {
+                                $price->decrement('quantity', $actualdeduct);
+                                
+                                MaterialLog::create([
+                                    'material_id' => $item->material->id,
+                                    'price_id'    => $price->id,
+                                    'user_id'     => Auth::id(),
+                                    'direction'   => 'out',
+                                    'quantitylog'  => $actualdeduct,
+                                ]);
 
-                if ($price) {
-                    $actualDeduct = min($price->sumquantity, $qtyToWithdraw);
-
-                    if ($actualDeduct > 0) {
-
-                        $price->decrement('sumquantity', $actualDeduct);
-
-                        MaterialLog::create([
-                            'material_id' => $item->material->id,
-                            'price_id'    => $price->id,
-                            'user_id'     => Auth::id(),
-                            'direction'   => 'out',
-                        ]);
-
-                        WithdrawalItem::create([
-                            'withdrawal_id' => $withdrawal->id,
-                            'material_id'   => $item->material->id,
-                            'lot'           => $price->lot,
-                            'quantity'      => $actualDeduct,
-                        ]);
+                                WithdrawalItem::create([
+                                    'withdrawal_id' => $withdrawal->id,
+                                    'material_id'   => $item->material->id,
+                                    'lot'           => $price->lot,
+                                    'quantity'      => $actualdeduct,
+                                ]);
+                            }
+                        }
                     }
                 }
             }
         }
 
-        $project->update([
-            'status' => 'materials_withdrawn'
-        ]);
+       
 
-        return redirect()->route('admin.projects.index', $project->id)->with('success', 'เบิกวัสดุสำเร็จเรียบร้อย');
+        return redirect()->route('admin.projects.withdrawpage', $project->id)->with('success', 'บันทึกการเบิกบางส่วนเรียบร้อย');
     }
+
+
 
     public function assignInstaller(Request $request, $id)
     {
@@ -1923,7 +2000,7 @@ class ProjectController extends Controller
             $color = $this->getStatusColor($pj->status);
 
             if ($pj->trashed()) {
-            $statusLabel = 'ยกเลิก (ถูกลบ)';
+            $statusLabel = 'ยกเลิก';
             $color = '#DC143C';
             } else {
                 $statusLabel = $this->getStatusLabel($pj->status);
@@ -2068,190 +2145,121 @@ class ProjectController extends Controller
             'projectPurchase.items.material.consumableItem',
         ])->find($id);
 
-        $purchaseItems = [];
-        $allComplete = true;
+        $purchase = $project->projectPurchase;
+        $purchaseItems = $purchase ? $purchase->items : collect();
 
-        if ($project != null && $project->projectPurchase != null) {
-            foreach ($project->projectPurchase->items as $item) {
+        $purchaseItems->transform(function ($item) {
+            $item->current_stock = Price::where('material_id', $item->material_id)->sum('quantity');
+            $item->required_qty = $item->quantity;
+            $item->is_complete = $item->current_stock >= $item->required_qty;
+            
+            return $item;
+        });
 
-                $material = $item->material;
-
-                if ($material != null) {
-                    $sumInStock = Price::where('material_id', $material->id)->sum('quantity');
-                    $item->current_stock = $sumInStock;
-                    $item->required_qty = $item->quantity;
-
-                    if ($sumInStock >= $item->quantity) {
-                        $item->is_complete = true;
-                    } else {
-                        $item->is_complete = false;
-                        $allComplete = false; 
-                    }
-
-                    $purchaseItems[] = $item;
-                }
-            }
-        }
-
-        if (count($purchaseItems) == 0) {
-            $allComplete = false;
-        }
+        $allComplete = $purchaseItems->isNotEmpty() && $purchaseItems->every('is_complete', true);
 
         return view('admin.projects.materialplanning.restockmaterials', compact('project', 'purchaseItems', 'allComplete'));
     }
-
-    public function processrestock(Request $request, $id)
-    {
-        $restockGroups = $request->input('restock_group');
-
-        if ($restockGroups != null) {
-
-            foreach ($restockGroups as $type => $data) {
-
-                if (isset($data['material_ids'])) {
-
-                    foreach ($data['material_ids'] as $material_id) {
-
-                        $material = Material::find($material_id);
-
-                        if ($material == null) {
-                            continue;
-                        }
-
-                        $priceColumn = null;
-                        $priceItemId = null;
-
-                        if ($material->material_type == 'อลูมิเนียม') {
-
-                            $aluminiumitem = AluminiumItem::find($material->aluminium_item_id);
-
-                            if ($aluminiumitem != null) {
-                                $length_meter = $data['length_meter'];
-
-                                $aluminiumlength = AluminiumLength::where('aluminium_item_id', $aluminiumitem->id)->where('length_meter', $length_meter)->first();
-
-                                if ($aluminiumlength == null) {
-                                    $aluminiumlength = AluminiumLength::create([
-                                        'aluminium_item_id' => $aluminiumitem->id,
-                                        'length_meter'      => $length_meter
-                                    ]);
-                                }
-
-                                $priceColumn = 'aluminium_length_id';
-                                $priceItemId = $aluminiumlength->id;
-                            }
-                        } else if ($material->material_type == 'กระจก') {
-
-                            $glassitem = GlassItem::find($material->glass_item_id);
-
-                            if ($glassitem != null) {
-                                $width_meter  = $data['width_meter'];
-                                $length_meter = $data['length_meter'];
-                                $thickness    = $data['thickness'];
-
-                                $glasssize = GlassSize::where('glass_item_id', $glassitem->id)->where('width_meter', $width_meter)->where('length_meter', $length_meter)->where('thickness', $thickness)->first();
-
-                                if ($glasssize == null) {
-                                    $glasssize = GlassSize::create([
-                                        'glass_item_id' => $glassitem->id,
-                                        'width_meter'   => $width_meter,
-                                        'length_meter'  => $length_meter,
-                                        'thickness'     => $thickness
-                                    ]);
-                                }
-
-                                $priceColumn = 'glass_size_id';
-                                $priceItemId = $glasssize->id;
-                            }
-                        } else if ($material->material_type == 'อุปกรณ์เสริม') {
-                            $priceColumn = 'accessory_item_id';
-                            $priceItemId = $material->accessory_item_id;
-                        } else if ($material->material_type == 'เครื่องมือช่าง') {
-                            $priceColumn = 'tool_item_id';
-                            $priceItemId = $material->tool_item_id;
-                        } else if ($material->material_type == 'วัสดุสิ้นเปลือง') {
-                            $priceColumn = 'consumable_item_id';
-                            $priceItemId = $material->consumable_item_id;
-                        }
-
-                        if ($priceColumn != null && $priceItemId != null) {
-
-                            $lotCount = Price::where($priceColumn, $priceItemId)
-                                ->where('dealer_id', $data['dealer_id'])
-                                ->count();
-
-                            $lotNumber = $lotCount + 1;
-                            $lotName = "ล็อตที่" . $lotNumber;
-
-                            $currentStock = Price::where('material_id', $material->id)->sum('quantity');
-                            $newSumQuantity = $currentStock + $data['qty'];
-
-                            $price = Price::create([
-                                'material_id' => $material->id,
-                                $priceColumn  => $priceItemId,
-                                'dealer_id'   => $data['dealer_id'],
-                                'price'       => $data['price'],
-                                'quantity'    => $data['qty'],
-                                'lot'         => $lotName,
-                                'sumquantity' => $newSumQuantity
-                            ]);
-
-                            MaterialLog::create([
-                                'material_id' => $material->id,
-                                'price_id'    => $price->id,
-                                'user_id'     => Auth::id(),
-                                'direction'   => 'in'
-                            ]);
-                        }
-                    }
-                }
-            }
-        }
-
-        return redirect()->route('admin.projects.restockpage', $id)->with('success', 'เติมสต็อกวัสดุสำเร็จ');
-    }
-
 
     public function restockForm(Request $request, $id)
     {
         $selected_ids = $request->input('selected_materials');
 
-        if ($selected_ids == null) {
+        if (empty($selected_ids)) {
             return redirect()->back()->with('error', 'กรุณาเลือกวัสดุอย่างน้อย 1 รายการ');
         }
 
         $project = Project::find($id);
         $dealers = Dealer::all();
 
-        $materials_list = Material::whereIn('id', $selected_ids)->get();
-
-        $groupedMaterials = [];
-
-        foreach ($materials_list as $mat) {
-            $name = "-";
-
-            if ($mat->aluminiumItem != null) {
-                $name = ($mat->aluminiumItem->aluminiumType->name ?? '-') . " (" . ($mat->aluminiumItem->aluminumSurfaceFinish->name ?? '-') . ")";
-            } else if ($mat->glassItem != null) {
-                $name = ($mat->glassItem->glassType->name ?? '-') . " (" . ($mat->glassItem->colourItem->name ?? '-') . ")";
-            } else if ($mat->accessoryItem != null) {
-                $name = $mat->accessoryItem->accessoryType->name ?? '-';
-            } else if ($mat->consumableItem != null) {
-                $name = $mat->consumableItem->consumabletype->name ?? '-';
-            }
-
-            $mat->display_detail = $name;
-
-            $type = $mat->material_type;
-
-            if (!isset($groupedMaterials[$type])) {
-                $groupedMaterials[$type] = [];
-            }
-
-            $groupedMaterials[$type][] = $mat;
-        }
+        $groupedMaterials = Material::whereIn('id', $selected_ids)
+            ->get()
+            ->map(function ($mat) {
+                $mat->display_detail = match ($mat->material_type) {
+                    'อลูมิเนียม' => ($mat->aluminiumItem->aluminiumType->name ?? '-') . " (" . ($mat->aluminiumItem->aluminumSurfaceFinish->name ?? '-') . ")",
+                    'กระจก' => ($mat->glassItem->glassType->name ?? '-') . " (" . ($mat->glassItem->colourItem->name ?? '-') . ")",
+                    'อุปกรณ์เสริม' => $mat->accessoryItem->accessoryType->name ?? '-',
+                    'วัสดุสิ้นเปลือง' => $mat->consumableItem->consumabletype->name ?? '-',
+                    default => '-'
+                };
+                return $mat;
+            })
+            ->groupBy('material_type');
 
         return view('admin.projects.materialplanning.restockform', compact('project', 'groupedMaterials', 'dealers'));
+    }
+
+    public function processrestock(Request $request, $id)
+    {
+        $restockGroups = $request->input('restock_group', []);
+
+        foreach ($restockGroups as $type => $data) {
+            $materialIds = $data['material_ids'] ?? [];
+
+            foreach ($materialIds as $material_id) {
+                $material = Material::find($material_id);
+                if (!$material) continue;
+
+                $priceColumn = null;
+                $priceItemId = null;
+
+                if ($material->material_type == 'อลูมิเนียม') {
+                    $aluminiumlength = AluminiumLength::firstOrCreate([
+                        'aluminium_item_id' => $material->aluminium_item_id,
+                        'length_meter' => $data['length_meter']
+                    ]);
+                    $priceColumn = 'aluminium_length_id';
+                    $priceItemId = $aluminiumlength->id;
+                    
+                } elseif ($material->material_type == 'กระจก') {
+                    $glasssize = GlassSize::firstOrCreate([
+                        'glass_item_id' => $material->glass_item_id,
+                        'width_meter' => $data['width_meter'],
+                        'length_meter' => $data['length_meter'],
+                        'thickness' => $data['thickness']
+                    ]);
+                    $priceColumn = 'glass_size_id';
+                    $priceItemId = $glasssize->id;
+                    
+                } elseif ($material->material_type == 'อุปกรณ์เสริม') {
+                    $priceColumn = 'accessory_item_id';
+                    $priceItemId = $material->accessory_item_id;
+                    
+                } elseif ($material->material_type == 'เครื่องมือช่าง') {
+                    $priceColumn = 'tool_item_id';
+                    $priceItemId = $material->tool_item_id;
+                    
+                } elseif ($material->material_type == 'วัสดุสิ้นเปลือง') {
+                    $priceColumn = 'consumable_item_id';
+                    $priceItemId = $material->consumable_item_id;
+                }
+
+                if ($priceColumn && $priceItemId) {
+                    $lotCount = Price::where($priceColumn, $priceItemId)
+                        ->where('dealer_id', $data['dealer_id'])
+                        ->count();
+
+                    $price = Price::create([
+                        'material_id' => $material->id,
+                        $priceColumn  => $priceItemId,
+                        'dealer_id'   => $data['dealer_id'],
+                        'price'       => $data['price'],
+                        'quantity'    => $data['qty'],
+                        'lot'         => "ล็อตที่" . ($lotCount + 1)
+                    ]);
+
+                    MaterialLog::create([
+                        'material_id' => $material->id,
+                        'price_id'    => $price->id,
+                        'user_id'     => Auth::id(),
+                        'direction'   => 'in',
+                        'quantitylog'    => $data['qty'],
+                    ]);
+                }
+            }
+        }
+
+        return redirect()->route('admin.projects.restockpage', $id)->with('success', 'เติมสต็อกวัสดุสำเร็จ');
     }
 
     public function choosetypeissues($id){
@@ -2529,7 +2537,7 @@ class ProjectController extends Controller
             'customerneed.productset.productsetitem.material.toolItem.toolType',
             'customerneed.productset.productsetitem.material.price',
             'assignedSurveyor.profile',
-            'quotation'
+            'quotation.quotationMaterials'
         ])->find($id);
         return $project;
     }
@@ -2604,6 +2612,51 @@ class ProjectController extends Controller
 
         return back()->with('success', 'กู้คืนงานเรียบร้อยแล้ว');
     }
+
+
+    public function cancelWithdrawal($id)
+{
+    $project = Project::find($id);
+    
+    if (!$project) {
+        return redirect()->back()->with('error', 'ไม่พบงานนี้');
+    }
+
+    $withdrawals = Withdrawal::with('items')->where('project_id', $project->id)->get();
+
+    if ($withdrawals->isEmpty()) {
+        return redirect()->back()->with('error', 'ไม่พบประวัติการเบิกวัสดุสำหรับงานนี้');
+    }
+
+    foreach ($withdrawals as $withdrawal) {
+        foreach ($withdrawal->items as $item) {
+            $price = Price::where('material_id', $item->material_id)
+                        ->where('lot', $item->lot)
+                        ->first();
+
+            if ($price) {
+                $price->increment('quantity', $item->quantity);
+
+                MaterialLog::create([
+                    'material_id' => $item->material_id,
+                    'price_id'    => $price->id,
+                    'user_id'     => Auth::id(),
+                    'direction'   => 'in',
+                    'quantitylog' => $item->quantity
+                ]);
+            }
+        }
+        
+        $withdrawal->items()->delete(); 
+        $withdrawal->delete(); 
+    }
+
+    $project->update([
+        'status' => 'ready_to_withdraw'
+    ]);
+
+    return redirect()->back()->with('success', 'ยกเลิกการเบิกวัสดุ คืนสต็อก และเปลี่ยนสถานะเป็นพร้อมเบิกเรียบร้อยแล้ว');
+}
 
 
     

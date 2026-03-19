@@ -45,22 +45,22 @@
                     </div>
                     <div style="width: 120px;">
                         <label style="font-size: 0.85em;  display:block; margin-bottom:5px;">ต้นทุน/หน่วย</label>
-                        <input type="number" name="restock_group[{{ $type }}][price]" class="form-input" step="0.01" required min="0" style="width: 100%; padding: 6px;">
+                        <input type="number"  name="restock_group[{{ $type }}][price]" class="form-input" step="0.01" required min="0" style="width: 100%; padding: 6px;">
                     </div>
 
                     @if($type == 'อลูมิเนียม')
                         <div style="width: 120px;">
                             <label style="font-size: 0.85em;  display:block; margin-bottom:5px;">ความยาว (ม.)</label>
-                            <input type="number" step="0.01" name="restock_group[{{ $type }}][length_meter]" class="form-input" required style="width: 100%; padding: 6px;">
+                            <input type="number" step="0.01" min="6" name="restock_group[{{ $type }}][length_meter]" class="form-input" required style="width: 100%; padding: 6px;">
                         </div>
                     @elseif($type == 'กระจก')
                         <div style="width: 90px;">
                             <label style="font-size: 0.85em;  display:block; margin-bottom:5px;">กว้าง (ม.)</label>
-                            <input type="number" step="0.01" name="restock_group[{{ $type }}][width_meter]" class="form-input" required style="width: 100%; padding: 6px;">
+                            <input type="number" min="2" step="0.01" name="restock_group[{{ $type }}][width_meter]" class="form-input" required style="width: 100%; padding: 6px;">
                         </div>
                         <div style="width: 90px;">
                             <label style="font-size: 0.85em;  display:block; margin-bottom:5px;">ยาว (ม.)</label>
-                            <input type="number" step="0.01" name="restock_group[{{ $type }}][length_meter]" class="form-input" required style="width: 100%; padding: 6px;">
+                            <input type="number"  min="2" step="0.01" name="restock_group[{{ $type }}][length_meter]" class="form-input" required style="width: 100%; padding: 6px;">
                         </div>
                         <div style="width: 90px;">
                             <label style="font-size: 0.85em;  display:block; margin-bottom:5px;">หนา (มม.)</label>
