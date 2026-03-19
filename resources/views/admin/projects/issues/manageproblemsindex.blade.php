@@ -11,7 +11,7 @@
     @forelse($groupedIssues as $projectId => $projectIssues)
         @php
             $project = $projectIssues->first()->project;
-            $currentStatus = $statusColors[$project->status] ?? ['#ccc', 'ไม่ระบุ'];
+            $currentStatus = $statusColors[$project->status] ?? ['#DC143C', 'ยกเลิก'];
             $issueCount = $projectIssues->count();
         @endphp
 

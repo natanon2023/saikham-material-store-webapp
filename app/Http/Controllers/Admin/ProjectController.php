@@ -59,7 +59,7 @@ class ProjectController extends Controller
 {
     public function index($id)
     {
-        $project = Project::with([
+        $project = Project::withTrashed()->with([
             'customer.province',
             'customer.amphure',
             'customer.tambon',
@@ -88,7 +88,7 @@ class ProjectController extends Controller
             'cancelled' => ['#DC143C', 'ยกเลิก']
         ];
 
-        $currentStatus = $statusColors[$project->status] ?? ['#ccc', 'ไม่ระบุ'];
+        $currentStatus = $statusColors[$project->status == 'cancelled'] ?? ['#DC143C', 'ยกเลิก'];
 
 
 
@@ -1319,7 +1319,7 @@ class ProjectController extends Controller
         $project = Project::find($id);
 
         if (!$project) {
-            return redirect()->back()->with('error', 'ไม่พบข้อมูลโปรเจกต์');
+            return redirect()->back()->with('error', 'ไม่พบข้อมูลงาน');
         }
 
         $quotations = Quotation::where('project_id', $project->id)->get();
@@ -1916,18 +1916,26 @@ class ProjectController extends Controller
     {
         $query = Project::with('projectname')->whereNotNull('survey_date');
 
-        $events = $query->with(['projectname', 'customer'])->get()->flatMap(function ($pj) {
+        $events = $query->withTrashed()->with(['projectname', 'customer'])->get()->flatMap(function ($pj) {
             $customerName = $pj->customer->first_name ?? 'ไม่ระบุลูกค้า';
             $projectName = $pj->projectname->name ?? 'ไม่มีชื่อโครงการ';
             $statusLabel = $this->getStatusLabel($pj->status);
             $color = $this->getStatusColor($pj->status);
+
+            if ($pj->trashed()) {
+            $statusLabel = 'ยกเลิก (ถูกลบ)';
+            $color = '#DC143C';
+            } else {
+                $statusLabel = $this->getStatusLabel($pj->status);
+                $color = $this->getStatusColor($pj->status);
+            }
 
             $items = [];
 
             if ($pj->survey_date) {
                 $items[] = [
                     'id'    => $pj->id . '_survey',
-                    'title' => "[สำรวจ] " . $customerName . " - " . $projectName,
+                    'title' => ($pj->trashed() ? " (ยกเลิก)" : ""). "[สำรวจ] " . $customerName . " - " . $projectName ,
                     'start' => date('Y-m-d', strtotime($pj->survey_date)),
                     'url'   => route('admin.projects.index', $pj->id),
                     'backgroundColor' => $color,
@@ -1940,7 +1948,7 @@ class ProjectController extends Controller
             if ($pj->installation_start_date && $pj->installation_end_date) {
                 $items[] = [
                     'id'    => $pj->id . '_install',
-                    'title' => "[ติดตั้ง] " . $customerName . " - " . $projectName . " (" . $statusLabel . ")",
+                    'title' => ($pj->trashed() ? " (ยกเลิก)" : "")."[ติดตั้ง] " . $customerName . " - " . $projectName . " (" . $statusLabel . ")",
                     'start' => date('Y-m-d', strtotime($pj->installation_start_date)),
                     'end'   => date('Y-m-d', strtotime($pj->installation_end_date . ' +1 day')),
                     'url'   => route('admin.projects.index', $pj->id),
@@ -1975,7 +1983,7 @@ class ProjectController extends Controller
             'cancelled'           => 'ยกเลิก',
         ];
 
-        return $labels[$status] ?? 'ไม่ระบุสถานะ';
+        return $labels[$status] ?? 'cancelled';
     }
 
 
@@ -1997,7 +2005,7 @@ class ProjectController extends Controller
             'cancelled'           => '#DC143C',
         ];
 
-        return $colors[$status] ?? '#2196F3';
+        return $colors[$status] ?? '#DC143C';
     }
 
 
@@ -2273,7 +2281,7 @@ class ProjectController extends Controller
     }
 
    public function manageproblemsindex(){
-        $issues = ProjectIssue::with([
+        $issues = ProjectIssue::whereHas('project')->with([
             'project.customer',
             'project.projectname',
         ])->latest()->get();
@@ -2567,11 +2575,6 @@ class ProjectController extends Controller
     }
 
 
-    
-
-
-
-
 
     public function updatestatusinstalling($id)
     {
@@ -2582,6 +2585,24 @@ class ProjectController extends Controller
         ]);
 
         return redirect()->route('admin.projects.index', $project->id)->with('success', 'อัปเดตสถานะเป็น กำลังติดตั้ง');
+    }
+
+
+
+    public function destroy($id)
+    {
+        $project = Project::find($id);
+        $project->delete(); 
+
+        return back()->with('success', 'ลบงานเรียบร้อยแล้ว');
+    }
+
+    public function restore($id)
+    {
+        $project = Project::withTrashed()->find($id);
+        $project->restore();
+
+        return back()->with('success', 'กู้คืนงานเรียบร้อยแล้ว');
     }
 
 

@@ -287,6 +287,9 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
         Route::post('projects/customerneed/{need_id}/upload-after-image', [ProjectController::class, 'uploadAfterImage'])->name('uploadafterimage');
         Route::delete('projects/customerneed/{need_id}/delete-after-image', [ProjectController::class, 'deleteAfterImage'])->name('deleteafterimage');
 
+        Route::delete('projects/{id}/destroy', [ProjectController::class, 'destroy'])->name('destroy');
+        Route::post('projects/{id}/restore', [ProjectController::class, 'restore'])->name('restore');
+
 
 
 
