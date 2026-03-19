@@ -167,10 +167,7 @@
 
                     @elseif($project->status == 'installing')
                     <a href="{{ route('admin.projects.choosetypeissues', $project->id) }}" class="btn btn-danger btn-full-text">แจ้งปัญหา</a>
-                    <form action="{{ route('admin.projects.updatestatuscompleted', $project->id) }}" method="POST" style="margin: 0;">
-                        @csrf
-                        <button type="submit" class="btn btn-success btn-full-text">เสร็จสมบูรณ์</button>
-                    </form>
+                    <a href="{{ route('admin.projects.confirmworkcompletedpage', $project->id) }}" class="btn btn-secondary btn-full-text">ยืนยันการทำงานเสร็จสิ้น</a>
                     @elseif($project->status == 'completed')
                     <form action="{{ route('admin.projects.updatestatusinstalling', $project->id) }}" method="POST" style="margin: 0;">
                         @csrf

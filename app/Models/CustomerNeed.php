@@ -20,7 +20,8 @@ class CustomerNeed extends Model
         'width',
         'height',
         'installation_image',
-        'note_need'
+        'note_need',
+        'imageafter'
     ];
 
     public function creator()

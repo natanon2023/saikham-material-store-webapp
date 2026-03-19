@@ -69,13 +69,125 @@
     <div style=" margin-top: 20px;">
         @include('components.successanderror')
     </div>
+    @if (in_array($project->status,$statusopendatework))
+    <div class="boxmaterial" style="margin-top: 20px; margin-bottom: 20px;">
+        <h3 style="margin-top: 0; color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+            ระยะเวลาทำงาน {{ $project->estimated_work_days }} วัน
+        </h3>
+
+        <div class="box-control" style="display: flex; gap: 20px; margin-top: 15px; ">
+
+            <div style="flex: 1; background-color: #f9f9f9; padding: 15px;  border-left: 4px solid #b5ffc6;">
+                <span style="font-size: 0.85em; color: #666; display: block;">วันเริ่มงาน</span>
+                {{ $project->installation_start_date 
+                        ? \Carbon\Carbon::parse($project->installation_start_date)
+                        ->locale('th') 
+                        ->addYears(543) 
+                        ->isoFormat('D MMMM YYYY') 
+                        : 'ยังไม่ได้กำหนดวันทำงาน' 
+                }}
+            </div>
+
+            <div style="flex: 1; background-color: #f9f9f9; padding: 15px;  border-left: 4px solid #ffa7b0;">
+                <span style="font-size: 0.85em; color: #666; display: block;">วันจบงาน</span>
+                {{ $project->installation_end_date 
+                        ? \Carbon\Carbon::parse($project->installation_end_date)
+                        ->locale('th') 
+                        ->addYears(543) 
+                        ->isoFormat('D MMMM YYYY') 
+                        : 'ยังไม่ได้กำหนดวันทำงาน' 
+                }}
+            </div>
+
+        </div>
+    </div>
+    <form method="POST" action="{{ route('admin.projects.assignInstaller', $project->id) }}">
+        @csrf
+        @method('PUT')
+
+        <div class="boxmaterial">
+            <div class="box-control">
+                <div class="form-group">
+                    <label class="form-label">
+                        วันเริ่มงาน (ทำงาน {{ $project->estimated_work_days }} วัน)
+                    </label>
+                    <input type="date" name="installation_start_date" class="form-input" value="{{ $project->installation_start_date }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">วันจบงาน</label>
+                    <input type="date" class="form-input" id="installation_end_date" value="{{ $project->installation_end_date }}" readonly>
+                </div>
+
+                <button class="btn btn-secondary">บันทึก</button>
+            </div>
+        </div>
+
+    </form>
+
+    <div class="boxmaterial" style="margin-top: 20px; margin-bottom: 10px;">
+        <h3>เลือกช่างติดตั้ง</h3>
+        <form action="{{ route('admin.projects.assignInstalleruser', $project->id) }}" method="POST">
+            @csrf
+            <div class="box-control">
+                <div class="form-group">
+                    <select name="user_id" class="form-input" required>
+                        <option value="">เลือกช่าง</option>
+                        @foreach ($technician as $installer)
+                        <option value="{{ $installer->id }}">
+                            {{ 'ช่าง '.$installer->name.' '.$installer->last_name }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <button type="submit" class="btn btn-secondary">บันทึก</button>
+                </div>
+            </div>
+        </form>
+
+    </div>
+
+    <div class="boxmaterial">
+        <div style="margin-bottom: 20px; display: flex; justify-content: space-between;">
+            รายชื่อช่างติดตั้ง
+        </div>
+        <table>
+            <tr align="center">
+                <th>ลำดับ</th>
+                <th>ชื่อ - สกุล</th>
+                <th>จัดการ</th>
+            </tr>
+            @foreach ($project->installers as $installer)
+            <tr>
+                <td align="center">{{ $loop->iteration }}</td>
+                <td align="center">ช่าง {{ $installer->name }} {{ $installer->last_name }}</td>
+                <td align="center">
+                    <form action="{{ route('admin.projects.removeinstaller', $installer->pivot->id) }}" method="POST">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn-icon btn-delete" title="ลบ" onclick="return confirm('ลบเฉพาะช่างคนนี้ใช่หรือไม่?')">
+                            <i class="fas fa-trash" ></i>
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            @endforeach
+
+        </table>
+        
+    </div>
+
+
+
+    @endif
     <div class="boxmaterial" style="margin-top: 20px;">
         <div style="margin-bottom: 15px;  border-bottom: 2px solid #eee; padding-bottom: 10px;">
             จัดการเอกสารโครงการ
         </div>
-        
+
         <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-            
+
             @if (in_array($project->status, $satatusopen))
             <div style="flex: 1; min-width: 250px; border: 1px solid #61b8c2;  padding: 15px;  display: flex; align-items: center; justify-content: space-between;">
                 <div>
@@ -86,7 +198,7 @@
                     เปิดเอกสาร
                 </a>
             </div>
-            
+
             @endif
 
 
@@ -345,7 +457,7 @@
             </center>
         </div>
         @endif
-       
+
         <div style="margin-top: 20px;">
             <div class="boxmaterial" style="margin-top: 20px; display: flex; justify-content: space-between;">
                 ความต้องการของลูกค้า
@@ -353,7 +465,7 @@
             </div>
 
             <div>
-                 @if ($project->customerneed->count() > 0)
+                @if ($project->customerneed->count() > 0)
                 <table>
                     <tr style="text-align: center;">
                         <th>รายการที่</th>
@@ -394,12 +506,12 @@
                     @endforeach
                 </table>
                 @else
-        <div class="box">
-            <center>
-                <p>ข้อมูลความต้องการยังไม่ถูกเพิ่ม</p>
-            </center>
-        </div>
-        @endif
+                <div class="box">
+                    <center>
+                        <p>ข้อมูลความต้องการยังไม่ถูกเพิ่ม</p>
+                    </center>
+                </div>
+                @endif
             </div>
         </div>
     </div>
@@ -410,55 +522,55 @@
         <div style="display: flex; justify-content:  space-between; border-bottom: 2px solid #eee; padding-bottom: 10px;">
             <p style="margin-bottom: 20px; ">ข้อมูลส่วนตัวและที่อยู่ลูกค้า</p>
             <a href="{{ route('admin.projects.projecteditcustomer', ['id' => $project->customer->id, 'project_id' => $project->id]) }}" class=" btn-icon btn-edit" title="แก้ไข">
-                        <i class="fas fa-edit"></i>
+                <i class="fas fa-edit"></i>
             </a>
         </div>
-        
-            <div class="detail-grid" style="margin-top: 20px;;">
-                <div>
-                    <span class="label">เลขประจำตัวผู้เสียภาษี</span>
-                    <span class="value">
+
+        <div class="detail-grid" style="margin-top: 20px;;">
+            <div>
+                <span class="label">เลขประจำตัวผู้เสียภาษี</span>
+                <span class="value">
                     {{ $project->customer->tax_id_number ?? '-' }}
-                    </span>
-                </div>
-
-                <div>
-                    <span class="label">ชื่อ-นามสกุล</span>
-                    <span class="value">
-                        {{ $project->customer->prefix ?? '' }}{{ $project->customer->first_name }} {{ $project->customer->last_name }}
-                    </span>
-                </div>
-
-                <div>
-                    <span class="label">เพศ</span>
-                    <span class="value">{{ $project->customer->gender ?? '-' }}</span>
-                </div>
-
-                <div>
-                    <span class="label">เบอร์โทร</span>
-                    <span class="value">{{ $project->customer->phone ?? '-' }}</span>
-                </div>
-
-                <div>
-                    <span class="label">อีเมล</span>
-                    <span class="value">{{ $project->customer->email ?? '-' }}</span>
-                </div>
-
-                <div class="full">
-                    <span class="label">ที่อยู่</span>
-                    <span class="value">
-                        เลขที่ {{ $project->customer->house_number ?? '-' }}
-                        {{ $project->customer->village ? 'หมู่ '.$project->customer->village : '' }}
-                        {{ $project->customer->house_name ?? '' }}
-                        {{ $project->customer->alley ? 'ซอย '.$project->customer->alley : '' }}
-                        {{ $project->customer->road ? 'ถนน '.$project->customer->road : '' }} <br>
-                        ต.{{ $project->customer->tambon->name_th ?? '-' }}
-                        อ.{{ $project->customer->amphure->name_th ?? '-' }}
-                        จ.{{ $project->customer->province->name_th ?? '-' }}
-                        {{ $project->customer->tambon->zip_code ?? '-' }}
-                    </span>
-                </div>
+                </span>
             </div>
+
+            <div>
+                <span class="label">ชื่อ-นามสกุล</span>
+                <span class="value">
+                    {{ $project->customer->prefix ?? '' }}{{ $project->customer->first_name }} {{ $project->customer->last_name }}
+                </span>
+            </div>
+
+            <div>
+                <span class="label">เพศ</span>
+                <span class="value">{{ $project->customer->gender ?? '-' }}</span>
+            </div>
+
+            <div>
+                <span class="label">เบอร์โทร</span>
+                <span class="value">{{ $project->customer->phone ?? '-' }}</span>
+            </div>
+
+            <div>
+                <span class="label">อีเมล</span>
+                <span class="value">{{ $project->customer->email ?? '-' }}</span>
+            </div>
+
+            <div class="full">
+                <span class="label">ที่อยู่</span>
+                <span class="value">
+                    เลขที่ {{ $project->customer->house_number ?? '-' }}
+                    {{ $project->customer->village ? 'หมู่ '.$project->customer->village : '' }}
+                    {{ $project->customer->house_name ?? '' }}
+                    {{ $project->customer->alley ? 'ซอย '.$project->customer->alley : '' }}
+                    {{ $project->customer->road ? 'ถนน '.$project->customer->road : '' }} <br>
+                    ต.{{ $project->customer->tambon->name_th ?? '-' }}
+                    อ.{{ $project->customer->amphure->name_th ?? '-' }}
+                    จ.{{ $project->customer->province->name_th ?? '-' }}
+                    {{ $project->customer->tambon->zip_code ?? '-' }}
+                </span>
+            </div>
+        </div>
     </div>
 
     <div class="boxmaterial">
@@ -467,27 +579,143 @@
         </div>
         <div class="detail-grid" style="margin-top: 20px;;">
 
-                <div>
-                    <span class="label">อัตราค่าแรงต่อวัน</span>
-                    <span class="value">
-                        {{ $project->daily_labor_rate ?? '' }}
-                    </span>
-                </div>
+            <div>
+                <span class="label">วันเริ่มงาน</span>
+                <span class="value">
+                    {{ $project->installation_start_date 
+                        ? \Carbon\Carbon::parse($project->installation_start_date)
+                        ->locale('th') 
+                        ->addYears(543) 
+                        ->isoFormat('D MMMM YYYY') 
+                        : 'ยังไม่ได้กำหนดวันทำงาน' 
+                    }}
+                </span>
+            </div>
 
-                <div>
-                    <span class="label">จำนวนวันทำงานที่ประเมิน</span>
-                    <span class="value">{{ $project->estimated_work_days.' วัน' ?? '' }}</span>
-                </div>
+            <div>
+                <span class="label">วันจบงาน</span>
+                <span class="value">
+                    {{ $project->installation_end_date 
+                        ? \Carbon\Carbon::parse($project->installation_end_date)
+                        ->locale('th') 
+                        ->addYears(543) 
+                        ->isoFormat('D MMMM YYYY') 
+                        : 'ยังไม่ได้กำหนดวันทำงาน' 
+                    }}
+                </span>
+            </div>
+
+            <div>
+                <span class="label">อัตราค่าแรงต่อวัน</span>
+                <span class="value">
+                    {{ $project->daily_labor_rate ?? '' }}
+                </span>
+            </div>
+
+            <div>
+                <span class="label">จำนวนวันทำงานที่ประเมิน</span>
+                <span class="value">{{ $project->estimated_work_days.' วัน' ?? '' }}</span>
+            </div>
 
         </div>
+        <div style="border-bottom: 2px solid #eee;  margin-bottom: 20px; margin-top: 50px;" >
+            <p style="margin-bottom: 20px; margin-top: 20px;">รายชื่อช่างติดตั้ง</p>
+        </div>
+        <table>
+            <thead>
+                <tr align="center">
+                    <th>ลำดับ</th>
+                    <th>ชื่อ - สกุล</th>
+                    <th>เบอร์โทร</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($project->installers as $installer)
+                    <tr align="center">
+                        <td>{{ $loop->iteration }}</td>
+                        <td>
+                            {{ $installer->name ?? 'ไม่ระบุชื่อ' }} {{ $installer->last_name ?? '' }} 
+                            @if(!empty($installer->nickname))
+                                (ช่าง{{ $installer->nickname }})
+                            @endif
+                        </td>
+                        <td>
+                            @if(!empty($installer->phone_number))
+                                โทร {{ $installer->phone_number }}
+                            @else
+                                <span style="color: #999;">- ไม่มีข้อมูลติดต่อ -</span>
+                            @endif
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="3" align="center" style="padding: 20px;">
+                             ยังไม่มีการมอบหมายช่างติดตั้ง
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+
+        <div style="border-bottom: 2px solid #eee; margin-bottom: 20px; ">
+            <p style="margin-bottom: 20px; margin-top: 20px; margin-top: 50px;">ภาพก่อนติดตั้งและหลังติดตั้ง</p>
+        </div>
+        <table border="1" cellpadding="12" cellspacing="0" style="width: 100%; border-collapse: collapse; text-align: left; background: #fff;" >
+            <thead style="background-color: #f8f9fa;">
+                <tr align = "center">
+                    <th style="width: 5%;">ลำดับ</th>
+                    <th style="width: 20%;">ผลิตภัณฑ์</th>
+                    <th style="width: 15%;">ตำแหน่งติดตั้ง</th>
+                    <th style="width: 15%;">ภาพก่อนติดตั้ง</th>
+                    <th style="width: 25%;">ภาพหลังติดตั้ง</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($project->customerneed as $index => $need)
+                <tr align = "center">
+                    <td style="text-align: center;">{{ $index + 1 }}</td>
+                    <td>
+                        <strong>{{ $need->productset->productSetName->name ?? 'ไม่ระบุ' }}</strong><br>
+                        <small style="color: #666;">ขนาด: {{ $need->width }} x {{ $need->height }} ซม.</small>
+                    </td>
+
+                    <td>{{ $need->projectImage->imagetype->name ?? 'ไม่ระบุตำแหน่ง' }}</td>
+
+                    <td>
+                        @if($need->installation_image)
+                            <img src="data:image/jpeg;base64,{{ base64_encode($need->installation_image) }}" style="width: 100px; height: 100px; object-fit: cover;  border: 1px solid #ddd;">
+                        @else
+                            <span style="color: #999;">ไม่มีภาพ</span>
+                        @endif
+                    </td>
+
+                    <td>
+                        @if($need->imageafter)
+                            <img src="data:image/jpeg;base64,{{ base64_encode($need->imageafter) }}" style="width: 150px; height: 100px; object-fit: cover;  border: 2px solid #ddd;">
+                        @else
+                            <div style=" background-color:#dc3545; color: #fff ; font-size: 0.9em; font-weight: bold; border-radius:20px; width:fit-content; padding:5px;">
+                                ยังไม่ได้อัปโหลดภาพ
+                            </div>
+                        @endif
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 20px; color: #888;">ยังไม่ได้อัปโหลดภาพ</td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+
+
         <div style="border-bottom: 2px solid #eee; ">
-            <p style="margin-bottom: 20px; margin-top: 20px;">ความต้องการของลูกค้า</p>
+            <p style="margin-bottom: 20px; margin-top: 20px; margin-top: 50px;">ความต้องการของลูกค้า</p>
         </div>
 
         <div>
             @foreach ($project->customerneed as $customerneed)
             <div>
-            <p style="margin-bottom: 20px; margin-top: 20px;">ชุดที่ {{ $loop->iteration }}</p>
+                <p style="margin-bottom: 20px; margin-top: 20px;">ชุดที่ {{ $loop->iteration }}</p>
                 <div style="display: flex; flex-direction: row; flex-wrap: wrap;" class="imgpositionneed">
                     @if($customerneed->productset && $customerneed->productset->product_image)
                     <div style="flex: 1;">
@@ -505,39 +733,39 @@
 
                     @if($customerneed)
                     <div style="flex: 1;">
-                        
+
                         <img src="data:image/jpeg;base64,{{ base64_encode($customerneed->installation_image) }}" alt="Location Image">
                         <span style="font-size: 12px; color: gray; display: block; text-align: center; margin-bottom: 5px;">พื้นที่ว่างที่จะติด</span>
                     </div>
                     @endif
                 </div>
-                <div class=" box-control" style=" margin-top: 50px; border-bottom: 2px solid #eee; padding-bottom: 20px;">
+                <div class=" box-control" style=" margin-top: 50px; border-bottom: 2px solid #eee; padding-bottom: 20px; gap:100px;">
 
-                        <div>
-                            <span class="label">ชุดผลิตภัณฑ์</span>
-                            <span class="value">
-                                {{ $customerneed->productset->productSetName->name.'|'.'อลูมิเนียม'.$customerneed->productset->aluminumSurfaceFinish->name.'|'.'กระจก'.$customerneed->productset->glasscolouritem->name  ?? '' }}
-                            </span>
-                        </div>
+                    <div>
+                        <span class="label">ชุดผลิตภัณฑ์</span>
+                        <span class="value">
+                            {{ $customerneed->productset->productSetName->name.' ('.'อลูมิเนียม'.$customerneed->productset->aluminumSurfaceFinish->name.') '.'กระจก'.$customerneed->productset->glasscolouritem->name  ?? '' }}
+                        </span>
+                    </div>
 
-                        <div>
-                            <span class="label" >ตำแหน่งที่จะติดตั้ง</span>
-                            <span class="value">{{ $customerneed->projectImage->imagetype->name ?? 'ไม่มีข้อมูล' }}</span>
-                        </div>
+                    <div>
+                        <span class="label">ตำแหน่งที่จะติดตั้ง</span>
+                        <span class="value">{{ $customerneed->projectImage->imagetype->name ?? 'ไม่มีข้อมูล' }}</span>
+                    </div>
 
-                        <div>
-                            <span class="label" >ขนาดกว้าง*สูง (ซม.)</span>
-                            <span class="value">{{ $customerneed->	width ?? 'ไม่มีข้อมูล' }}*{{ $customerneed->height ?? 'ไม่มีข้อมูล' }}</span>
-                        </div>
+                    <div>
+                        <span class="label">ขนาดกว้าง*สูง (ซม.)</span>
+                        <span class="value">{{ $customerneed->	width ?? 'ไม่มีข้อมูล' }}*{{ $customerneed->height ?? 'ไม่มีข้อมูล' }}</span>
+                    </div>
 
 
-                        <div>
-                            <span class="label" >หมายเหตุหรือความต้องการเบื้องต้น (ถ้ามี)</span>
-                            <span class="value">{{ $customerneed->note_need ?? 'ไม่มีข้อมูล' }}</span>
-                        </div>
+                    <div>
+                        <span class="label">หมายเหตุหรือความต้องการเบื้องต้น (ถ้ามี)</span>
+                        <span class="value">{{ $customerneed->note_need ?? 'ไม่มีข้อมูล' }}</span>
+                    </div>
 
                 </div>
-                
+
             </div>
             @endforeach
         </div>
@@ -547,7 +775,7 @@
 
 
 
-               
+
     </div>
 
 
@@ -557,11 +785,34 @@
 
     @endif
 
-    
+
+
+
 
 
 
 </div>
+<script>
+    document.querySelector('input[name="installation_start_date"]').addEventListener('change', function() {
+        if (!this.value) {
+            document.getElementById('installation_end_date').value = '';
+            return;
+        }
+
+        const startDate = new Date(this.value);
+
+        const workDays = parseInt("{{ $project->estimated_work_days ?? 1 }}", 10);
+        const daysToadd = workDays > 0 ? workDays - 1 : 0;
+
+        startDate.setDate(startDate.getDate() + daysToadd);
+
+        const yyyy = startDate.getFullYear();
+        const mm = String(startDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(startDate.getDate()).padStart(2, '0');
+
+        document.getElementById('installation_end_date').value = `${yyyy}-${mm}-${dd}`;
+    });
+</script>
 
 
 

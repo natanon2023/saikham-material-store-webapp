@@ -283,6 +283,10 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
         Route::get('/productsetname/{id}/delete', [ProjectController::class, 'deleteproductsetname'])->name('deleteproductsetname');
         Route::get('/productsetname/{id}/restore', [ProjectController::class, 'restoreproductsetname'])->name('restoreproductsetname');
 
+        Route::get('/confirmworkcompletedpage/{id}', [ProjectController::class, 'confirmworkcompletedpage'])->name('confirmworkcompletedpage');
+        Route::post('projects/customerneed/{need_id}/upload-after-image', [ProjectController::class, 'uploadAfterImage'])->name('uploadafterimage');
+        Route::delete('projects/customerneed/{need_id}/delete-after-image', [ProjectController::class, 'deleteAfterImage'])->name('deleteafterimage');
+
 
 
 

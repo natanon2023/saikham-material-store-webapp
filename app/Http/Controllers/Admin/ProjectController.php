@@ -1184,10 +1184,15 @@ class ProjectController extends Controller
             'completed'
         ];
 
+        $statusopendatework = [
+            'ready_to_withdraw',
+            'materials_withdrawn'
+        ];
 
 
 
-        return view('admin.projects.alldetail.detailpage', compact('project', 'customerall', 'projectname', 'technician', 'statuspayment', 'satatusopen', 'statusmaterialplanningopen','satatuswaiting','satatusonline'));
+
+        return view('admin.projects.alldetail.detailpage', compact('project', 'customerall', 'projectname', 'technician', 'statuspayment', 'satatusopen', 'statusmaterialplanningopen','satatuswaiting','satatusonline','statusopendatework'));
     }
 
     public function addautersurver(Request $request)
@@ -1739,16 +1744,7 @@ class ProjectController extends Controller
         return redirect()->back()->with('error', 'ไม่พบข้อมูล');
     }
 
-    public function updatestatusinstalling($id)
-    {
-        $project = Project::find($id);
-
-        $project->update([
-            'status' => 'installing'
-        ]);
-
-        return redirect()->route('admin.projects.index', $project->id)->with('success', 'อัปเดตสถานะเป็น กำลังติดตั้ง');
-    }
+    
 
     public function updatestatuscompleted($id)
     {
@@ -2497,6 +2493,97 @@ class ProjectController extends Controller
 
         return redirect()->back()->with('success', 'ยกเลิกเรียบร้อยแล้ว');
     }
+
+
+    private function qerydataproject($id){
+        $project = Project::with([
+            'customer.province',
+            'customer.amphure',
+            'customer.tambon',
+            'projectname',
+            'customerneed',
+            'customerneed.productset.productSetName',
+            'customerneed.productset.productsetitem',
+            'projectexpenses',
+            'projectexpenses.type',
+            'customerneed.productset.productsetitem.material',
+            'customerneed.productset.productsetitem.material.aluminiumItem.aluminiumType',
+            'customerneed.productset.productsetitem.material.aluminiumItem.aluminumSurfaceFinish',
+            'customerneed.productset.productsetitem.material.aluminiumItem.aluminiumLengths.price',
+            'customerneed.productset.productsetitem.material.glassItem.glassType',
+            'customerneed.productset.productsetitem.material.glassItem.colourItem',
+            'customerneed.productset.productsetitem.material.glassItem.glassSize.price',
+            'customerneed.productset.productsetitem.material.accessoryItem.accessoryType',
+            'customerneed.productset.productsetitem.material.accessoryItem.aluminumSurfaceFinish',
+            'customerneed.productset.productsetitem.material.accessoryItem.unit',
+            'customerneed.productset.productsetitem.material.consumableItem.unit',
+            'customerneed.productset.productsetitem.material.consumableItem.consumabletype',
+            'customerneed.productset.productsetitem.material.toolItem.toolType',
+            'customerneed.productset.productsetitem.material.price',
+            'assignedSurveyor.profile',
+            'quotation'
+        ])->find($id);
+        return $project;
+    }
+
+
+
+
+    public function confirmworkcompletedpage($id){
+        
+        $project = $this->qerydataproject($id);
+
+        return view('admin.projects.installing.confirmworkcompletedpage',compact('project'));
+    }
+
+    public function uploadAfterImage(Request $request, $need_id)
+    {
+
+        $need = CustomerNeed::find($need_id);
+
+        if ($request->hasFile('imageafter') && $request->file('imageafter')->isValid()) {
+            $file = $request->file('imageafter');
+            $imageData = file_get_contents($file->getRealPath());
+
+            $need->update([
+                'imageafter' => $imageData
+            ]);
+
+            return back()->with('success', 'อัปโหลดภาพหลังติดตั้งเรียบร้อยแล้ว');
+        }
+
+        return back()->with('error', 'เกิดข้อผิดพลาดในการอัปโหลดไฟล์');
+    }
+
+    public function deleteAfterImage($need_id)
+    {
+        $need = CustomerNeed::find($need_id);
+        
+        $need->update([
+            'imageafter' => null
+        ]);
+
+        return back()->with('success', 'ลบภาพหลังติดตั้งเรียบร้อยแล้ว');
+    }
+
+
+    
+
+
+
+
+
+    public function updatestatusinstalling($id)
+    {
+        $project = Project::find($id);
+
+        $project->update([
+            'status' => 'installing'
+        ]);
+
+        return redirect()->route('admin.projects.index', $project->id)->with('success', 'อัปเดตสถานะเป็น กำลังติดตั้ง');
+    }
+
 
     
 
