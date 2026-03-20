@@ -52,6 +52,7 @@ use App\Models\ProjectPurchaseItem;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\QuotationMaterial;
+use App\Models\WithdrawalItemLog;
 use GuzzleHttp\Promise\Create;
 use Illuminate\Support\Facades\Validator;
 
@@ -1700,12 +1701,14 @@ class ProjectController extends Controller
     {
         $selecteditems = $request->input('selected_items');
         $withdrawnby = $request->input('withdrawn_by');
+        $customQtys = $request->input('custom_qty'); 
 
         if (empty($selecteditems) or empty($withdrawnby)) {
             return redirect()->back()->with('error', 'กรุณาเลือกวัสดุและช่างผู้เบิก');
         }
 
         $project = $this->getCalculatedProject($id);
+        
         $totalReadyToWithdraw = 0;
         foreach ($project->customerneed as $need) {
             foreach ($need->productset->productsetitem as $item) {
@@ -1724,7 +1727,7 @@ class ProjectController extends Controller
         foreach ($project->customerneed as $need) {
             foreach ($need->productset->productsetitem as $item) {
                 if (in_array($item->id, $selecteditems)) {
-                    $qtytowithdraw = $item->calculated_qty;
+                    $qtytowithdraw = $customQtys[$item->id] ?? $item->calculated_qty;
 
                     if ($qtytowithdraw > 0 and !empty($item->calculated_price_id)) {
                         $price = Price::find($item->calculated_price_id);
@@ -1740,7 +1743,7 @@ class ProjectController extends Controller
                                     'price_id'    => $price->id,
                                     'user_id'     => Auth::id(),
                                     'direction'   => 'out',
-                                    'quantitylog'  => $actualdeduct,
+                                    'quantitylog' => $actualdeduct,
                                 ]);
 
                                 WithdrawalItem::create([
@@ -1756,10 +1759,35 @@ class ProjectController extends Controller
             }
         }
 
-       
+        $withdrawnSummary = WithdrawalItem::whereHas('withdrawal', function($q) use ($id) {
+                $q->where('project_id', $id);
+            })
+            ->selectRaw('material_id, SUM(quantity) as total_out')
+            ->groupBy('material_id')
+            ->pluck('total_out', 'material_id');
 
-        return redirect()->route('admin.projects.withdrawpage', $project->id)->with('success', 'บันทึกการเบิกบางส่วนเรียบร้อย');
+        $itemsCompletedCount = 0;
+        foreach ($project->customerneed as $need) {
+            foreach ($need->productset->productsetitem as $item) {
+                $totalOut = $withdrawnSummary[$item->material_id] ?? 0;
+                if ($totalOut >= $item->calculated_qty) {
+                    $itemsCompletedCount++;
+                }
+            }
+        }
+
+        if ($itemsCompletedCount >= $totalReadyToWithdraw) {
+            $project->update([
+                'status' => 'materials_withdrawn'
+            ]);
+            return redirect()->route('admin.projects.index', $project->id)->with('success', 'เบิกวัสดุครบแล้ว อัปเดตสถานะสำเร็จ');
+        } else {
+            return redirect()->route('admin.projects.withdrawpage', $project->id)->with('success', 'บันทึกการเบิกบางส่วนเรียบร้อย');
+        }
     }
+
+
+
 
 
 
@@ -2615,49 +2643,379 @@ class ProjectController extends Controller
 
 
     public function cancelWithdrawal($id)
-{
-    $project = Project::find($id);
+    {
+        $project = Project::find($id);
+        
+        if (!$project) {
+            return redirect()->back()->with('error', 'ไม่พบงานนี้');
+        }
+
+        $withdrawals = Withdrawal::with('items')->where('project_id', $project->id)->get();
+
+        if ($withdrawals->isEmpty()) {
+            return redirect()->back()->with('error', 'ไม่พบประวัติการเบิกวัสดุสำหรับงานนี้');
+        }
+
+        foreach ($withdrawals as $withdrawal) {
+            foreach ($withdrawal->items as $item) {
+                $price = Price::where('material_id', $item->material_id)
+                            ->where('lot', $item->lot)
+                            ->first();
+
+                if ($price) {
+                    $price->increment('quantity', $item->quantity);
+
+                    MaterialLog::create([
+                        'material_id' => $item->material_id,
+                        'price_id'    => $price->id,
+                        'user_id'     => Auth::id(),
+                        'direction'   => 'in',
+                        'quantitylog' => $item->quantity
+                    ]);
+                }
+            }
+            
+            $withdrawal->items()->delete(); 
+            $withdrawal->delete(); 
+        }
+
+        $project->update([
+            'status' => 'ready_to_withdraw'
+        ]);
+
+        return redirect()->back()->with('success', 'ยกเลิกการเบิกวัสดุ คืนสต็อก และเปลี่ยนสถานะเป็นพร้อมเบิกเรียบร้อยแล้ว');
+    }
+
+    public function withdrawtoolspage($id)
+    {
+        $project = Project::find($id);
+        $users = User::all();
+
+        $toolsstock = Price::whereHas('material', function($q){
+            $q->where('material_type', 'เครื่องมือช่าง');
+        })->where('quantity', '>', 0)
+        ->with(['material.toolItem.toolType', ])->get();
+
+        return view('admin.projects.withdraw.withdrawtoolspage',compact('project','users','toolsstock'));
+    }
+
+    public function withdrawtoolsstore(Request $request,$id)
+    {
+        $selecteditems = $request->input('selected_items');
+        $customqtys = $request->input('custom_qty');
+        $withdrawnby = $request->input('withdrawn_by');
+
+        if (empty($selecteditems) or empty($withdrawnby)) {
+            return redirect()->back()->with('error', 'กรุณาเลือกเครื่องมือและช่างผู้เบิก');
+        }
+
+        $project = Project::find($id);
+
+        $withdrawal = Withdrawal::create([
+            'project_id'   => $project->id,
+            'withdrawn_by' => $withdrawnby,
+            'recorded_by'  => Auth::id(),
+        ]);
+
+        foreach($selecteditems as $price_id){
+            $price = Price::find($price_id);
+
+            if($price){
+                $qtytowithdraw = $customqtys[$price_id] ?? 1;
+                
+                if($qtytowithdraw > 0 && $price->quantity >= $qtytowithdraw){
+                    $price->decrement('quantity', $qtytowithdraw);
+
+                    MaterialLog::create([
+                        'material_id' => $price->material_id,
+                        'price_id'    => $price->id,
+                        'user_id'     => Auth::id(),
+                        'direction'   => 'out',
+                        'quantitylog' => $qtytowithdraw, 
+                        'project_id'  => $project->id,
+                    ]);
+
+                    WithdrawalItem::create([
+                        'withdrawal_id' => $withdrawal->id,
+                        'material_id'   => $price->material_id,
+                        'lot'           => $price->lot,
+                        'quantity'      => $qtytowithdraw,
+                    ]);
+
+                }
+
+            }
+        }
+
+        return redirect()->route('admin.projects.withdrawdetails', $project->id)->with('success', 'เบิกเครื่องมือช่างสำเร็จ');
+    }
+
+
+    public function managewithdrawals()
+    {
+        $withdrawals = Withdrawal::whereHas('project')->with([
+            'project.customer',
+            'project.projectname',
+        ])->latest()->get();
+
+
+        $groupwithdrawals = $withdrawals->groupBy('project_id');
+
+        $statusColors = [
+            'pending_survey' => ['#D4AF37', 'นัดสำรวจ'],
+            'waiting_survey' => ['#FF8C00', 'รอวันสำรวจ'],
+            'surveying' => ['#1E90FF', 'กำลังสำรวจ'],
+            'pending_quotation' => ['#E91E63', 'รอเสนอราคา'],
+            'waiting_approval' => ['#9C27B0', 'รออนุมัติ'],
+            'approved' => ['#78d37b', 'อนุมัติและชำระเงินแล้ว'],
+            'material_planning' => ['#00CED1', 'วางแผนวัสดุ'],
+            'waiting_purchase' => ['#FF4500', 'รอสั่งซื้อ'],
+            'ready_to_withdraw' => ['#008080', 'พร้อมเบิก'],
+            'materials_withdrawn' => ['#8B4513', 'เบิกวัสดุแล้ว'],
+            'installing' => ['#4CAF50', 'กำลังติดตั้ง'],
+            'completed' => ['#708090', 'เสร็จสิ้น'],
+            'cancelled' => ['#DC143C', 'ยกเลิก']
+        ];
+
+
+        return view('admin.projects.withdraw.managewithdrawals', compact('groupwithdrawals', 'statusColors'));
+    }
+
+    public function withdrawdetails($id)
+    {
+        $project = Project::with(['projectname', 'customer'])->find($id);
     
-    if (!$project) {
-        return redirect()->back()->with('error', 'ไม่พบงานนี้');
+        if (!$project) {
+            return redirect()->back()->with('error', 'ไม่พบข้อมูลงานนี้');
+        }
+    
+        $withdrawals = Withdrawal::with([
+            'withdrawnBy',
+            'items.material.aluminiumItem.aluminiumType',
+            'items.material.aluminiumItem.aluminumSurfaceFinish',
+            'items.material.aluminiumItem.aluminiumLengths', 
+            'items.material.glassItem.glassType',
+            'items.material.glassItem.colourItem',
+            'items.material.glassItem.glassSize',
+            'items.material.accessoryItem.accessoryType',
+            'items.material.consumableItem.consumabletype',
+            'items.material.toolItem.toolType',
+        ])->where('project_id', $project->id)->latest()->get();
+
+        $returnLogs = MaterialLog::with([
+            'material.aluminiumItem.aluminiumType',
+            'material.aluminiumItem.aluminumSurfaceFinish',
+            'material.glassItem.glassType',
+            'material.glassItem.colourItem',
+            'material.accessoryItem.accessoryType',
+            'material.consumableItem.consumabletype',
+            'user'
+        ])->where('project_id', $id)->where('direction', 'in')->latest()->get();
+    
+        return view('admin.projects.withdraw.withdrawdetails', compact('project', 'withdrawals','returnLogs'));
     }
 
-    $withdrawals = Withdrawal::with('items')->where('project_id', $project->id)->get();
 
-    if ($withdrawals->isEmpty()) {
-        return redirect()->back()->with('error', 'ไม่พบประวัติการเบิกวัสดุสำหรับงานนี้');
+    public function returnMaterialsPage($id)
+    {
+        $project = Project::with(['projectname', 'customer'])->find($id);
+        $allItems = WithdrawalItem::whereHas('withdrawal', function ($q) use ($id) {
+            $q->where('project_id', $id);
+        })->with([
+            'material.aluminiumItem.aluminiumType',
+            'material.aluminiumItem.aluminumSurfaceFinish',
+            'material.glassItem.glassType',
+            'material.glassItem.colourItem',
+            'material.accessoryItem.accessoryType',
+            'material.consumableItem.consumabletype',
+        ])->get();
+    
+        $aluminiumItems  = $allItems->filter(fn($i) => $i->material?->material_type == 'อลูมิเนียม');
+        $glassItems      = $allItems->filter(fn($i) => $i->material?->material_type == 'กระจก');
+        $accessoryItems  = $allItems->filter(fn($i) => $i->material?->material_type == 'อุปกรณ์เสริม');
+        $consumableItems = $allItems->filter(fn($i) => $i->material?->material_type == 'วัสดุสิ้นเปลือง');
+    
+        return view('admin.projects.withdraw.returnmaterials', compact(
+            'project',
+            'aluminiumItems',
+            'glassItems',
+            'accessoryItems',
+            'consumableItems'
+        ));
     }
 
-    foreach ($withdrawals as $withdrawal) {
-        foreach ($withdrawal->items as $item) {
+    public function storeReturnMaterials(Request $request, $id)
+    {
+        $project = Project::find($id);
+
+        $groups = $request->input('return_qty', []);
+
+        foreach ($groups as $type => $items) {
+            foreach ($items as $withdrawalItemId => $qty) {
+                $qty = (int) $qty;
+
+                if ($qty <= 0) {
+                    continue;
+                }
+
+                $materialId = $request->input("return_material_id.{$type}.{$withdrawalItemId}");
+                $lot        = $request->input("return_lot.{$type}.{$withdrawalItemId}");
+
+                $withdrawalItem = WithdrawalItem::find($withdrawalItemId);
+
+                if (!$withdrawalItem) {
+                    continue;
+                }
+
+                $qty = min($qty, $withdrawalItem->quantity);
+
+                $withdrawalItem->quantity -= $qty;
+                $withdrawalItem->save();
+
+                $price = Price::where('material_id', $materialId)
+                    ->where('lot', $lot)
+                    ->first();
+
+                if ($price) {
+                    $price->increment('quantity', $qty);
+
+                    MaterialLog::create([
+                        'material_id' => $materialId,
+                        'price_id'    => $price->id,
+                        'user_id'     => Auth::id(),
+                        'direction'   => 'in',
+                        'project_id'  => $project->id,
+                        'quantitylog' => $qty,
+                    ]);
+                }
+            }
+        }
+
+        return redirect()
+            ->route('admin.projects.withdrawdetails', $project->id)
+            ->with('success', 'คืนวัสดุเข้าสต็อกเรียบร้อยแล้ว');
+    }
+ 
+    public function returnTool($withdrawalItemId)
+    {
+        $item = WithdrawalItem::find($withdrawalItemId);
+
+        $projectId = $item->withdrawal->project_id;
+    
+        if (!$item) {
+            return redirect()->back()->with('error', 'ไม่พบข้อมูลรายการนี้');
+        }
+    
+        $price = Price::where('material_id', $item->material_id)
+            ->where('lot', $item->lot)
+            ->first();
+    
+        if ($price) {
+            $price->increment('quantity', $item->quantity);
+    
+            MaterialLog::create([
+                'material_id' => $item->material_id,
+                'price_id'    => $price->id,
+                'user_id'     => Auth::id(),
+                'direction'   => 'in',
+                'quantitylog' => $item->quantity,
+                'project_id'  => $projectId
+
+            ]);
+        }
+    
+    
+        $item->delete();
+    
+        return redirect()->route('admin.projects.withdrawdetails', $projectId)->with('success', 'คืนเครื่องมือช่างเข้าคลังเรียบร้อยแล้ว');
+    }
+
+    
+    public function editWithdrawalItemPage($id)
+    {
+        $item = WithdrawalItem::with([
+            'withdrawal.withdrawnBy',
+            'material.aluminiumItem.aluminiumType',
+            'material.aluminiumItem.aluminumSurfaceFinish',
+            'material.glassItem.glassType',
+            'material.glassItem.colourItem',
+            'material.accessoryItem.accessoryType',
+            'material.consumableItem.consumabletype',
+            'material.toolItem.toolType',
+        ])->find($id);
+
+        $mat    = $item->material;
+        $detail = '-';
+        if ($mat) {
+            if ($mat->aluminiumItem) {
+                $detail = ($mat->aluminiumItem->aluminiumType->name ?? '-')
+                        . ' สี ' . ($mat->aluminiumItem->aluminumSurfaceFinish->name ?? '-');
+            } elseif ($mat->glassItem) {
+                $detail = 'กระจก ' . ($mat->glassItem->glassType->name ?? '-')
+                        . ' สี ' . ($mat->glassItem->colourItem->name ?? '-');
+            } elseif ($mat->accessoryItem) {
+                $detail = 'อุปกรณ์เสริม: ' . ($mat->accessoryItem->accessoryType->name ?? '-');
+            } elseif ($mat->consumableItem) {
+                $detail = 'วัสดุสิ้นเปลือง: ' . ($mat->consumableItem->consumabletype->name ?? '-');
+            } elseif ($mat->toolItem) {
+                $detail = 'เครื่องมือ: ' . ($mat->toolItem->toolType->name ?? '-');
+            }
+        }
+
+        $logs = WithdrawalItemLog::with('editor')->where('withdrawal_item_id', $id)->latest()->get();
+
+        return view('admin.projects.withdraw.editwithdrawalitem', compact('item', 'detail', 'logs'));
+    }
+
+    public function editWithdrawalItem(Request $request, $id)
+    {
+        
+        $item   = WithdrawalItem::find($id);
+        $projectId = $item->withdrawal->project_id;
+        $oldQty = $item->quantity;
+        $newQty = (int) $request->quantity;
+        $diff   = $newQty - $oldQty;
+
+        if ($diff != 0) {
             $price = Price::where('material_id', $item->material_id)
-                        ->where('lot', $item->lot)
-                        ->first();
+                ->where('lot', $item->lot)
+                ->first();
 
             if ($price) {
-                $price->increment('quantity', $item->quantity);
+                $price->decrement('quantity', $diff); 
 
                 MaterialLog::create([
                     'material_id' => $item->material_id,
                     'price_id'    => $price->id,
                     'user_id'     => Auth::id(),
-                    'direction'   => 'in',
-                    'quantitylog' => $item->quantity
+                    'direction'   => $diff > 0 ? 'out' : 'in',
+                    'quantitylog' => abs($diff),
+                    'project_id'  => $projectId,
                 ]);
             }
         }
+
+        WithdrawalItemLog::create([
+            'withdrawal_item_id' => $item->id,
+            'old_quantity'       => $oldQty,
+            'new_quantity'       => $newQty,
+            'reason'             => $request->reason,
+            'edited_by'          => Auth::id(),
+        ]);
+
+        $item->update(['quantity' => $newQty]);
+
         
-        $withdrawal->items()->delete(); 
-        $withdrawal->delete(); 
+        return redirect()->back()->with('success', 'แก้ไขจำนวนเรียบร้อยแล้ว');
     }
 
-    $project->update([
-        'status' => 'ready_to_withdraw'
-    ]);
 
-    return redirect()->back()->with('success', 'ยกเลิกการเบิกวัสดุ คืนสต็อก และเปลี่ยนสถานะเป็นพร้อมเบิกเรียบร้อยแล้ว');
-}
 
+
+
+
+
+    
 
     
 

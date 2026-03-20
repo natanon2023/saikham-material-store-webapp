@@ -28,6 +28,7 @@
                 <li><a href="{{ route('admin.projects.adminfulleventcalendarpage') }}" class="nav-link">ปฎิทินงานทั้งหมด</a></li>
                 <li><a href="{{ route('admin.projects.productsetdetail') }}" class="nav-link">ผลิตภัณฑ์</a></li>
                 <li><a href="{{ route('admin.projects.manageproblemsindex') }}" class="nav-link">จัดการปัญหา</a></li>
+                <li><a href="{{ route('admin.projects.managewithdrawals') }}" class="nav-link">ประวัติการเบิกและคืนวัสดุ</a></li>
             </ul>
         </li>
 

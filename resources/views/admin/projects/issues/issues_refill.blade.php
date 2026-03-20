@@ -17,7 +17,7 @@
     @include('components.successanderror')
 
     <div class="boxmaterial" style="margin-bottom: 20px;">
-        <h4 style="margin-bottom: 15px;">ระบุจำนวนที่ต้องการเติมลงในตารางงานเดิม</h4>
+        <h4 style="margin-bottom: 15px;">ระบุจำนวนที่ต้องการเติม</h4>
         <form action="{{ route('admin.projects.issues.refill.store', $issue->id) }}" method="POST">
             @csrf
             

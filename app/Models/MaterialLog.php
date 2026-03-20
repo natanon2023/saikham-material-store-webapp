@@ -21,7 +21,8 @@ class MaterialLog extends Model
         'quantity',
         'lot',
         'price_id',
-        'quantitylog'
+        'quantitylog',
+        'project_id'
     ];
 
     protected $casts = [
@@ -43,6 +44,11 @@ class MaterialLog extends Model
     public function price()
     {
         return $this->belongsTo(Price::class, 'price_id');
+    }
+
+    public function project()
+    {
+        return $this->belongsTo(Project::class, 'project_id');
     }
 
     

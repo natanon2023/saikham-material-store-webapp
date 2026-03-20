@@ -214,6 +214,8 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
         Route::post('{id}/readytowithdraw', [ProjectController::class, 'updatestatusreadytowithdraw']) ->name('updatestatusreadytowithdraw');
 
         Route::get('{id}/withdraw', [ProjectController::class, 'withdrawpage'])->name('withdrawpage');
+        Route::get('projects/{id}/withdrawtools', [ProjectController::class, 'withdrawtoolspage'])->name('withdrawtoolspage');
+        Route::post('projects/{id}/withdrawtools/store', [ProjectController::class, 'withdrawtoolsstore'])->name('withdrawtoolsstore');
         
         Route::get('{id}/installingpage', [ProjectController::class, 'installingpage'])->name('installingpage');
         Route::post('/project/{id}/assign-installer', [ProjectController::class, 'assignInstalleruser'])->name('assignInstalleruser');
@@ -294,6 +296,13 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
 
         Route::post('projects/{id}/withdraw/form', [ProjectController::class, 'withdrawform'])->name('withdrawform');
         Route::post('projects/{id}/withdraw/store', [ProjectController::class, 'withdrawstore'])->name('withdrawstore');
+        Route::get('/managewithdrawals', [ProjectController::class, 'managewithdrawals'])->name('managewithdrawals');
+        Route::get('/{id}/withdrawdetails', [ProjectController::class, 'withdrawdetails'])->name('withdrawdetails');
+        Route::get('/projects/{id}/return-materials',[ProjectController::class, 'returnMaterialsPage'])->name('return_materials_page');
+        Route::post('/projects/{id}/return-materials',[ProjectController::class, 'storeReturnMaterials'])->name('store_return_materials');
+        Route::post('/withdrawal-item/{id}/return-tool',[ProjectController::class, 'returnTool'])->name('return_tool');
+        Route::get('/withdrawal-item/{id}/edit',[ProjectController::class, 'editWithdrawalItemPage'])->name('edit_withdrawal_item_page');
+        Route::put('/withdrawal-item/{id}/edit',[ProjectController::class, 'editWithdrawalItem'])->name('edit_withdrawal_item');
 
 
 
