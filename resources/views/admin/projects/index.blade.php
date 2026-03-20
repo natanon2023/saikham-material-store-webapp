@@ -143,12 +143,14 @@
                     @endif
                     <a href="{{ route('admin.projects.installingpage', $project->id) }}" class="btn btn-secondary btn-full-text">กำหนดวันทำงาน</a>
                     @elseif($project->status == 'materials_withdrawn')
+                        @if (\Carbon\Carbon::parse($project->installation_start_date)->addDay()->isFuture())
                         <form action="{{ route('admin.projects.cancelWithdrawal', $project->id) }}" method="POST" style="margin: 0;" onsubmit="return confirm('ยืนยันการยกเลิกการเบิก? ระบบจะคืนจำนวนวัสดุทั้งหมดกลับเข้าคลังและเปลี่ยนสถานะเป็นพร้อมเบิก');">
                             @csrf
-                            <button type="submit" class="btn btn-warning btn-full-text" style="height: max-content;">
+                            <button type="submit" class="btn btn-delecte btn-full-text" style="height: max-content;">
                                 ยกเลิกการเบิกวัสดุ
                             </button>
                         </form>
+                        @endif
                         @if(!empty($project->installation_start_date) && now()->format('Y-m-d') >= $project->installation_start_date)
                         <form action="{{ route('admin.projects.updatestatusinstalling', $project->id) }}" method="POST" style="margin: 0;">
                             @csrf
@@ -172,8 +174,19 @@
                     @endif
 
                     @elseif($project->status == 'installing')
-                        <a href="{{ route('admin.projects.choosetypeissues', $project->id) }}" class="btn btn-danger btn-full-text">แจ้งปัญหา</a>
+                    <div style="display: flex; flex-direction:row; gap: 5px;">
+                        <a href="{{ route('admin.projects.choosetypeissues', $project->id) }}" class="btn  btn-edit btn-full-text">แจ้งปัญหา</a>
                         <a href="{{ route('admin.projects.confirmworkcompletedpage', $project->id) }}" class="btn btn-secondary btn-full-text">ยืนยันการทำงานเสร็จสิ้น</a>
+                        @if (\Carbon\Carbon::parse($project->installation_start_date)->addDay()->isFuture())
+                         <form action="{{ route('admin.projects.cancellinstalling', $project->id) }}" method="POST" style="margin: 0;">
+                            @csrf
+                            <button type="submit" class="btn btn-delecte btn-full-text" style="height: max-content;">
+                                ยกเลิกการติกตั้ง
+                            </button>
+                        </form>
+                        @endif
+                    </div>
+                        
                     @elseif($project->status == 'completed')
                         <form action="{{ route('admin.projects.updatestatusinstalling', $project->id) }}" method="POST" style="margin: 0;">
                         @csrf
@@ -184,7 +197,7 @@
                         <span style="color: #dc3545; font-weight: bold;">กรุณากู้คืนงานก่อนทำรายการต่อ</span>
                     @endif
                 </div>
-                <div>
+                <div style="display: flex; flex-direction: column; gap:5px; justify-content: end;">
                     <a href="{{ route('admin.projects.alldetail', $project->id) }}" class="btn btn-primary btn-full-text" title="ดูรายละเอียดเต็ม" style="{{ $project->trashed() ? 'pointer-events: none; opacity: 0.5;' : '' }}">
                         ดูรายละเอียดทั้งหมด
                     </a>

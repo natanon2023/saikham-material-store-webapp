@@ -606,6 +606,7 @@ class MaterialController extends Controller
             'user_id'     => Auth::id(),
             'direction'   => 'in',
             'quantitylog'   => $qty,
+            'source' => 'restock'
         ]);
 
         return redirect()->back()->with('success', 'เพิ่มจำนวนสต็อกสำเร็จ');

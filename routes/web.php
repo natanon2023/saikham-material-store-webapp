@@ -306,6 +306,8 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
         Route::get('/projects/{id}/return-history',[ProjectController::class, 'returnHistory'])->name('return_history');
         Route::get('/projects/{id}/edit-history',[ProjectController::class, 'editHistory'])->name('edit_history');
 
+        Route::post('/cancellinstalling/{id}',[ProjectController::class, 'cancellinstalling'])->name('cancellinstalling');
+
 
 
 

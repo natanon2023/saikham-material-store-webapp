@@ -3097,6 +3097,20 @@ class ProjectController extends Controller
     }
 
 
+    public function cancellinstalling($id)
+    {
+        $project = Project::find($id);
+
+        $project->update([
+            'status' => 'materials_withdrawn' 
+        ]);
+
+
+        return redirect()->route('admin.projects.index',$project->id)->with('success','ยกเลิกสถานะสำเร็จ');
+
+    }  
+
+
 
 
 
