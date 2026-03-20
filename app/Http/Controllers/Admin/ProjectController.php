@@ -511,10 +511,14 @@ class ProjectController extends Controller
             'projectname',
             'projectimage.imagetype',
             'customerneed.creator',
-            'customerneed.productset.productSetName',
+            'customerneed.productset.productSetName','installers','customerneed.productset.productsetitem.material',
         ])->find($id);
 
-        return view('admin.projects.survey.surveying', compact('project'));
+       
+
+        $technician = User::where('role', 'technician')->get();
+
+        return view('admin.projects.survey.surveying', compact('project','technician'));
     }
 
     public function formcustomerneed($id)
@@ -1127,6 +1131,7 @@ class ProjectController extends Controller
 
         ])->find($id);
 
+
         $projectname = ProjectName::all();
         $customerall = Customer::all();
         $technician = User::where('role', 'technician')->get();
@@ -1243,6 +1248,9 @@ class ProjectController extends Controller
     {
         $project = $this->getCalculatedProject($request->id);
 
+        $installerCount = $project->installers->count();
+        $installerCount = max($installerCount, 1);
+
         $sumProductTotal = 0;
         foreach ($project->customerneed as $need) {
             $sumProductTotal += ($need->quantity * $need->calculated_total);
@@ -1253,7 +1261,10 @@ class ProjectController extends Controller
             $totalExpenses += $expense->amount;
         }
 
-        $totalLabor = $project->labor_cost_surveying + ($project->estimated_work_days * $project->daily_labor_rate);
+        $laborSurveying      = $project->labor_cost_surveying; 
+        $laborInstallPerDay  = $project->daily_labor_rate * $installerCount; 
+        $laborInstallTotal   = $project->estimated_work_days * $laborInstallPerDay;
+        $totalLabor          = $laborSurveying + $laborInstallTotal;
 
         $sumtotal = $sumProductTotal + $totalExpenses + $totalLabor;
         $sevic = $sumtotal * 0.20;
@@ -1276,7 +1287,7 @@ class ProjectController extends Controller
                 'quotation_id' => $quotation->id,
                 'item_name'    => $need->productset->productSetName->name,
                 'description'  => "ขนาด " . $need->width . " x " . $need->height . " ซม.",
-                'qty'          => $need->quantity,
+                'quantity'          => $need->quantity,
                 'unit_price'   => $need->calculated_total,
                 'total_price'  => $need->quantity * $need->calculated_total,
                 'item_type'    => 'product'
@@ -1367,7 +1378,8 @@ class ProjectController extends Controller
             'customerneed.productset.productsetitem.material.toolItem.toolType',
             'customerneed.productset.productsetitem.material.price',
             'assignedSurveyor.profile',
-            'quotation'
+            'quotation',
+            'installers',
         ])->find($id);
 
         foreach ($project->customerneed as $need) {

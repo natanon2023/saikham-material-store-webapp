@@ -168,19 +168,27 @@ $quotation = \App\Models\Quotation::where('project_id', $project->id)->latest()-
         </table>
 
         <h3 style="margin-top: 15px; color: black;">ค่าแรงช่าง</h3>
+        @php
+            $installerCount = $project->installers->count();
+            $installerCount = max($installerCount, 1);
+            $totalLabor = $project->labor_cost_surveying
+                        + ($project->estimated_work_days * $project->daily_labor_rate * $installerCount);
+        @endphp
         <table width="100%" border="1" cellspacing="0" cellpadding="5" style="border-collapse: collapse;">
             <tr align="center" style="background-color: #f2f2f2 !important;">
                 <td>ลำดับ</td>
                 <td>รายการ</td>
                 <td>จำนวนวันทำงาน</td>
-                <td>อัตราค่าแรงต่อวัน</td>
-                <td>ค่าแรงต่อวันรวม</td>
+                <td>อัตราค่าแรงต่อวัน/คน</td>
+                <td>จำนวนช่าง</td>
+                <td>รวมค่าแรง</td>
             </tr>
             <tr>
                 <td align="center">1</td>
                 <td>วันออกสำรวจหน้างาน</td>
                 <td align="center">1</td>
                 <td align="center">{{ number_format($project->labor_cost_surveying, 2) }}</td>
+                <td align="center">1</td>
                 <td align="right">{{ number_format($project->labor_cost_surveying, 2) }}</td>
             </tr>
             <tr>
@@ -188,13 +196,11 @@ $quotation = \App\Models\Quotation::where('project_id', $project->id)->latest()-
                 <td>วันติดตั้ง</td>
                 <td align="center">{{ $project->estimated_work_days }}</td>
                 <td align="center">{{ number_format($project->daily_labor_rate, 2) }}</td>
-                <td align="right">{{ number_format($project->estimated_work_days * $project->daily_labor_rate, 2) }}</td>
+                <td align="center">{{ $installerCount }} คน</td>
+                <td align="right">{{ number_format($project->estimated_work_days * $project->daily_labor_rate * $installerCount, 2) }}</td>
             </tr>
-            @php
-            $totalLabor = $project->labor_cost_surveying + ($project->estimated_work_days * $project->daily_labor_rate);
-            @endphp
             <tr style="background-color: #f9f9f9 !important;">
-                <td colspan="4" align="right"><strong>รวม</strong></td>
+                <td colspan="5" align="right"><strong>รวม</strong></td>
                 <td align="right"><strong>{{ number_format($totalLabor, 2) }} บาท</strong></td>
             </tr>
         </table>

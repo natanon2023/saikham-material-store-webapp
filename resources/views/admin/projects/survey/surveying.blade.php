@@ -51,6 +51,61 @@
             </div>
 
         </form>
+        <div class="boxmaterial" style="margin-top: 20px; margin-bottom: 10px;">
+            <h3>เลือกช่างติดตั้ง</h3>
+            <form action="{{ route('admin.projects.assignInstalleruser', $project->id) }}" method="POST">
+                @csrf
+                <div class="box-control">
+                    <div class="form-group">
+                        <select name="user_id" class="form-input" required>
+                            <option value="">เลือกช่าง</option>
+                            @foreach ($technician as $installer)
+                            <option value="{{ $installer->id }}">
+                                {{ 'ช่าง '.$installer->name.' '.$installer->last_name }}
+                            </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <button type="submit" class="btn btn-secondary">บันทึก</button>
+                    </div>
+                </div>
+            </form>
+
+        </div>
+
+
+        <div class="boxmaterial" style="margin-bottom: 20px;">
+            <div style="margin-bottom: 20px; display: flex; justify-content: space-between;">
+                รายชื่อช่างติดตั้ง
+            </div>
+            <table>
+                <tr align="center">
+                    <th>ลำดับ</th>
+                    <th>ชื่อ - สกุล</th>
+                    <th>จัดการ</th>
+                </tr>
+                @foreach ($project->installers as $installer)
+                <tr>
+                    <td align="center">{{ $loop->iteration }}</td>
+                    <td align="center">ช่าง {{ $installer->name }} {{ $installer->last_name }}</td>
+                    <td align="center">
+                        <form action="{{ route('admin.projects.removeinstaller', $installer->pivot->id) }}" method="POST">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn-icon btn-delete" title="ลบ" onclick="return confirm('ลบเฉพาะช่างคนนี้ใช่หรือไม่?')">
+                                <i class="fas fa-trash" ></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                @endforeach
+
+            </table>
+            
+        </div>
+
+        
         <div class="boxmaterial" style="display: flex; justify-content: space-between;">
             รูปภาพหน้างาน
             <a href="{{ route('admin.projects.formprojectimage',$project->id) }}" class="btn btn-secondary">เพิ่มรูปภาพงาน</a>
@@ -147,18 +202,21 @@
                 @endforeach
             </table>
             @if($project->customerneed->count() > 0)
-            @if ($project->status == 'surveying')
-            <div style="margin-top: 20px; text-align: right;">
-                <form action="{{ route('admin.projects.updatestatuspendingquotation') }}" method="post">
-                    @csrf
-                    <input type="hidden" name="id" value="{{ $project->id }}">
-                    <button type="submit" class="btn btn-secondary">บันทึกความต้องการ</button>
-                </form>
-            </div>
-            @endif
+                @if ($project->status == 'surveying')
+                <div style="margin-top: 20px; text-align: right;">
+                    <form action="{{ route('admin.projects.updatestatuspendingquotation') }}" method="post">
+                        @csrf
+                        <input type="hidden" name="id" value="{{ $project->id }}">
+                        <button type="submit" class="btn btn-secondary">บันทึกความต้องการ</button>
+                    </form>
+                </div>
+                @endif
             @endif
         </div>
     </div>
+
+
+    
 
 
 
