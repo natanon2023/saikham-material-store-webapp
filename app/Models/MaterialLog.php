@@ -22,7 +22,9 @@ class MaterialLog extends Model
         'lot',
         'price_id',
         'quantitylog',
-        'project_id'
+        'project_id',
+        'source',
+        'note'
     ];
 
     protected $casts = [

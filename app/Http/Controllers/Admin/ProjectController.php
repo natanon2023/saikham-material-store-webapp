@@ -1756,6 +1756,8 @@ class ProjectController extends Controller
                                     'user_id'     => Auth::id(),
                                     'direction'   => 'out',
                                     'quantitylog' => $actualdeduct,
+                                    'project_id'  => $project->id,  
+                                    'source'      => 'withdraw',  
                                 ]);
 
                                 WithdrawalItem::create([
@@ -2294,6 +2296,7 @@ class ProjectController extends Controller
                         'user_id'     => Auth::id(),
                         'direction'   => 'in',
                         'quantitylog'    => $data['qty'],
+                        'source'      => 'restock',
                     ]);
                 }
             }
@@ -2484,18 +2487,36 @@ class ProjectController extends Controller
 
     public function storeRefillIssue(Request $request, $id)
     {
-        $issue = ProjectIssue::find($id);
+        $issue        = ProjectIssue::find($id);
         $withdrawalItem = WithdrawalItem::find($issue->withdrawal_item_damaged);
 
         $withdrawalItem->quantity += $request->refill_amount;
         $withdrawalItem->save();
 
+        $price = Price::where('material_id', $withdrawalItem->material_id)->where('lot', $withdrawalItem->lot)->first();
+
+        if ($price) {
+            $price->increment('quantity', $request->refill_amount);
+
+            MaterialLog::create([
+                'material_id' => $withdrawalItem->material_id,
+                'price_id'    => $price->id,
+                'user_id'     => Auth::id(),
+                'direction'   => 'in',
+                'quantitylog' => $request->refill_amount,
+                'project_id'  => $issue->project_id,
+                'source'      => 'issue_refill',       
+                'note'        => 'เติมวัสดุจากปัญหา' . ': ' . $issue->description,
+            ]);
+        }
+
         $issue->update([
-            'status' => 'resolved',
+            'status'          => 'resolved',
             'refilled_amount' => $request->refill_amount
         ]);
 
-        return redirect()->route('admin.projects.issues.detail', $issue->project_id)->with('success', 'เติมวัสดุและอัปเดตสถานะเสร็จสิ้นเรียบร้อยแล้ว');
+        return redirect()->route('admin.projects.issues.detail', $issue->project_id)
+            ->with('success', 'เติมวัสดุและอัปเดตสถานะเสร็จสิ้นเรียบร้อยแล้ว');
     }
 
     public function undoRefillIssue($id)
@@ -2682,7 +2703,9 @@ class ProjectController extends Controller
                         'price_id'    => $price->id,
                         'user_id'     => Auth::id(),
                         'direction'   => 'in',
-                        'quantitylog' => $item->quantity
+                        'quantitylog' => $item->quantity,
+                        'source'      => 'return_material',        
+                        'note'        => 'ยกเลิกการเบิก คืนสต็อก',
                     ]);
                 }
             }
@@ -2745,6 +2768,7 @@ class ProjectController extends Controller
                         'direction'   => 'out',
                         'quantitylog' => $qtytowithdraw, 
                         'project_id'  => $project->id,
+                        'source'      => 'withdraw',
                     ]);
 
                     WithdrawalItem::create([
@@ -2805,7 +2829,7 @@ class ProjectController extends Controller
             'withdrawnBy',
             'items.material.aluminiumItem.aluminiumType',
             'items.material.aluminiumItem.aluminumSurfaceFinish',
-            'items.material.aluminiumItem.aluminiumLengths', 
+            'items.material.aluminiumItem.aluminiumLengths',
             'items.material.glassItem.glassType',
             'items.material.glassItem.colourItem',
             'items.material.glassItem.glassSize',
@@ -2813,18 +2837,10 @@ class ProjectController extends Controller
             'items.material.consumableItem.consumabletype',
             'items.material.toolItem.toolType',
         ])->where('project_id', $project->id)->latest()->get();
-
-        $returnLogs = MaterialLog::with([
-            'material.aluminiumItem.aluminiumType',
-            'material.aluminiumItem.aluminumSurfaceFinish',
-            'material.glassItem.glassType',
-            'material.glassItem.colourItem',
-            'material.accessoryItem.accessoryType',
-            'material.consumableItem.consumabletype',
-            'user'
-        ])->where('project_id', $id)->where('direction', 'in')->latest()->get();
     
-        return view('admin.projects.withdraw.withdrawdetails', compact('project', 'withdrawals','returnLogs'));
+        $returnedMaterialIds = MaterialLog::where('project_id', $id)->where('direction', 'in')->whereIn('source', ['return_material', 'return_tool'])->pluck('material_id')->unique()->toArray();
+    
+        return view('admin.projects.withdraw.withdrawdetails',compact('project', 'withdrawals', 'returnedMaterialIds'));
     }
 
 
@@ -2898,6 +2914,8 @@ class ProjectController extends Controller
                         'direction'   => 'in',
                         'project_id'  => $project->id,
                         'quantitylog' => $qty,
+                        'source'      => 'return_material', 
+                        'note'        => 'คืนวัสดุที่เหลือจากโครงการ', 
                     ]);
                 }
             }
@@ -2912,11 +2930,13 @@ class ProjectController extends Controller
     {
         $item = WithdrawalItem::find($withdrawalItemId);
 
-        $projectId = $item->withdrawal->project_id;
+        
     
         if (!$item) {
             return redirect()->back()->with('error', 'ไม่พบข้อมูลรายการนี้');
         }
+        
+        $projectId = $item->withdrawal->project_id;
     
         $price = Price::where('material_id', $item->material_id)
             ->where('lot', $item->lot)
@@ -2931,8 +2951,9 @@ class ProjectController extends Controller
                 'user_id'     => Auth::id(),
                 'direction'   => 'in',
                 'quantitylog' => $item->quantity,
-                'project_id'  => $projectId
-
+                'project_id'  => $projectId,
+                'source'      => 'return_tool',         
+                'note'        => 'คืนเครื่องมือช่างเข้าคลัง',
             ]);
         }
     
@@ -3003,6 +3024,8 @@ class ProjectController extends Controller
                     'direction'   => $diff > 0 ? 'out' : 'in',
                     'quantitylog' => abs($diff),
                     'project_id'  => $projectId,
+                    'source'      => 'manual',                          
+                    'note'        => 'แก้ไขจำนวน: ' . $request->reason
                 ]);
             }
         }
@@ -3018,7 +3041,59 @@ class ProjectController extends Controller
         $item->update(['quantity' => $newQty]);
 
         
-        return redirect()->back()->with('success', 'แก้ไขจำนวนเรียบร้อยแล้ว');
+        return redirect()->route('admin.projects.edit_withdrawal_item_page', $id)->with('success', 'แก้ไขจำนวนเรียบร้อยแล้ว');
+    }
+
+
+
+    public function returnHistory($id)
+    {
+        $project = Project::with(['projectname', 'customer'])->find($id);
+
+        if (!$project) {
+            return redirect()->back()->with('error', 'ไม่พบข้อมูลงานนี้');
+        }
+
+        $baseWith = [
+            'material.aluminiumItem.aluminiumType',
+            'material.aluminiumItem.aluminumSurfaceFinish',
+            'material.glassItem.glassType',
+            'material.glassItem.colourItem',
+            'material.accessoryItem.accessoryType',
+            'material.consumableItem.consumabletype',
+            'material.toolItem.toolType',
+            'user',
+            'price',
+        ];
+
+        $returnOnlyLogs = MaterialLog::with($baseWith)->where('project_id', $id)->where('direction', 'in')->whereIn('source', ['return_material', 'return_tool'])->latest()->get();
+
+        $issueRefillLogs = MaterialLog::with($baseWith)->where('project_id', $id)->where('source', 'issue_refill')->latest()->get();
+
+        return view('admin.projects.withdraw.returnhistory',compact('project', 'returnOnlyLogs', 'issueRefillLogs'));
+    }
+
+    public function editHistory($id)
+    {
+        $project = Project::with(['projectname', 'customer'])->find($id);
+
+        if (!$project) {
+            return redirect()->back()->with('error', 'ไม่พบข้อมูลงานนี้');
+        }
+
+        $editLogs = MaterialLog::with([
+            'material.aluminiumItem.aluminiumType',
+            'material.aluminiumItem.aluminumSurfaceFinish',
+            'material.glassItem.glassType',
+            'material.glassItem.colourItem',
+            'material.accessoryItem.accessoryType',
+            'material.consumableItem.consumabletype',
+            'material.toolItem.toolType',
+            'user',
+            'price',
+        ])->where('project_id', $id)->where('source', 'manual')->latest()->get();
+
+        return view('admin.projects.withdraw.edithistory',compact('project', 'editLogs'));
     }
 
 

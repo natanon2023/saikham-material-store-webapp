@@ -303,6 +303,8 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
         Route::post('/withdrawal-item/{id}/return-tool',[ProjectController::class, 'returnTool'])->name('return_tool');
         Route::get('/withdrawal-item/{id}/edit',[ProjectController::class, 'editWithdrawalItemPage'])->name('edit_withdrawal_item_page');
         Route::put('/withdrawal-item/{id}/edit',[ProjectController::class, 'editWithdrawalItem'])->name('edit_withdrawal_item');
+        Route::get('/projects/{id}/return-history',[ProjectController::class, 'returnHistory'])->name('return_history');
+        Route::get('/projects/{id}/edit-history',[ProjectController::class, 'editHistory'])->name('edit_history');
 
 
 

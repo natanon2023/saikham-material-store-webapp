@@ -281,18 +281,30 @@
         <tr align="center">
             <td style=" height:max-content;">{{ $log->price->lot }}</td>
             <td>
-                @if ($log->direction == 'in')
-                <div style="background-color: #bcffafff; padding: 5px; width: fit-content; border-radius: 20px; ">
-                    เข้า
-                </div>
-                @elseif($log->direction == 'return')
-                <div style="background-color: #bcffafff; padding: 5px; width: fit-content; border-radius: 20px; ">
-                    คืน
-                </div>
+                @if ($log->direction == 'out')
+                    @if($log->source == 'withdraw')
+                        <div style="background-color: #ffafafff; padding: 5px; width: fit-content; border-radius: 20px;">
+                            เบิก
+                        </div>
+                    @else
+                        <div style="background-color: #ffafafff; padding: 5px; width: fit-content; border-radius: 20px;">
+                            ออก
+                        </div>
+                    @endif
                 @else
-                <div style="background-color: #ffafafff; padding: 5px; width: fit-content; border-radius: 20px;">
-                    ออก
-                </div>
+                    @php
+                        $sourceLabel = match($log->source ?? '') {
+                            'restock'         => ['label' => 'เติมสต็อก',       'color' => '#bcffaf'],
+                            'return_material' => ['label' => 'คืนวัสดุ',         'color' => '#bcffaf'],
+                            'return_tool'     => ['label' => 'คืนเครื่องมือ',    'color' => '#bcffaf'],
+                            'issue_refill'    => ['label' => 'เติมจากปัญหา',     'color' => '#ffe0b2'],
+                            'manual'          => ['label' => 'แก้ไขจำนวน',       'color' => '#e1d5ff'],
+                            default           => ['label' => 'เข้า',             'color' => '#bcffaf'],
+                        };
+                    @endphp
+                    <div style="background-color: {{ $sourceLabel['color'] }}; padding: 5px; width: fit-content; border-radius: 20px; white-space: nowrap;">
+                        {{ $sourceLabel['label'] }}
+                    </div>
                 @endif
             </td>
             <td>

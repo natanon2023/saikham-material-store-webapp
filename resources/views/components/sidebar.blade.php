@@ -26,7 +26,6 @@
             </a>
             <ul class="submenu">
                 <li><a href="{{ route('admin.projects.adminfulleventcalendarpage') }}" class="nav-link">ปฎิทินงานทั้งหมด</a></li>
-                <li><a href="{{ route('admin.projects.productsetdetail') }}" class="nav-link">ผลิตภัณฑ์</a></li>
                 <li><a href="{{ route('admin.projects.manageproblemsindex') }}" class="nav-link">จัดการปัญหา</a></li>
                 <li><a href="{{ route('admin.projects.managewithdrawals') }}" class="nav-link">ประวัติการเบิกและคืนวัสดุ</a></li>
             </ul>
@@ -43,6 +42,7 @@
             <ul class="submenu">
                 <li><a href="{{ route('admin.materials.index') }}" class="nav-link">วัสดุและอุปกรณ์ทั้งหมด</a></li>
                 <li><a href="{{ route('admin.materials.showselecttypematerials') }}" class="nav-link">เพิ่มวัสดุและอุปกรณ์ใหม่</a></li>
+                <li><a href="{{ route('admin.projects.productsetdetail') }}" class="nav-link">ผลิตภัณฑ์</a></li>
                 <li><a href="{{ route('admin.materials.trash') }}" class="nav-link">กู้คืนข้อมูล</a></li>
             </ul>
         </li>

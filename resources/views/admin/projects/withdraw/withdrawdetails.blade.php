@@ -24,7 +24,7 @@
     @endphp
 
     <div class="boxmaterial" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h3 style="margin: 0;">ประวัติการเบิก-คืนวัสดุ</h3>
+        <h3 style="margin: 0;">รายการที่เบิกไปทั้งหมด</h3>
         <div style="display: flex; gap: 10px;">
             <a href="{{ route('admin.projects.withdrawtoolspage', $project->id) }}" class="btn btn-secondary">
                 เบิกเครื่องมือช่าง
@@ -33,19 +33,28 @@
         </div>
     </div>
 
-    <div class="boxmaterial" style="margin-bottom: 20px; background: #f9f9f9;">
-        <p><strong>โครงการ:</strong> {{ $project->projectname->name }} &nbsp;|&nbsp; <strong>ลูกค้า:</strong> คุณ {{ $project->customer->first_name }}</p>
-        <p>
+    <div class="boxmaterial" style="margin-bottom: 20px; display:flex; justify-content:space-between; height: max-content;  ">
+        <div >
+           <strong>โครงการ:</strong> {{ $project->projectname->name }} &nbsp;|&nbsp; <strong>ลูกค้า:</strong> คุณ {{ $project->customer->first_name }} |
             <strong>สถานะ:</strong>
             <span style="background-color: {{ $currentStatus[0] }}; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 0.85em;">
                 {{ $currentStatus[1] }}
-            </span>
-        </p>
+            </span> 
+        </div>
+        
+        <div style="margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="{{ route('admin.projects.return_history', $project->id) }}" class="btn btn-secondary btn-full-text" style="font-size: 0.85em;">
+                ดูประวัติการคืนวัสดุ
+            </a>
+            <a href="{{ route('admin.projects.edit_history', $project->id) }}" class="btn btn-secondary btn-full-text" style="font-size: 0.85em;">
+                ดูประวัติการแก้ไขจำนวน
+            </a>
+        </div>
     </div>
 
     <div class="boxmaterial" style="margin-bottom: 20px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h3 style="margin: 0;">รายการที่เบิกไปทั้งหมด</h3>
+            <h3 style="margin: 0;">รายการวัสดุ</h3>
             <span style="color: #666;">จำนวน <b>{{ $withdrawals->flatMap->items->count() }}</b> รายการ</span>
         </div>
         <table width="100%" cellpadding="10" cellspacing="0" style="border-collapse: collapse; border: 1px solid #ddd;">
@@ -54,11 +63,11 @@
                     <th width="10%">วันที่เบิก</th>
                     <th width="13%">ผู้เบิก</th>
                     <th width="10%">ประเภท</th>
-                    <th width="27%">รายละเอียด</th>
-                    <th width="13%">ขนาด</th>
+                    <th width="22%">รายละเอียด</th>
+                    <th width="15%">ขนาด</th>
                     <th width="7%">ล็อต</th>
-                    <th width="10%">จำนวนคงเหลือ</th>
-                    <th width="10%">จัดการ</th>
+                    <th width="10%">คงเหลือ</th>
+                    <th width="13%">จัดการ</th>
                 </tr>
             </thead>
             <tbody>
@@ -73,13 +82,13 @@
                                 if ($mat->aluminiumItem) {
                                     $detail = ($mat->aluminiumItem->aluminiumType->name ?? '-') . ' สี ' . ($mat->aluminiumItem->aluminumSurfaceFinish->name ?? '-');
                                 } elseif ($mat->glassItem) {
-                                    $detail = 'กระจก ' . ($mat->glassItem->glassType->name ?? '-') . ' สี ' . ($mat->glassItem->colourItem->name ?? '-');
+                                    $detail = ($mat->glassItem->glassType->name ?? '-') . ' สี ' . ($mat->glassItem->colourItem->name ?? '-');
                                 } elseif ($mat->accessoryItem) {
-                                    $detail = 'อุปกรณ์เสริม: ' . ($mat->accessoryItem->accessoryType->name ?? '-');
+                                    $detail = $mat->accessoryItem->accessoryType->name ?? '-';
                                 } elseif ($mat->consumableItem) {
-                                    $detail = ($mat->consumableItem->consumabletype->name ?? '-');
+                                    $detail = $mat->consumableItem->consumabletype->name ?? '-';
                                 } elseif ($mat->toolItem) {
-                                    $detail = ($mat->toolItem->toolType->name ?? '-');
+                                    $detail = $mat->toolItem->toolType->name ?? '-';
                                 } else {
                                     $detail = $mat->name ?? '-';
                                 }
@@ -98,11 +107,13 @@
                                         $gs = $priceRecord->glassSize;
                                         $sizeText = $gs->width_meter . ' × ' . $gs->length_meter . ' ม.';
                                         if (!empty($gs->thickness)) {
-                                            $sizeText .= ' หนา ' . $gs->thickness . ' มม.'.' (ต่อแผ่น)';
+                                            $sizeText .= ' หนา ' . $gs->thickness . ' มม. (ต่อแผ่น)';
                                         }
                                     }
                                 }
                             }
+
+                            $hasReturned = $mat && in_array($mat->id, $returnedMaterialIds);
                         @endphp
                         <tr style="border-bottom: 1px solid #eee;">
                             <td align="center">
@@ -111,9 +122,7 @@
                             <td align="center">{{ $withdrawal->withdrawnBy->name ?? 'ไม่ระบุ' }}</td>
                             <td align="center"><b>{{ $mat->material_type ?? '-' }}</b></td>
                             <td>{{ $detail }}</td>
-                            <td align="center">
-                                {{ $sizeText !== '-' ? $sizeText : '-' }}
-                            </td>
+                            <td align="center">{{ $sizeText }}</td>
                             <td align="center">{{ $item->lot }}</td>
                             <td align="center">
                                 @if($item->quantity == 0)
@@ -131,11 +140,13 @@
                                             คืนเข้าคลัง
                                         </button>
                                     </form>
-                                @else
+                                @elseif($hasReturned)
                                     <a href="{{ route('admin.projects.edit_withdrawal_item_page', $item->id) }}"
-                                       class="btn-icon btn-edit" title="แก้ไขจำนวน">
+                                       class="btn-icon btn-edit" title="แก้ไขจำนวนคืน">
                                         <i class="fas fa-edit"></i>
                                     </a>
+                                @else
+                                    <span style="color: #ccc; font-size: 0.8em;">-</span>
                                 @endif
                             </td>
                         </tr>
@@ -148,74 +159,6 @@
             </tbody>
         </table>
     </div>
-
-    @if($returnLogs->isNotEmpty())
-    <div class="boxmaterial" style="margin-bottom: 20px;">
-        <h3 style="margin-bottom: 15px;">ประวัติการคืนวัสดุ</h3>
-        <table width="100%" cellpadding="10" cellspacing="0" style="border-collapse: collapse; border: 1px solid #ddd;">
-            <thead style="background: #333; color: #fff;">
-                <tr align="center">
-                    <th width="15%">วันที่คืน</th>
-                    <th width="15%">ผู้คืน</th>
-                    <th width="12%">ประเภท</th>
-                    <th width="43%">รายละเอียด</th>
-                    <th width="15%">ขนาด</th> 
-                    <th width="15%">จำนวนที่คืน</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($returnLogs as $log)
-                @php
-                    $mat    = $log->material;
-                    $detail = '-';
-                    if ($mat) {
-                        if ($mat->aluminiumItem) {
-                            $detail = ($mat->aluminiumItem->aluminiumType->name ?? '-') . ' สี ' . ($mat->aluminiumItem->aluminumSurfaceFinish->name ?? '-');
-                        } elseif ($mat->glassItem) {
-                            $detail = 'กระจก ' . ($mat->glassItem->glassType->name ?? '-') . ' สี ' . ($mat->glassItem->colourItem->name ?? '-');
-                        } elseif ($mat->accessoryItem) {
-                            $detail = 'อุปกรณ์เสริม: ' . ($mat->accessoryItem->accessoryType->name ?? '-');
-                        } elseif ($mat->consumableItem) {
-                            $detail = 'วัสดุสิ้นเปลือง: ' . ($mat->consumableItem->consumabletype->name ?? '-');
-                        } elseif ($mat->toolItem) {
-                            $detail =  ($mat->toolItem->toolType->name ?? '-');
-                        } else {
-                                $detail = $mat->name ?? '-';
-                        }
-                    }
-                    $sizeText = 'ไม่มีขนาด';
-                    if ($mat) {
-                        $priceRecord = \App\Models\Price::where('material_id', $mat->id)
-                            ->where('lot', $log->price->lot ?? '')
-                            ->with(['aluminiumlength', 'glassSize'])
-                            ->first();
-
-                        if ($priceRecord) {
-                            if ($priceRecord->aluminiumlength) {
-                                $sizeText = $priceRecord->aluminiumlength->length_meter . ' (ม./เส้น)';
-                            } elseif ($priceRecord->glassSize) {
-                                $gs = $priceRecord->glassSize;
-                                $sizeText = $gs->width_meter . ' × ' . $gs->length_meter . ' ม.';
-                                if (!empty($gs->thickness)) {
-                                    $sizeText .= ' หนา ' . $gs->thickness . ' มม.' .' (ต่อแผ่น)' ;
-                                }
-                            }
-                        }
-                    }
-                @endphp
-                <tr style="border-bottom: 1px solid #eee;">
-                    <td align="center">{{ \Carbon\Carbon::parse($log->created_at)->locale('th')->addYears(543)->isoFormat('D MMM YY') }}</td>
-                    <td align="center">{{ $log->user->name ?? '-' }}</td>
-                    <td ><b>{{ $mat->material_type ?? '-' }}</b></td>
-                    <td>{{ $detail }}</td>
-                    <td align="center">{{ $sizeText }}</td>
-                    <td align="center" style="color: #1e8e3e;"><b>+{{ $log->quantitylog }}</b></td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-    @endif
 
     <div class="boxmaterial" style="text-align: center; padding: 20px;">
         @if($project->status == 'completed')
