@@ -5,12 +5,12 @@
     @include('components.successanderror')
     <div class="boxmaterial" style="display: flex; justify-content: space-between; align-items: center;">
         <h3>เพิ่มรูปภาพงาน</h3>
-        <a href="{{ route('technician.projects.formsurveying',$project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
+        <a href="{{ route('admin.projects.alldetail',$project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
     </div>
 
 
     <div class="box">
-        <form action="{{ route('technician.projects.createprojectimage') }}" method="post" enctype="multipart/form-data">
+        <form action="{{ route('admin.projects.createprojectimagedetail') }}" method="post" enctype="multipart/form-data">
             @csrf
             <input type="hidden" name="project_id" value="{{ $project->id }}">
             <div class="box-control">
@@ -24,7 +24,7 @@
                             @endforeach
                             
                         </select>
-                        <a href="{{ route('technician.projects.formcrateimgtype',$project->id) }}" class="btn-secondary" style="padding: 8px 12px; font-size: 12px; text-decoration: none; white-space: nowrap; border-radius: 5px; transition: all 0.3s ease; border-radius:0;">
+                        <a href="{{ route('admin.projects.formcrateimgtype') }}" class="btn-secondary" style="padding: 8px 12px; font-size: 12px; text-decoration: none; white-space: nowrap; border-radius: 5px; transition: all 0.3s ease; border-radius:0;">
                             + เพิ่ม
                         </a>  
                     </div>

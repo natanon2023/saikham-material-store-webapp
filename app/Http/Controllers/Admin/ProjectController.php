@@ -1290,7 +1290,7 @@ class ProjectController extends Controller
                 'quantity'          => $need->quantity,
                 'unit_price'   => $need->calculated_total,
                 'total_price'  => $need->quantity * $need->calculated_total,
-                'item_type'    => 'product'
+                'item_type'    => 'product',
             ]);
 
             foreach ($need->productset->productsetitem as $item) {
@@ -1308,6 +1308,7 @@ class ProjectController extends Controller
 
                 QuotationMaterial::create([
                     'quotation_id'  => $quotation->id,
+                    'material_id'   => $mat->id,
                     'material_type' => $mat->material_type,
                     'description'   => $matDetail,
                     'lot_number'    => $item->calculated_lot,
@@ -1667,137 +1668,143 @@ class ProjectController extends Controller
 
 
 
+    
+
     public function withdrawpage($id)
     {
-        $project = $this->getCalculatedProject($id);
+        $project = Project::with([
+            'projectname',
+            'customer',
+            'quotation.quotationMaterials',
+        ])->find($id);
 
-        $withdrawnItems = WithdrawalItem::whereHas('withdrawal', function($q) use ($id) {
-            $q->where('project_id', $id);
-        })->get();
+        $users = User::all();
 
-        $withdrawnSummary = [];
-        foreach($withdrawnItems as $wItem) {
-            if(!isset($withdrawnSummary[$wItem->material_id])) {
-                $withdrawnSummary[$wItem->material_id] = 0;
-            }
-            $withdrawnSummary[$wItem->material_id] += $wItem->quantity;
-        }
+        $withdrawnSummary = MaterialLog::where('project_id', $id)
+            ->where('direction', 'out')
+            ->where('source', 'withdraw')
+            ->selectRaw('material_id, SUM(quantitylog) as total_out')
+            ->groupBy('material_id')
+            ->pluck('total_out', 'material_id')
+            ->toArray();
 
-        return view('admin.projects.withdraw.withdrawpage', compact('project','withdrawnSummary'));
+        return view('admin.projects.withdraw.withdrawpage',
+            compact('project', 'withdrawnSummary', 'users'));
     }
 
-    public function withdrawform(Request $request,$id){
-        $selecteditems = $request->input('selected_items');
+    public function withdrawform(Request $request, $id)
+    {
+        $selectedPriceIds = $request->input('selected_price_ids', []);
+        $customQtys       = $request->input('custom_qty', []);
 
-        if (empty($selecteditems)) {
+        if (empty($selectedPriceIds)) {
             return redirect()->back()->with('error', 'กรุณาเลือกวัสดุอย่างน้อย 1 รายการ');
         }
 
-        $project = $this->getCalculatedProject($id);
-        $users = User::all();
+        $project = Project::with(['projectname'])->find($id);
+        $users   = User::all();
 
-        $itemstowithdraw = [];
-        foreach ($project->customerneed as $need) {
-            foreach ($need->productset->productsetitem as $item) {
-                if (in_array($item->id, $selecteditems)) {
-                    $itemstowithdraw[] = $item;
+        $itemsToWithdraw = [];
+        foreach ($selectedPriceIds as $pid) {
+            $price = Price::with('material')->find($pid);
+            if (!$price) continue;
+
+            $mat = $price->material;
+            $description = '-';
+            if ($mat) {
+                if ($mat->aluminiumItem) {
+                    $description = ($mat->aluminiumItem->aluminiumType->name ?? '-') . ' สี ' . ($mat->aluminiumItem->aluminumSurfaceFinish->name ?? '-');
+                } elseif ($mat->glassItem) {
+                    $description = ($mat->glassItem->glassType->name ?? '-') . ' สี ' . ($mat->glassItem->colourItem->name ?? '-');
+                } elseif ($mat->accessoryItem) {
+                    $description = $mat->accessoryItem->accessoryType->name ?? '-';
+                } elseif ($mat->consumableItem) {
+                    $description = $mat->consumableItem->consumabletype->name ?? '-';
+                } elseif ($mat->toolItem) {
+                    $description = $mat->toolItem->toolType->name ?? '-';
                 }
             }
+
+            $itemsToWithdraw[] = [
+                'price_id'      => $pid,
+                'material_type' => $mat?->material_type ?? '-',
+                'description'   => $description,
+                'lot'           => $price->lot,
+                'qty'           => $customQtys[$pid] ?? 0,
+            ];
         }
 
-        return view('admin.projects.withdraw.withdrawform', compact('project', 'itemstowithdraw', 'users', 'selecteditems'));
-
+        return view('admin.projects.withdraw.withdrawform',
+            compact('project', 'users', 'selectedPriceIds', 'customQtys', 'itemsToWithdraw'));
     }
 
     public function withdrawstore(Request $request, $id)
     {
-        $selecteditems = $request->input('selected_items');
-        $withdrawnby = $request->input('withdrawn_by');
-        $customQtys = $request->input('custom_qty'); 
+        $selectedPriceIds = $request->input('selected_price_ids', []);
+        $withdrawnby      = $request->input('withdrawn_by');
+        $customQtys       = $request->input('custom_qty', []);
 
-        if (empty($selecteditems) or empty($withdrawnby)) {
+        if (empty($selectedPriceIds) || empty($withdrawnby)) {
             return redirect()->back()->with('error', 'กรุณาเลือกวัสดุและช่างผู้เบิก');
         }
 
-        $project = $this->getCalculatedProject($id);
-        
-        $totalReadyToWithdraw = 0;
-        foreach ($project->customerneed as $need) {
-            foreach ($need->productset->productsetitem as $item) {
-                if (!empty($item->calculated_price_id)) {
-                    $totalReadyToWithdraw++;
-                }
-            }
-        }
-
+        $project    = Project::with(['quotation.quotationMaterials'])->find($id);
         $withdrawal = Withdrawal::create([
             'project_id'   => $project->id,
             'withdrawn_by' => $withdrawnby,
             'recorded_by'  => Auth::id(),
         ]);
 
-        foreach ($project->customerneed as $need) {
-            foreach ($need->productset->productsetitem as $item) {
-                if (in_array($item->id, $selecteditems)) {
-                    $qtytowithdraw = $customQtys[$item->id] ?? $item->calculated_qty;
+        foreach ($selectedPriceIds as $price_id) {
+            $price = Price::find($price_id);
+            if (!$price) continue;
 
-                    if ($qtytowithdraw > 0 and !empty($item->calculated_price_id)) {
-                        $price = Price::find($item->calculated_price_id);
+            $qtyToWithdraw = (int)($customQtys[$price_id] ?? 0);
+            $actualDeduct  = min($price->quantity, $qtyToWithdraw);
 
-                        if ($price) {
-                            $actualdeduct = min($price->quantity, $qtytowithdraw);
+            if ($actualDeduct > 0) {
+                $price->decrement('quantity', $actualDeduct);
 
-                            if ($actualdeduct > 0) {
-                                $price->decrement('quantity', $actualdeduct);
-                                
-                                MaterialLog::create([
-                                    'material_id' => $item->material->id,
-                                    'price_id'    => $price->id,
-                                    'user_id'     => Auth::id(),
-                                    'direction'   => 'out',
-                                    'quantitylog' => $actualdeduct,
-                                    'project_id'  => $project->id,  
-                                    'source'      => 'withdraw',  
-                                ]);
+                MaterialLog::create([
+                    'material_id' => $price->material_id,
+                    'price_id'    => $price->id,
+                    'user_id'     => Auth::id(),
+                    'direction'   => 'out',
+                    'quantitylog' => $actualDeduct,
+                    'project_id'  => $project->id,
+                    'source'      => 'withdraw',
+                ]);
 
-                                WithdrawalItem::create([
-                                    'withdrawal_id' => $withdrawal->id,
-                                    'material_id'   => $item->material->id,
-                                    'lot'           => $price->lot,
-                                    'quantity'      => $actualdeduct,
-                                ]);
-                            }
-                        }
-                    }
-                }
+                WithdrawalItem::create([
+                    'withdrawal_id' => $withdrawal->id,
+                    'material_id'   => $price->material_id,
+                    'lot'           => $price->lot,
+                    'quantity'      => $actualDeduct,
+                ]);
             }
         }
 
-        $withdrawnSummary = WithdrawalItem::whereHas('withdrawal', function($q) use ($id) {
-                $q->where('project_id', $id);
-            })
-            ->selectRaw('material_id, SUM(quantity) as total_out')
+        $quotationMats = $project->quotation?->quotationMaterials ?? collect();
+        $withdrawnSummary = MaterialLog::where('project_id', $id)
+            ->where('direction', 'out')
+            ->where('source', 'withdraw')
+            ->selectRaw('material_id, SUM(quantitylog) as total')
             ->groupBy('material_id')
-            ->pluck('total_out', 'material_id');
+            ->pluck('total', 'material_id');
 
-        $itemsCompletedCount = 0;
-        foreach ($project->customerneed as $need) {
-            foreach ($need->productset->productsetitem as $item) {
-                $totalOut = $withdrawnSummary[$item->material_id] ?? 0;
-                if ($totalOut >= $item->calculated_qty) {
-                    $itemsCompletedCount++;
-                }
-            }
+        $allDone = $quotationMats->every(function($qmat) use ($withdrawnSummary) {
+            if (!$qmat->material_id) return true;
+            return ($withdrawnSummary[$qmat->material_id] ?? 0) >= $qmat->quantity;
+        });
+
+        if ($allDone) {
+            $project->update(['status' => 'materials_withdrawn']);
+            return redirect()->route('admin.projects.index', $project->id)
+                ->with('success', 'เบิกวัสดุครบแล้ว');
         }
 
-        if ($itemsCompletedCount >= $totalReadyToWithdraw) {
-            $project->update([
-                'status' => 'materials_withdrawn'
-            ]);
-            return redirect()->route('admin.projects.index', $project->id)->with('success', 'เบิกวัสดุครบแล้ว อัปเดตสถานะสำเร็จ');
-        } else {
-            return redirect()->route('admin.projects.withdrawpage', $project->id)->with('success', 'บันทึกการเบิกบางส่วนเรียบร้อย');
-        }
+        return redirect()->route('admin.projects.withdrawpage', $project->id)
+            ->with('success', 'บันทึกการเบิกบางส่วนเรียบร้อย');
     }
 
 
@@ -2688,6 +2695,8 @@ class ProjectController extends Controller
         if ($withdrawals->isEmpty()) {
             return redirect()->back()->with('error', 'ไม่พบประวัติการเบิกวัสดุสำหรับงานนี้');
         }
+
+        MaterialLog::where('project_id', $id)->where('source', 'withdraw')->delete();
 
         foreach ($withdrawals as $withdrawal) {
             foreach ($withdrawal->items as $item) {

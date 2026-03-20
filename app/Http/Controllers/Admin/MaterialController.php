@@ -257,7 +257,7 @@ class MaterialController extends Controller
             'price',
         ])->findOrFail($id);
 
-        $logquery = MaterialLog::with(['user', 'price'])->where('material_id', $id)->orderBy('created_at', 'desc'); // เรียงจากล่าสุดไปเก่าสุด
+        $logquery = MaterialLog::with(['user', 'price'])->where('material_id', $id)->orderBy('created_at', 'desc'); 
 
         if ($request->filled('direction')) {
 
@@ -661,57 +661,71 @@ class MaterialController extends Controller
     {
         $price = Price::findOrFail($id);
         $material = $price->material;
+        
         $oldQuantity = $price->quantity;
         $oldPrice    = $price->price;
-
         $oldLength = $oldWidth = $oldThickness = null;
+
+        $priceColumn = null;
+        $priceItemId = null;
 
         if ($material->material_type == 'อลูมิเนียม') {
 
-            $aluminiumlength = AluminiumLength::findOrFail($price->aluminium_length_id);
+            $oldLengthRecord = AluminiumLength::find($price->aluminium_length_id);
+            $oldLength = $oldLengthRecord ? $oldLengthRecord->length_meter : null;
 
-            $oldLength = $aluminiumlength->length_meter;
+            $aluminiumitem = AluminiumItem::find($material->aluminium_item_id);
 
-            $aluminiumlength->update([
-                'length_meter' => $request->length_meter
-            ]);
+            $newLengthRecord = AluminiumLength::where('aluminium_item_id', $aluminiumitem->id)->where('length_meter', $request->length_meter)->first();
+
+            if (!$newLengthRecord) {
+                $newLengthRecord = AluminiumLength::create([
+                    'aluminium_item_id' => $aluminiumitem->id,
+                    'length_meter'      => $request->length_meter
+                ]);
+            }
 
             $priceColumn = 'aluminium_length_id';
-            $priceItemId = $aluminiumlength->id;
+            $priceItemId = $newLengthRecord->id;
+
         } elseif ($material->material_type == 'กระจก') {
 
-            $glasssize = GlassSize::findOrFail($price->glass_size_id);
+            $oldSizeRecord = GlassSize::find($price->glass_size_id);
+            if ($oldSizeRecord) {
+                $oldWidth     = $oldSizeRecord->width_meter;
+                $oldLength    = $oldSizeRecord->length_meter;
+                $oldThickness = $oldSizeRecord->thickness;
+            }
 
-            $oldWidth     = $glasssize->width_meter;
-            $oldLength    = $glasssize->length_meter;
-            $oldThickness = $glasssize->thickness;
+            $glassitem = GlassItem::find($material->glass_item_id);
 
-            $glasssize->update([
-                'width_meter'  => $request->width_meter,
-                'length_meter' => $request->length_meter,
-                'thickness'    => $request->thickness
-            ]);
+            $newSizeRecord = GlassSize::where('glass_item_id', $glassitem->id)
+                ->where('width_meter', $request->width_meter)
+                ->where('length_meter', $request->length_meter)
+                ->where('thickness', $request->thickness)
+                ->first();
+
+            if (!$newSizeRecord) {
+                $newSizeRecord = GlassSize::create([
+                    'glass_item_id' => $glassitem->id,
+                    'width_meter'   => $request->width_meter,
+                    'length_meter'  => $request->length_meter,
+                    'thickness'     => $request->thickness
+                ]);
+            }
 
             $priceColumn = 'glass_size_id';
-            $priceItemId = $glasssize->id;
+            $priceItemId = $newSizeRecord->id;
+
         } elseif ($material->material_type == 'อุปกรณ์เสริม') {
-
-            $accessoryitem = AccessoryItem::findOrFail($material->accessory_item_id);
-
             $priceColumn = 'accessory_item_id';
-            $priceItemId = $accessoryitem->id;
+            $priceItemId = $material->accessory_item_id;
         } elseif ($material->material_type == 'เครื่องมือช่าง') {
-
-            $toolitem = ToolItem::findOrFail($material->tool_item_id);
-
             $priceColumn = 'tool_item_id';
-            $priceItemId = $toolitem->id;
+            $priceItemId = $material->tool_item_id;
         } elseif ($material->material_type == 'วัสดุสิ้นเปลือง') {
-
-            $consumableitem = ConsumableItem::findOrFail($material->consumable_item_id);
-
             $priceColumn = 'consumable_item_id';
-            $priceItemId = $consumableitem->id;
+            $priceItemId = $material->consumable_item_id;
         }
 
         $price->update([
@@ -720,6 +734,14 @@ class MaterialController extends Controller
             'price'      => $request->price,
             'quantity'   => $request->quantity
         ]);
+
+        $materialLog = MaterialLog::where('price_id', $price->id)->where('direction', 'in') ->first();
+
+        if ($materialLog) {
+            $materialLog->update([
+                'quantitylog' => $request->quantity 
+            ]);
+        }
 
         StockEditLog::create([
             'material_id' => $material->id,
@@ -733,13 +755,13 @@ class MaterialController extends Controller
             'new_price' => $request->price,
 
             'old_length_meter' => $oldLength,
-            'new_length_meter' => $request->length_meter,
+            'new_length_meter' => $request->length_meter ?? null,
 
             'old_width_meter'  => $oldWidth,
-            'new_width_meter'  => $request->width_meter,
+            'new_width_meter'  => $request->width_meter ?? null,
 
             'old_thickness'    => $oldThickness,
-            'new_thickness'    => $request->thickness,
+            'new_thickness'    => $request->thickness ?? null,
 
             'reason' => $request->reason
         ]);

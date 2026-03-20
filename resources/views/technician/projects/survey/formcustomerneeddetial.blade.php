@@ -4,7 +4,7 @@
 <div class="main-content">
     <div class="boxmaterial" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h3>เพิ่มความต้องการของลูกค้า</h3>
-        <a href="{{ route('technician.projects.formsurveying', $project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
+        <a href="{{ route('admin.projects.alldetail', $project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
     </div>
     <div class="image-preview-group">
 
@@ -32,12 +32,10 @@
             </div>
         </div>
 
-
-
     </div>
 
     <div class="box">
-        <form action="{{ route('technician.projects.addcustomerneed') }}" method="post" enctype="multipart/form-data">
+        <form action="{{ route('admin.projects.addcustomerneeddetial') }}" method="post" enctype="multipart/form-data">
             @csrf
             <input type="hidden" value="{{ $project->id }}" name="project_id">
 

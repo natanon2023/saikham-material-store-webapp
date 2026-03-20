@@ -380,22 +380,46 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
 
 
 Route::middleware(['auth', 'verified', 'role:technician'])->group(function () {
-    Route::get('/technician/dashboard', [TechnicianDashboard::class, 'index'])->name('technician.dashboard');
-    Route::get('/projects/{id}', [TechnicianProjectController::class, 'show'])->name('technician.projects.show');
+    Route::get('/technician/dashboard', [TechnicianDashboard::class, 'dashboard'])->name('technician.dashboard');
+    Route::get('/projects/{id}', [TechnicianProjectController::class, 'index'])->name('technician.projects.index');
     Route::post('/projects/{id}/close', [TechnicianProjectController::class, 'close'])->name('technician.projects.close');
 
     Route::prefix('technician/project')->name('technician.projects.')->group(function(){
+        //สำรวจ
         Route::get('/formsurveying/{id}',[TechnicianProjectController::class,'formsurveying'])->name('formsurveying');
-        Route::post('/updatestatussurveying/{id}',[TechnicianProjectController::class,'updatestatussurveying']) ->name('updatestatussurveying');
+        Route::post('/updatestatussurveying/{id}',[TechnicianProjectController::class,'updatestatussurveying'])->name('updatestatussurveying');
+        Route::post('/addautersurver',[TechnicianProjectController::class,'addautersurver'])->name('addautersurver');
+
+        //ภาพ
+        Route::get('/formprojectimage/{id}',[TechnicianProjectController::class,'formprojectimage'])->name('formprojectimage');
+        Route::post('/createprojectimage',[TechnicianProjectController::class,'createprojectimage'])->name('createprojectimage');
+        Route::get('/formeditprojectimage/{id}',[TechnicianProjectController::class,'formeditprojectimage'])->name('formeditprojectimage');
+        Route::put('/updateprojectimage/{id}',[TechnicianProjectController::class,'updateprojectimage'])->name('updateprojectimage');
+        Route::delete('/deleteprojectimage/{id}',[TechnicianProjectController::class,'deleteprojectimage'])->name('deleteprojectimage');
+
+        //ประเภทภาพ
+        Route::get('/formcrateimgtype/{id}',[TechnicianProjectController::class,'formcrateimgtype'])->name('formcrateimgtype');
+        Route::post('crateimgtype',[TechnicianProjectController::class,'crateimgtype'])->name('crateimgtype');
+        Route::put('/{id}', [TechnicianProjectController::class, 'updateimgtype'])->name('updateimgtype');
+        Route::delete('/{id}', [TechnicianProjectController::class, 'deleteimgtype'])->name('deleteimgtype');
+        Route::post('/{id}/restore', [TechnicianProjectController::class, 'restoreimgtype'])->name('restoreimgtype');
+
+
+        //ความต้องการลูกค้า
+        Route::get('/formcustomerneed/{id}',[TechnicianProjectController::class,'formcustomerneed'])->name('formcustomerneed');
+        Route::post('addcustomerneed',[TechnicianProjectController::class,'addcustomerneed'])->name('addcustomerneed');
+        Route::get('/editformcustomerneed/{id}',[TechnicianProjectController::class,'editformcustomerneed'])->name('editformcustomerneed');
+        Route::put('/updatecustomerneed/{id}', [TechnicianProjectController::class, 'updatecustomerneed'])->name('updatecustomerneed');
+        Route::delete('deletecustomerneed/{id}',[TechnicianProjectController::class,'deletecustomerneed'])->name('deletecustomerneed');
+
+        //อัปเดตจากสำรวจ
         Route::post('/updatestatuspendingquotation',[TechnicianProjectController::class,'updatestatuspendingquotation']) ->name('updatestatuspendingquotation');
 
 
-        Route::get('/formprojectimage/{id}',[TechnicianProjectController::class,'formprojectimage'])->name('formprojectimage');
-        Route::post('/createprojectimage',[TechnicianProjectController::class,'createprojectimage'])->name('createprojectimage');
-        Route::delete('/deleteprojectimage/{id}',[TechnicianProjectController::class,'deleteprojectimage'])->name('deleteprojectimage');
 
-        Route::get('/formcustomerneed/{id}',[TechnicianProjectController::class,'formcustomerneed'])->name('formcustomerneed');
-        Route::post('/addcustomerneed',[TechnicianProjectController::class,'addcustomerneed'])->name('addcustomerneed');
-        Route::delete('deletecustomerneed/{id}',[TechnicianProjectController::class,'deletecustomerneed'])->name('deletecustomerneed');
+
+
+
+
     });
 });

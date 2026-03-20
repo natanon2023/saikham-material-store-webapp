@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.technician')
 
 @section('content')
 <div class="main-content">
@@ -10,9 +10,9 @@
     <div class="boxmaterial" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h3>แก้ไขความต้องการของลูกค้า</h3>
         @if ($project->status == 'surveying')
-        <a href="{{ route('admin.projects.formsurveying',$project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
+        <a href="{{ route('technician.projects.formsurveying',$project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
         @else
-        <a href="{{ route('admin.projects.alldetail',$project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
+        <a href="{{ route('technician.projects.alldetail',$project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
         @endif
     </div>
     
@@ -49,7 +49,7 @@
     </div>
 
     <div class="box">
-        <form action="{{ route('admin.projects.updatecustomerneed', $customerNeed->id) }}" method="post" enctype="multipart/form-data">
+        <form action="{{ route('technician.projects.updatecustomerneed', $customerNeed->id) }}" method="post" enctype="multipart/form-data">
             @csrf
             @method('PUT')
             <input type="hidden" value="{{ $project->id }}" name="project_id">
@@ -138,7 +138,7 @@
 
             selectBox.addEventListener('change', updateImage);
 
-            updateImage();
+            updateImage(); 
         }
 
         setupImagePreview('select-product', 'preview-product', 'text-product');

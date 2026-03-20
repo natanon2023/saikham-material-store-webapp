@@ -372,9 +372,13 @@
             </td>
             <td style="font-size: xx-small;">{{ $log->user->name }}</td>
             <td>
-                <a href="{{ route('admin.materials.formeditsatock',$log->price_id) }}" class="btn-icon btn-edit" title="แก้ไข">
-                    <i class="fas fa-edit"></i>
-                </a>
+                @if(($log->source ?? 'restock') == 'restock')
+                    <a href="{{ route('admin.materials.formeditsatock',$log->price_id) }}" class="btn-icon btn-edit" title="แก้ไข">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                @else
+                    <span style="color: #ccc;">-</span>
+                @endif
             </td>
         </tr>
         @endforeach

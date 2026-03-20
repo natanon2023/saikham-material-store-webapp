@@ -4,11 +4,60 @@ namespace App\Http\Controllers\Technician;
 
 use App\Http\Controllers\Controller;
 use App\Models\Project;
+use App\Models\AccessoryType;
+use App\Models\AluminiumProfileType;
+use App\Models\Customer;
+use App\Models\ExpenseType;
+use App\Models\ProductSetName;
+use App\Models\ProjectExpense;
+use App\Models\Projectimages;
+use App\Models\ProjectName;
+use App\Models\ThaiAmphure;
+use App\Models\ThaiProvince;
+use App\Models\ThaiTambon;
+use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\AluminumSurfaceFinish;
+use App\Models\GlassType;
+use App\Models\ColourItem;
+use App\Models\ConsumableType;
+use App\Models\CustomerNeed;
+use App\Models\ImageTypeName;
+use App\Models\Material;
+use App\Models\Price;
+use App\Models\ProductSet;
+use App\Models\ProductSetItem;
+use App\Models\ToolType;
+use App\Models\MaterialLog;
+use App\Models\Withdrawal;
+use App\Models\WithdrawalItem;
+use App\Models\ProjectIssue;
+use App\Models\IssueImage;
+use Carbon\Carbon;
+use App\Models\AluminiumItem;
+use App\Models\AluminiumLength;
+use App\Models\GlassItem;
+use App\Models\GlassSize;
+use App\Models\AccessoryItem;
+use App\Models\AssignedInstaller;
+use App\Models\ToolItem;
+use App\Models\ConsumableItem;
+use App\Models\Dealer;
+use App\Models\MaterialPrice;
+use App\Models\Unit;
+use App\Models\ProjectPurchase;
+use App\Models\ProjectPurchaseItem;
+use App\Models\Quotation;
+use App\Models\QuotationItem;
+use App\Models\QuotationMaterial;
+use App\Models\WithdrawalItemLog;
+use GuzzleHttp\Promise\Create;
+use Illuminate\Support\Facades\Validator;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function dashboard()
     {
         $statuses = [
             'waiting_survey',
@@ -26,23 +75,55 @@ class DashboardController extends Controller
             'cancelled'
         ];
 
-        $query = Project::where('assigned_surveyor_id', Auth::id())->whereIn('status', $statuses)->whereNotNull('survey_date');
+        $query = Project::with('projectname')->whereNotNull('survey_date');
 
-        $eventCount = $query->count();
+        $events = $query->withTrashed()->with(['projectname', 'customer'])->get()->flatMap(function ($pj) {
+            $customerName = $pj->customer->first_name ?? 'ไม่ระบุลูกค้า';
+            $projectName = $pj->projectname->name ?? 'ไม่มีชื่อโครงการ';
+            $statusLabel = $this->getStatusLabel($pj->status);
+            $color = $this->getStatusColor($pj->status);
 
-        $events = $query->with('projectname')
-            ->get()
-            ->map(function ($pj) {
-                return [
-                    'id'    => $pj->id,
-                    'title' => "[" . $this->getStatusLabel($pj->status) . "] " . ($pj->projectname->name ?? 'ไม่มีชื่อโครงการ'),
+            if ($pj->trashed()) {
+            $statusLabel = 'ยกเลิก';
+            $color = '#DC143C';
+            } else {
+                $statusLabel = $this->getStatusLabel($pj->status);
+                $color = $this->getStatusColor($pj->status);
+            }
+
+            $items = [];
+
+            if ($pj->survey_date) {
+                $items[] = [
+                    'id'    => $pj->id . '_survey',
+                    'title' => ($pj->trashed() ? " (ยกเลิก)" : ""). "[สำรวจ] " . $customerName . " - " . $projectName ,
                     'start' => date('Y-m-d', strtotime($pj->survey_date)),
-                    'url'   => route('technician.projects.show', $pj->id),
-                    'backgroundColor' => $this->getStatusColor($pj->status),
-                    'borderColor'     => $this->getStatusColor($pj->status),
-                    'allDay'          => true
+                    'url'   => route('technician.projects.index', $pj->id),
+                    'backgroundColor' => $color,
+                    'borderColor'     => $color,
+                    'allDay'          => true,
+                    'textColor'       => '#ffffff'
                 ];
-            });
+            }
+
+            if ($pj->installation_start_date && $pj->installation_end_date) {
+                $items[] = [
+                    'id'    => $pj->id . '_install',
+                    'title' => ($pj->trashed() ? " (ยกเลิก)" : "")."[ติดตั้ง] " . $customerName . " - " . $projectName . " (" . $statusLabel . ")",
+                    'start' => date('Y-m-d', strtotime($pj->installation_start_date)),
+                    'end'   => date('Y-m-d', strtotime($pj->installation_end_date . ' +1 day')),
+                    'url'   => route('technician.projects.index', $pj->id),
+                    'backgroundColor' => $color,
+                    'borderColor'     => $color,
+                    'allDay'          => true,
+                    'textColor'       => '#ffffff'
+                ];
+            }
+
+            return $items;
+        });
+            
+        $eventCount = $query->count();
 
         return view('technician.dashboard', compact('events', 'eventCount'));
     }
