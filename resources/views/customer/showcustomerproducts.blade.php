@@ -216,11 +216,11 @@
 <div style="max-width: 1100px; margin: 0 auto; padding: 0 1rem;">
 
     <div class="products-header">
-        <h3>สินค้าของเรา</h3>
+        <h3>ผลิตภัณฑ์ของเรา</h3>
     </div>
 
     @if($productsets->isEmpty())
-        <div class="empty-state">ยังไม่มีสินค้าในระบบ</div>
+        <div class="empty-state">ยังไม่มีผลิตภัณฑ์ในระบบ</div>
     @else
     <div class="product-grid">
         @foreach($productsets as $product)
@@ -229,7 +229,7 @@
                  alt="{{ $product->productSetName->name ?? '' }}"
                  class="p-card-img">
             <div class="p-card-body">
-                <p class="p-card-name">{{ $product->productSetName->name ?? 'ไม่ระบุชื่อสินค้า' }}</p>
+                <p class="p-card-name">{{ $product->productSetName->name ?? 'ไม่ระบุชื่อผลิตภัณฑ์' }}</p>
                 <p class="p-card-detail">{{ Str::limit($product->detail, 60) }}</p>
             </div>
             <div class="p-card-footer" style="display: flex; flex-direction: column; gap: 8px;">
@@ -245,7 +245,7 @@
              onclick="closeModalOutside(event, 'modal-{{ $product->id }}')">
             <div class="modal-box">
                 <div class="modal-head">
-                    <h5>{{ $product->productSetName->name ?? 'รายละเอียดสินค้า' }}</h5>
+                    <h5>{{ $product->productSetName->name ?? 'รายละเอียดผลิตภัณฑ์' }}</h5>
                     <button class="modal-close" onclick="closeModal('modal-{{ $product->id }}')">&times;</button>
                 </div>
                 <img src="data:image/jpeg;base64,{{ base64_encode($product->product_image) }}"

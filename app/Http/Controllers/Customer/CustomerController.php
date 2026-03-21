@@ -52,6 +52,10 @@ use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\QuotationMaterial;
 use App\Models\WithdrawalItemLog;
+use PhpOffice\PhpWord\PhpWord;
+use PhpOffice\PhpWord\SimpleType\TblWidth;
+use PhpOffice\PhpWord\Style\Table as TableStyle;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class CustomerController extends Controller
 {
@@ -109,6 +113,205 @@ class CustomerController extends Controller
         ));
     }
 
+    public function addbiddocument($id)
+    {
+        $project = Project::with([
+            'customer.province',
+            'customer.amphure',
+            'customer.tambon',
+            'projectname',
+            'projectexpenses.type',
+            'customerneed.productset.productSetName',
+            'customerneed.projectImage.imagetype',
+            'quotation.items',
+            'quotation.quotationMaterials'
+        ])->find($id);
+
+        $statusopenqtc = [
+            'pending_quotation',
+            'approved',
+            'waiting_approval'
+        ];
+
+        return view('customer.bid.addbiddocument', compact('project','statusopenqtc'));
+    }
+
+    public function receipt($id)
+    {
+        $project = $this->getCalculatedProject($id);
+        return view('customer.bid.receipt', compact('project'));
+    }
+
+    public function taxInvoice($id)
+    {
+        $project = $this->getCalculatedProject($id);
+        return view('customer.bid.tax_invoice', compact('project'));
+    }
+
+
+    private function getCalculatedProject($id)
+    {
+        $project = Project::with([
+            'customer.province',
+            'customer.amphure',
+            'customer.tambon',
+            'projectname',
+            'customerneed',
+            'customerneed.productset.productSetName',
+            'customerneed.productset.productsetitem',
+            'projectexpenses',
+            'projectexpenses.type',
+            'customerneed.productset.productsetitem.material',
+            'customerneed.productset.productsetitem.material.aluminiumItem.aluminiumType',
+            'customerneed.productset.productsetitem.material.aluminiumItem.aluminumSurfaceFinish',
+            'customerneed.productset.productsetitem.material.aluminiumItem.aluminiumLengths.price',
+            'customerneed.productset.productsetitem.material.glassItem.glassType',
+            'customerneed.productset.productsetitem.material.glassItem.colourItem',
+            'customerneed.productset.productsetitem.material.glassItem.glassSize.price',
+            'customerneed.productset.productsetitem.material.accessoryItem.accessoryType',
+            'customerneed.productset.productsetitem.material.accessoryItem.aluminumSurfaceFinish',
+            'customerneed.productset.productsetitem.material.accessoryItem.unit',
+            'customerneed.productset.productsetitem.material.consumableItem.unit',
+            'customerneed.productset.productsetitem.material.consumableItem.consumabletype',
+            'customerneed.productset.productsetitem.material.toolItem.toolType',
+            'customerneed.productset.productsetitem.material.price',
+            'assignedSurveyor.profile',
+            'quotation',
+            'installers',
+        ])->find($id);
+
+        foreach ($project->customerneed as $need) {
+            $m_w = $need->width / 100;
+            $m_h = $need->height / 100;
+            $needTotal = 0;
+            $requestlent = max($m_w, $m_h);
+
+            foreach ($need->productset->productsetitem as $item) {
+                $material = $item->material;
+                $type = $material->material_type;
+
+                $selectprice = 0;
+                $selectlot = '';
+                $remark = '';
+                $qtyuse = 0;
+                $description = ''; 
+
+                if ($type == 'อลูมิเนียม') {
+                    $totalneedlen = ($m_w * 2) + ($m_h * 2);
+                    $stock = Price::where('material_id', $material->id)
+                        ->where('quantity', '>', 0)
+                        ->whereHas('aluminiumlength', function ($show) use ($requestlent) {
+                            $show->where('length_meter', '>=', $requestlent);
+                        })
+                        ->orderBy('id', 'asc')
+                        ->first();
+
+                    if ($stock) {
+                        $len = $stock->aluminiumlength->length_meter;
+                        $qtyuse = ceil($totalneedlen / $len);
+                        $selectprice = $stock->price;
+                        $selectlot = $stock->lot;
+                        $item->calculated_price_id = $stock->id;
+                        $remark = "ใช้อลูมิเนียมยาว {$len} ม. จำนวน {$qtyuse} เส้น";
+                        
+                        $aluName = $material->aluminiumItem->aluminiumType->name ?? '';
+                        $aluColor = $material->aluminiumItem->aluminumSurfaceFinish->name ?? '';
+                        $description = "อลูมิเนียม {$aluName} สี{$aluColor} (ความยาว {$len} ม.)";
+                    } else {
+                        $flatlen = 6;
+                        $qtyuse = ceil($totalneedlen / $flatlen);
+                        $selectprice = 300;
+                        $selectlot = 'ไม่มีของ';
+                        $remark = "ใช้ราคาเหมา 300 บ. ต่อ เส้น ({$flatlen} ม.) จำนวน {$qtyuse} เส้น";
+                        $item->calculated_price_id = null;
+                        
+                        $aluName = $material->aluminiumItem->aluminiumType->name ?? '';
+                        $description = "อลูมิเนียม {$aluName} (ราคาเหมา ความยาว {$flatlen} ม.)";
+                    }
+                } elseif ($type == 'กระจก') {
+                    $stock = Price::where('material_id', $material->id)
+                        ->where('quantity', '>', 0)
+                        ->whereHas('glassSize', function ($q) use ($m_w, $m_h) {
+                            $q->where('width_meter', '>=', $m_w)
+                            ->where('length_meter', '>=', $m_h);
+                        })
+                        ->orderBy('id', 'asc')
+                        ->first();
+
+                    if ($stock && $stock->glassSize) {
+                        $sheetW = $stock->glassSize->width_meter;
+                        $sheetH = $stock->glassSize->length_meter;
+
+                        $qtyuse      = 2;
+                        $selectprice = $stock->price;
+                        $selectlot   = $stock->lot;
+                        $item->calculated_price_id = $stock->id;
+                        $remark      = "ใช้กระจก {$sheetW}×{$sheetH} ม. จำนวน {$qtyuse} แผ่น (×2 กันแตก)";
+
+                        $glassName  = $material->glassItem->glassType->name ?? '';
+                        $glassColor = $material->glassItem->colourItem->name ?? '';
+                        $description = "กระจก{$glassName} สี{$glassColor} (ขนาด {$sheetW}×{$sheetH} ม.)";
+
+                    } else {
+                        $flatW = 2;
+                        $flatH = 2;
+                        $qtyuse      = 2; 
+                        $selectprice = 400;
+                        $selectlot   = 'ไม่มีของ';
+                        $item->calculated_price_id = null;
+                        $remark      = "ใช้กระจกเหมา {$flatW}×{$flatH} ม. 400 บ./แผ่น จำนวน {$qtyuse} แผ่น (×2 กันแตก)";
+
+                        $glassName   = $material->glassItem->glassType->name ?? '';
+                        $description = "กระจก{$glassName} (ราคาเหมา {$flatW}×{$flatH} ม.)";
+                    }
+                } else {
+                    $stock = Price::where('material_id', $material->id)->where('quantity', '>', 0)->orderBy('id', 'asc')->first();
+                    if ($stock) {
+                        $selectprice = $stock->price;
+                        $selectlot = $stock->lot;
+                        $qtyuse = 1;
+                        $remark = '-';
+                        $item->calculated_price_id = $stock->id;
+                    } else {
+                        $qtyuse = 1;
+                        $selectprice = 100;
+                        $selectlot = 'ไม่มีของ';
+                        $remark = 'ใช้ราคาเหมา 100 บ.';
+                        $item->calculated_price_id = null;
+                    }
+                    if ($type == 'อุปกรณ์เสริม') {
+                        $accName = $material->accessoryItem->accessoryType->name ?? '';
+                        $description = "อุปกรณ์เสริม: {$accName}";
+                    } elseif ($type == 'วัสดุสิ้นเปลือง') {
+                        $conName = $material->consumableItem->consumabletype->name ?? '';
+                        $description = "วัสดุสิ้นเปลือง: {$conName}";
+                    } elseif ($type == 'เครื่องมือช่าง') {
+                        $toolName = $material->toolItem->toolType->name ?? '';
+                        $description = "เครื่องมือช่าง: {$toolName}";
+                    } else {
+                        $description = "วัสดุอื่นๆ";
+                    }
+                }
+
+                $total_item_price = $qtyuse * $selectprice;
+                $item->calculated_description = $description;
+                $item->calculated_material_type = $type;
+                
+                $item->calculated_lot = $selectlot;
+                $item->calculated_unit_price = $selectprice;
+                $item->calculated_qty = $qtyuse;
+                $item->calculated_total = $total_item_price;
+                $item->calculated_remark = $remark;
+
+                $needTotal += $total_item_price;
+            }
+
+            $need->calculated_total = $needTotal;
+        }
+
+        return $project;
+    }
+
 
     public function showcustomerproducts(){
         $productsets = ProductSet::with([
@@ -141,6 +344,98 @@ class CustomerController extends Controller
             default               => 'อื่นๆ'
         };
     }
+
+
+
+    
+    public function quotationPdf($id)
+    {
+        $project = Project::with([
+            'customer.province', 'customer.amphure', 'customer.tambon',
+            'projectname', 'projectexpenses.type', 'installers',
+            'quotation.items', 'quotation.quotationMaterials',
+        ])->find($id);
+
+        $quotation = Quotation::where('project_id', $project->id)->latest()->first();
+
+        if ($quotation) {
+            $totalExpenses   = $quotation->total_expense_amount;
+            $sumProductTotal = $quotation->total_product_amount;
+            $totalLabor      = $quotation->total_labor_amount;
+            $sevic           = $quotation->service_charge_amount;
+            $sumincome       = $totalExpenses + $sumProductTotal + $totalLabor + $sevic;
+            $pricevat        = $quotation->vat_amount;
+            $sumvattotal     = $quotation->grand_total;
+        } else {
+            $totalExpenses   = $project->projectexpenses->sum('amount');
+            $installerCount  = max($project->installers->count(), 1);
+            $totalLabor      = $project->labor_cost_surveying
+                            + ($project->estimated_work_days * $project->daily_labor_rate * $installerCount);
+            $sumProductTotal = 0;
+            $sumtotal        = $sumProductTotal + $totalExpenses + $totalLabor;
+            $sevic           = $sumtotal * 0.20;
+            $sumincome       = $sumtotal + $sevic;
+            $pricevat        = $sumincome * 0.07;
+            $sumvattotal     = $sumincome + $pricevat;
+        }
+
+        $installerCount = max($project->installers->count(), 1);
+
+        $pdf = Pdf::loadView('customer.pdf.quotation', compact(
+            'project', 'quotation',
+            'totalExpenses', 'sumProductTotal', 'totalLabor',
+            'sevic', 'sumincome', 'pricevat', 'sumvattotal', 'installerCount'
+        ))->setPaper('a4', 'portrait');
+
+        return $pdf->stream('ใบเสนอราคา-' . ($project->quotation_number ?? $project->id) . '.pdf');
+    }
+
+
+    public function receiptPdf($id)
+    {
+        $project = Project::with([
+            'customer.province', 'customer.amphure', 'customer.tambon',
+            'projectname', 'quotation',
+        ])->find($id);
+
+        $sumvattotal = $project->quotation->grand_total;
+        $pricevat    = $project->quotation->vat_amount;
+        $sumincome   = $sumvattotal - $pricevat;
+
+        $pdf = Pdf::loadView('customer.pdf.receipt', compact(
+            'project', 'sumvattotal', 'pricevat', 'sumincome'
+        ))->setPaper('a4', 'portrait');
+
+        return $pdf->stream('ใบเสร็จ-' . ($project->receipt_number ?? $project->id) . '.pdf');
+    }
+
+
+    public function taxInvoicePdf($id)
+    {
+        $project = Project::with([
+            'customer.province', 'customer.amphure', 'customer.tambon',
+            'projectname', 'quotation',
+        ])->find($id);
+
+        $sumvattotal = $project->quotation->grand_total;
+        $pricevat    = $project->quotation->vat_amount;
+        $sumincome   = $sumvattotal - $pricevat;
+
+        $pdf = Pdf::loadView('customer.pdf.tax_invoice', compact(
+            'project', 'sumvattotal', 'pricevat', 'sumincome'
+        ))->setPaper('a4', 'portrait');
+
+        return $pdf->stream('ใบกำกับภาษี-' . ($project->tax_invoice_number ?? $project->id) . '.pdf');
+    }
+
+
+
+
+    
+
+   
+
+
 
 
 

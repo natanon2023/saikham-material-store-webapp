@@ -332,7 +332,7 @@
                     @if($hasQuotation)
                         <div class="doc-card-num">เลขที่ <span>{{ $project->quotation_number ?? '-' }}</span></div>
                         <div style="border-top: 1px solid #D4B483; margin-top: 20px;"></div>
-                        <a href="{{ route('admin.projects.addbiddocument', $project->id) }}"
+                        <a href="{{ route('customer.addbiddocument', $project->id) }}"
                            class="btn-outline-navy" style="margin-top: 4px; text-align:center; display:block; text-decoration:none; padding: 6px 0; border-radius: 0px;">
                             ดูเอกสาร
                         </a>
@@ -347,7 +347,7 @@
                     @if($hasReceipt)
                         <div class="doc-card-num">เลขที่ <span>{{ $project->receipt_number ?? '-' }}</span></div>
                         <div style="border-top: 1px solid #D4B483; margin-top: 20px;"></div>
-                        <a href="{{ route('admin.projects.receipt', $project->id) }}"
+                        <a href="{{ route('customer.receipt', $project->id) }}"
                            class="btn-outline-navy" style="margin-top: 4px; text-align:center; display:block; text-decoration:none; padding: 6px 0; border-radius: 0px;">
                             ดูเอกสาร
                         </a>
@@ -365,7 +365,7 @@
                         </div>
                         <div style="border-top: 1px solid #D4B483; margin-top: 20px;"></div>
                         <div >
-                            <a href="{{ route('admin.projects.taxInvoice', $project->id) }}"
+                            <a href="{{ route('customer.taxInvoice', $project->id) }}"
                             class="btn-outline-navy" style="margin-top: 4px; text-align:center; display:block; text-decoration:none; padding: 6px 0; border-radius: 0;">
                                 ดูเอกสาร
                             </a>
