@@ -26,9 +26,9 @@
         <h3 style="margin: 0;">ออกใบกำกับภาษี</h3>
         <div style="display: flex; gap: 10px;">
             <a href="{{ route('admin.projects.alldetail', $project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
-            <button type="button" onclick="window.print()" class="btn btn-danger" style="background-color: #dc3545; color: white;">
-                <i class="fas fa-print"></i> พิมพ์ใบกำกับภาษี
-            </button>
+            <a href="{{ route('admin.projects.pdf.taxinvoice', $project->id) }}" target="_blank" class="btn" style="background:#17a2b8; color:white;">
+                <i class="fas fa-file-pdf"></i> PDF
+            </a>
         </div>
     </div>
     

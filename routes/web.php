@@ -317,6 +317,9 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
 
         Route::post('/cancellinstalling/{id}',[ProjectController::class, 'cancellinstalling'])->name('cancellinstalling');
 
+        Route::get('/my/projects/{id}/pdf/quotation',  [CustomerController::class, 'quotationPdf'])->name('pdf.quotation');
+        Route::get('/my/projects/{id}/pdf/receipt',    [CustomerController::class, 'receiptPdf'])->name('pdf.receipt');
+        Route::get('/my/projects/{id}/pdf/taxinvoice', [CustomerController::class, 'taxInvoicePdf'])->name('pdf.taxinvoice');
 
 
 

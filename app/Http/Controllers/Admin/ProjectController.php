@@ -55,6 +55,7 @@ use App\Models\QuotationMaterial;
 use App\Models\WithdrawalItemLog;
 use GuzzleHttp\Promise\Create;
 use Illuminate\Support\Facades\Validator;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ProjectController extends Controller
 {
@@ -3189,6 +3190,88 @@ class ProjectController extends Controller
         return redirect()->route('admin.projects.index',$project->id)->with('success','ยกเลิกสถานะสำเร็จ');
 
     }  
+
+
+
+    public function quotationPdf($id)
+    {
+        $project = Project::with([
+            'customer.province', 'customer.amphure', 'customer.tambon',
+            'projectname', 'projectexpenses.type', 'installers',
+            'quotation.items', 'quotation.quotationMaterials',
+        ])->find($id);
+
+        $quotation = Quotation::where('project_id', $project->id)->latest()->first();
+
+        if ($quotation) {
+            $totalExpenses   = $quotation->total_expense_amount;
+            $sumProductTotal = $quotation->total_product_amount;
+            $totalLabor      = $quotation->total_labor_amount;
+            $sevic           = $quotation->service_charge_amount;
+            $sumincome       = $totalExpenses + $sumProductTotal + $totalLabor + $sevic;
+            $pricevat        = $quotation->vat_amount;
+            $sumvattotal     = $quotation->grand_total;
+        } else {
+            $totalExpenses   = $project->projectexpenses->sum('amount');
+            $installerCount  = max($project->installers->count(), 1);
+            $totalLabor      = $project->labor_cost_surveying
+                            + ($project->estimated_work_days * $project->daily_labor_rate * $installerCount);
+            $sumProductTotal = 0;
+            $sumtotal        = $sumProductTotal + $totalExpenses + $totalLabor;
+            $sevic           = $sumtotal * 0.20;
+            $sumincome       = $sumtotal + $sevic;
+            $pricevat        = $sumincome * 0.07;
+            $sumvattotal     = $sumincome + $pricevat;
+        }
+
+        $installerCount = max($project->installers->count(), 1);
+
+        $pdf = Pdf::loadView('admin.pdf.quotation', compact(
+            'project', 'quotation',
+            'totalExpenses', 'sumProductTotal', 'totalLabor',
+            'sevic', 'sumincome', 'pricevat', 'sumvattotal', 'installerCount'
+        ))->setPaper('a4', 'portrait');
+
+        return $pdf->stream('ใบเสนอราคา-' . ($project->quotation_number ?? $project->id) . '.pdf');
+    }
+
+
+    public function receiptPdf($id)
+    {
+        $project = Project::with([
+            'customer.province', 'customer.amphure', 'customer.tambon',
+            'projectname', 'quotation',
+        ])->find($id);
+
+        $sumvattotal = $project->quotation->grand_total;
+        $pricevat    = $project->quotation->vat_amount;
+        $sumincome   = $sumvattotal - $pricevat;
+
+        $pdf = Pdf::loadView('admin.pdf.receipt', compact(
+            'project', 'sumvattotal', 'pricevat', 'sumincome'
+        ))->setPaper('a4', 'portrait');
+
+        return $pdf->stream('ใบเสร็จ-' . ($project->receipt_number ?? $project->id) . '.pdf');
+    }
+
+
+    public function taxInvoicePdf($id)
+    {
+        $project = Project::with([
+            'customer.province', 'customer.amphure', 'customer.tambon',
+            'projectname', 'quotation',
+        ])->find($id);
+
+        $sumvattotal = $project->quotation->grand_total;
+        $pricevat    = $project->quotation->vat_amount;
+        $sumincome   = $sumvattotal - $pricevat;
+
+        $pdf = Pdf::loadView('admin.pdf.tax_invoice', compact(
+            'project', 'sumvattotal', 'pricevat', 'sumincome'
+        ))->setPaper('a4', 'portrait');
+
+        return $pdf->stream('ใบกำกับภาษี-' . ($project->tax_invoice_number ?? $project->id) . '.pdf');
+    }
 
 
 

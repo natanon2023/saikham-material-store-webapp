@@ -27,9 +27,9 @@
         <h3 style="margin: 0;">ออกใบเสร็จรับเงิน</h3>
         <div style="display: flex; gap: 10px;">
             <a href="{{ route('admin.projects.alldetail', $project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
-            <button type="button" onclick="window.print()" class="btn btn-success" style="background-color: #28a745; color: white;">
-                <i class="fas fa-print"></i> พิมพ์ใบเสร็จ
-            </button>
+            <a href="{{ route('admin.projects.pdf.receipt', $project->id) }}" target="_blank" class="btn" style="background:#17a2b8; color:white;">
+                <i class="fas fa-file-pdf"></i> PDF
+            </a>
         </div>
     </div>
     

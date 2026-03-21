@@ -91,9 +91,9 @@
                     </button>
                 </form>
             @endif
-            <button type="button" onclick="window.print()" class="btn" style="background-color: #17a2b8; color: white;">
-                <i class="fas fa-print"></i> พิมพ์ใบเสนอราคา
-            </button>
+            <a href="{{ route('admin.projects.pdf.quotation', $project->id) }}" target="_blank" class="btn" style="background:#17a2b8; color:white;">
+                <i class="fas fa-file-pdf"></i> PDF
+            </a>
         </div>
     </div>
 
