@@ -196,7 +196,7 @@ $quotation = \App\Models\Quotation::where('project_id', $project->id)->latest()-
                 <td>วันติดตั้ง</td>
                 <td align="center">{{ $project->estimated_work_days }}</td>
                 <td align="center">{{ number_format($project->daily_labor_rate, 2) }}</td>
-                <td align="center">{{ $installerCount }} คน</td>
+                <td align="center">{{ $installerCount }}</td>
                 <td align="right">{{ number_format($project->estimated_work_days * $project->daily_labor_rate * $installerCount, 2) }}</td>
             </tr>
             <tr style="background-color: #f9f9f9 !important;">

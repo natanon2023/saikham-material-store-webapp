@@ -14,6 +14,7 @@ class WithdrawalItem extends Model
         'material_id',
         'lot',
         'quantity',
+        'direction',
     ];
 
     public function withdrawal()

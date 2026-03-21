@@ -191,8 +191,8 @@
                         @endif
                     </div>
                     <div style="display: flex; flex-direction: column; gap:5px; justify-content: end;">
-                        <a href="{{ route('technician.projects.alldetail',$project->id) }}" class="btn btn-primary btn-full-text" title="ดูรายละเอียดเต็ม" style="{{ $project->trashed() ? 'pointer-events: none; opacity: 0.5;' : '' }}">
-                            ดูรายละเอียดทั้งหมด
+                        <a href="{{ route('technician.projects.alldetail',$project->id) }}" class="btn-icon btn-show" title="ดูรายละเอียด" style="{{ $project->trashed() ? 'pointer-events: none; opacity: 0.5;' : '' }}">
+                            <i class="fas fa-eye"></i>
                         </a>
                     </div>
                 </div>

@@ -197,10 +197,11 @@
                         <span style="color: #dc3545; font-weight: bold;">กรุณากู้คืนงานก่อนทำรายการต่อ</span>
                     @endif
                 </div>
-                <div style="display: flex; flex-direction: column; gap:5px; justify-content: end;">
-                    <a href="{{ route('admin.projects.alldetail', $project->id) }}" class="btn btn-primary btn-full-text" title="ดูรายละเอียดเต็ม" style="{{ $project->trashed() ? 'pointer-events: none; opacity: 0.5;' : '' }}">
-                        ดูรายละเอียดทั้งหมด
+                <div >
+                    <a href="{{ route('admin.projects.alldetail', $project->id) }}" class="btn-icon btn-show" title="ดูรายละเอียด"  style="{{ $project->trashed() ? 'pointer-events: none; opacity: 0.5;' : '' }}">
+                        <i class="fas fa-eye"></i>
                     </a>
+
 
                     @if($project->trashed())
                     <form action="{{ route('admin.projects.restore', $project->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('ยืนยันการกู้คืน?');">

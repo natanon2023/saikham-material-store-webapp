@@ -77,7 +77,7 @@
                             <a href="{{ route('admin.projects.showissuedetail',$issue->id) }}" class="btn-icon btn-show" title="ดูรายละเอียด" style="margin-bottom: 10px;">
                                 <i class="fas fa-eye"></i>
                             </a>
-                            @if ($issue->status == 'pending')
+                            @if ($issue->status == 'pending' or $issue->status == 'in_progress')
                             <a href="{{ route('admin.projects.issues.edit',$issue->id) }}" class="btn-icon btn-edit" title="แก้ไข">
                                 <i class="fas fa-edit"></i>
                             </a>
