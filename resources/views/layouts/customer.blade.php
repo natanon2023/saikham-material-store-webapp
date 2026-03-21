@@ -537,13 +537,18 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="">
+                        <a class="nav-link {{ request()->routeIs('customer.showcustomerproducts') ? 'active' :'' }}" href="{{ route('customer.showcustomerproducts') }}" >
                             ผลิตภัณฑ์
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('customer.cakestatuspage') ? 'active' : '' }}" href="{{ route('customer.cakestatuspage') }}">
                             เช็คสถานะ
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('/login') ? 'active' : '' }}" href="/login">
+                            เข้าสู่ระบบ
                         </a>
                     </li>
                 </ul>

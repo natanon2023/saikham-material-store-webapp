@@ -24,13 +24,14 @@ Route::post('/logout', function () {
     request()->session()->invalidate();
     request()->session()->regenerateToken();
 
-    return redirect('/login');
+    return redirect()->route('home');
 })->name('logout');
 
 
 Route::get('/', [CustomerController::class, 'publicPage'])->name('home');
 Route::get('/check-status', [CustomerController::class, 'cakestatuspage'])->name('customer.cakestatuspage');
 Route::get('/project-detail/{id}', [CustomerController::class, 'projectDetail'])->name('customer.projectdetail');
+Route::get('/showcustomerproducts',[CustomerController::class,'showcustomerproducts'])->name('customer.showcustomerproducts');
 
 
 Route::middleware([
