@@ -79,20 +79,34 @@ class CustomerController extends Controller
         return view('customer.cakestatuspage', compact('projects', 'phone'));
     }
 
-    public function projectDetail($id){
+   
+    public function projectDetail($id)
+    {
         $project = Project::with([
             'customer.province',
             'customer.amphure',
             'customer.tambon',
             'projectname',
-            'projectimage',
+            'projectimage.imagetype',
             'customerneed.productset.productSetName',
-            'projectexpenses.type'
+            'projectexpenses.type',
+            'quotation',        
+            'installers',        
         ])->find($id);
 
         $statusesthiname = $this->getStatusName($project->status);
 
-        return view('customer.projectdetail', compact('project','statusesthiname'));
+        $quotation = $project->quotation ?? null;
+
+        $hasQuotation = $quotation !== null;
+        $hasReceipt   = in_array($project->status, [
+            'approved', 'material_planning', 'waiting_purchase',
+            'ready_to_withdraw', 'materials_withdrawn', 'installing', 'completed',
+        ]);
+
+        return view('customer.projectdetail', compact(
+            'project', 'statusesthiname', 'quotation', 'hasQuotation', 'hasReceipt'
+        ));
     }
 
 
