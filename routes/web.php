@@ -38,6 +38,8 @@ Route::get('/addbiddocument/{id}',[CustomerController::class,'addbiddocument'])-
 Route::get('/my/projects/{id}/pdf/quotation',  [CustomerController::class, 'quotationPdf'])->name('customer.pdf.quotation');
 Route::get('/my/projects/{id}/pdf/receipt',    [CustomerController::class, 'receiptPdf'])->name('customer.pdf.receipt');
 Route::get('/my/projects/{id}/pdf/taxinvoice', [CustomerController::class, 'taxInvoicePdf'])->name('customer.pdf.taxinvoice');
+Route::get('/estimate/{productset_id}',  [CustomerController::class, 'estimateForm'])->name('customer.estimate.form');
+Route::post('/estimate/{productset_id}', [CustomerController::class, 'estimateCalculate'])->name('customer.estimate.calculate');
 
 
 Route::middleware([

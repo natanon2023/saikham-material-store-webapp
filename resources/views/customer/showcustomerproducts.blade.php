@@ -237,7 +237,7 @@
                         onclick="openModal('modal-{{ $product->id }}')">
                     ดูรายละเอียด
                 </button>
-                <a href="" class="btn-gold-outline">ประเมินราคา</a>
+                <a href="{{ route('customer.estimate.form', $product->id) }}" class="btn-gold-outline">ประเมินราคา</a>
             </div>
         </div>
 

@@ -58,7 +58,7 @@
                     <a href="{{ route('home') }}" class="sidebar-link">หน้าหลัก</a>
                 </li>
                 <li class="sidebar-list-item">
-                    <a href="" class="sidebar-link">ผลิตภัณฑ์ทั้งหมด</a>
+                    <a href="{{ route('customer.showcustomerproducts') }}" class="sidebar-link">ผลิตภัณฑ์ทั้งหมด</a>
                 </li>
                 <li class="sidebar-list-item">
                     <a href="{{ route('customer.cakestatuspage') }}" class="sidebar-link">เช็คสถานะการติดตั้ง</a>

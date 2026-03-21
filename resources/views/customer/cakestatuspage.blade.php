@@ -1,39 +1,37 @@
 @extends('layouts.customer')
 @section('content')
 
-    @include('components.successanderror')
+@include('components.successanderror')
 
+<div style="max-width: 1100px; margin: 0 auto; padding: 0 1rem;">
     <h3 style="color: #1F2933;">เช็คสถานะการติดตั้ง</h3>
 
     <form action="{{ route('customer.cakestatuspage') }}" method="GET">
         <div>
-           <input type="text" name="phone" placeholder="กรอกเบอร์โทรศัพท์" value="{{ $phone }}" class="form-input" style="width: 70%;">
-           <button type="submit" class="btn btn-primary"><i class="fa-solid fa-magnifying-glass"></i>ค้นหา</button> 
+            <input type="text" name="phone" placeholder="กรอกเบอร์โทรศัพท์" value="{{ $phone }}" class="form-input" style="width: 70%;">
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-magnifying-glass"></i>ค้นหา</button>
         </div>
     </form>
 
-    <hr>
-
-    @if(count($projects) > 0)
-    <div class="project-timeline">
-    @foreach($projects as $row)
+    @if(count($projects) > 0)<div class="project-timeline">
+        @foreach($projects as $row)
         @php
-            $thaiStatus = match($row->status) {
-                'waiting_survey'      => 'รอสำรวจ',
-                'pending_survey'      => 'ค้างสำรวจ',
-                'surveying'           => 'กำลังสำรวจ',
-                'pending_quotation'   => 'รอเสนอราคา',
-                'waiting_approval'    => 'รออนุมัติ',
-                'approved'            => 'อนุมัติแล้ว',
-                'material_planning'   => 'วางแผนวัสดุ',
-                'waiting_purchase'    => 'รอซื้อวัสดุ',
-                'ready_to_withdraw'   => 'พร้อมเบิก',
-                'materials_withdrawn' => 'เบิกวัสดุแล้ว',
-                'installing'          => 'กำลังติดตั้ง',
-                'completed'           => 'เสร็จสิ้น',
-                'cancelled'           => 'ยกเลิก',
-                default               => 'อื่นๆ'
-            };
+        $thaiStatus = match($row->status) {
+        'waiting_survey' => 'รอสำรวจ',
+        'pending_survey' => 'ค้างสำรวจ',
+        'surveying' => 'กำลังสำรวจ',
+        'pending_quotation' => 'รอเสนอราคา',
+        'waiting_approval' => 'รออนุมัติ',
+        'approved' => 'อนุมัติแล้ว',
+        'material_planning' => 'วางแผนวัสดุ',
+        'waiting_purchase' => 'รอซื้อวัสดุ',
+        'ready_to_withdraw' => 'พร้อมเบิก',
+        'materials_withdrawn' => 'เบิกวัสดุแล้ว',
+        'installing' => 'กำลังติดตั้ง',
+        'completed' => 'เสร็จสิ้น',
+        'cancelled' => 'ยกเลิก',
+        default => 'อื่นๆ'
+        };
         @endphp
 
         <div class="project-item">
@@ -53,8 +51,12 @@
                 </div>
             </div>
         </div>
-    @endforeach
+        @endforeach
+    </div>
+    @endif
+
 </div>
-@endif
+
+    
 
 @endsection
