@@ -170,14 +170,6 @@
                         <div style="display: flex; flex-direction:row; gap: 5px;">
                             <a href="{{ route('technician.projects.choosetypeissues', $project->id) }}" class="btn  btn-edit btn-full-text">แจ้งปัญหา</a>
                             <a href="{{ route('technician.projects.confirmworkcompletedpage', $project->id) }}" class="btn btn-secondary btn-full-text">ยืนยันการทำงานเสร็จสิ้น</a>
-                            @if (\Carbon\Carbon::parse($project->installation_start_date)->addDay()->isFuture())
-                            <form action="{{ route('technician.projects.cancellinstalling', $project->id) }}" method="POST" style="margin: 0;">
-                                @csrf
-                                <button type="submit" class="btn btn-delecte btn-full-text" style="height: max-content;">
-                                    ยกเลิกการติกตั้ง
-                                </button>
-                            </form>
-                            @endif
                         </div>
                             
                         @elseif($project->status == 'completed')

@@ -385,19 +385,18 @@ Route::middleware(['auth', 'verified', 'role:technician'])->group(function () {
     Route::post('/projects/{id}/close', [TechnicianProjectController::class, 'close'])->name('technician.projects.close');
 
     Route::prefix('technician/project')->name('technician.projects.')->group(function(){
-        //สำรวจ
+        
         Route::get('/formsurveying/{id}',[TechnicianProjectController::class,'formsurveying'])->name('formsurveying');
         Route::post('/updatestatussurveying/{id}',[TechnicianProjectController::class,'updatestatussurveying'])->name('updatestatussurveying');
         Route::post('/addautersurver',[TechnicianProjectController::class,'addautersurver'])->name('addautersurver');
 
-        //ภาพ
+        
         Route::get('/formprojectimage/{id}',[TechnicianProjectController::class,'formprojectimage'])->name('formprojectimage');
         Route::post('/createprojectimage',[TechnicianProjectController::class,'createprojectimage'])->name('createprojectimage');
         Route::get('/formeditprojectimage/{id}',[TechnicianProjectController::class,'formeditprojectimage'])->name('formeditprojectimage');
         Route::put('/updateprojectimage/{id}',[TechnicianProjectController::class,'updateprojectimage'])->name('updateprojectimage');
         Route::delete('/deleteprojectimage/{id}',[TechnicianProjectController::class,'deleteprojectimage'])->name('deleteprojectimage');
 
-        //ประเภทภาพ
         Route::get('/formcrateimgtype/{id}',[TechnicianProjectController::class,'formcrateimgtype'])->name('formcrateimgtype');
         Route::post('crateimgtype',[TechnicianProjectController::class,'crateimgtype'])->name('crateimgtype');
         Route::put('/{id}', [TechnicianProjectController::class, 'updateimgtype'])->name('updateimgtype');
@@ -405,7 +404,6 @@ Route::middleware(['auth', 'verified', 'role:technician'])->group(function () {
         Route::post('/{id}/restore', [TechnicianProjectController::class, 'restoreimgtype'])->name('restoreimgtype');
 
 
-        //ความต้องการลูกค้า
         Route::get('/formcustomerneed/{id}',[TechnicianProjectController::class,'formcustomerneed'])->name('formcustomerneed');
         Route::post('addcustomerneed',[TechnicianProjectController::class,'addcustomerneed'])->name('addcustomerneed');
         Route::get('/editformcustomerneed/{id}',[TechnicianProjectController::class,'editformcustomerneed'])->name('editformcustomerneed');
@@ -416,13 +414,10 @@ Route::middleware(['auth', 'verified', 'role:technician'])->group(function () {
         Route::get('/formcustomerneeddetial/{id}',[TechnicianProjectController::class,'formcustomerneeddetial'])->name('formcustomerneeddetial');
         Route::post('/addcustomerneeddetial',[TechnicianProjectController::class,'addcustomerneeddetial'])->name('addcustomerneeddetial');
 
-        //อัปเดตจากสำรวจ
         Route::post('/updatestatuspendingquotation',[TechnicianProjectController::class,'updatestatuspendingquotation']) ->name('updatestatuspendingquotation');
 
-        //เริ่มติดตั้ง
         Route::post('{id}/installing', [TechnicianProjectController::class, 'updatestatusinstalling'])->name('updatestatusinstalling');
 
-        //แจ้งปัยหา
         Route::get('/choosetypeissues/{id}',[TechnicianProjectController::class,'choosetypeissues'])->name('choosetypeissues');
         Route::get('/issues/create/{id}',[TechnicianProjectController::class,'createIssue'])->name('issues.create');
         Route::get('/generalissues/{id}',[TechnicianProjectController::class,'generalissues'])->name('generalissues');
@@ -441,7 +436,6 @@ Route::middleware(['auth', 'verified', 'role:technician'])->group(function () {
 
 
 
-        //ยืนยันการติดตั้ง
         Route::get('/confirmworkcompletedpage/{id}',[TechnicianProjectController::class,'confirmworkcompletedpage'])->name('confirmworkcompletedpage');
         Route::post('projects/customerneed/{need_id}/upload-after-image', [TechnicianProjectController::class, 'uploadAfterImage'])->name('uploadafterimage');
         Route::delete('projects/customerneed/{need_id}/delete-after-image', [TechnicianProjectController::class, 'deleteAfterImage'])->name('deleteafterimage');
@@ -449,13 +443,10 @@ Route::middleware(['auth', 'verified', 'role:technician'])->group(function () {
         Route::delete('/project/{id}/remove-installer', [TechnicianProjectController::class, 'removeInstaller'])->name('removeinstaller');
 
 
-        //ยกเลิกการติดตั้ง
         Route::post('/cancellinstalling/{id}',[TechnicianProjectController::class,'cancellinstalling']) ->name('cancellinstalling');
 
-        //รายละเอียดทั้งหมด
         Route::get('/detail/{id}', [TechnicianProjectController::class, 'projectalldetail'])->name('alldetail');
 
-        //คืนวัสดุ
         Route::get('/managewithdrawals', [TechnicianProjectController::class, 'managewithdrawals'])->name('managewithdrawals');
         Route::get('/{id}/withdrawdetails', [TechnicianProjectController::class, 'withdrawdetails'])->name('withdrawdetails');
         Route::get('projects/{id}/withdrawtools', [TechnicianProjectController::class, 'withdrawtoolspage'])->name('withdrawtoolspage');
@@ -468,14 +459,5 @@ Route::middleware(['auth', 'verified', 'role:technician'])->group(function () {
         Route::post('projects/{id}/withdrawtools/store', [TechnicianProjectController::class, 'withdrawtoolsstore'])->name('withdrawtoolsstore');
         Route::post('/withdrawal-item/{id}/return-tool',[TechnicianProjectController::class, 'returnTool'])->name('return_tool');
         
-
-
-
-
-
-
-
-
-
     });
 });

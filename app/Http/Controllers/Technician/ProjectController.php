@@ -57,7 +57,6 @@ use Illuminate\Support\Facades\Validator;
 
 class ProjectController extends Controller
 {
-   //หน้าเริ่ม
     public function index($id)
     {
         $project = Project::withTrashed()->with([
@@ -96,7 +95,6 @@ class ProjectController extends Controller
         return view("technician.projects.index", compact('project', 'statusColors', 'currentStatus'));
     }
 
-    //สำรวจ
     public function updatestatussurveying(Request $request, $id)
     {
         $project = Project::find($id);
@@ -512,7 +510,6 @@ class ProjectController extends Controller
 
 
 
-    //ไปจากสำรวจ
     public function updatestatuspendingquotation(Request $request)
     {
 
@@ -525,7 +522,6 @@ class ProjectController extends Controller
     }
 
 
-    //เริ่มติดตั้ง
     public function updatestatusinstalling($id)
     {
         $project = Project::find($id);
@@ -537,7 +533,6 @@ class ProjectController extends Controller
         return redirect()->route('technician.projects.index', $project->id)->with('success', 'อัปเดตสถานะเป็น กำลังติดตั้ง');
     }
 
-    //จัดการปัญหา
     public function choosetypeissues($id){
         $projects = Project::find($id);
         return view('technician.projects.issues.choosetypeissues',compact('projects'));
@@ -574,38 +569,43 @@ class ProjectController extends Controller
         if (!$request->hasFile('image_data') || !$request->file('image_data')->isValid()) {
             return redirect()->back()->with('error', 'กรุณาแนบรูปภาพหลักฐานที่ถูกต้อง');
         }
-
+    
         $withdrawalItem = WithdrawalItem::find($request->withdrawal_item_damaged);
-        
+    
         if (!$withdrawalItem) {
             return redirect()->back()->with('error', 'ไม่พบข้อมูลรายการวัสดุที่เลือก');
         }
-
+    
+        $belongsToProject = $withdrawalItem->withdrawal->project_id == $project_id;
+        if (!$belongsToProject) {
+            return redirect()->back()->with('error', 'รายการวัสดุนี้ไม่ได้อยู่ในงานนี้');
+        }
+    
         if ($request->damaged_amount > $withdrawalItem->quantity) {
             return redirect()->back()->with('error', 'จำนวนที่แจ้งเสียมากกว่าจำนวนที่มีอยู่');
         }
-
+    
         $file = $request->file('image_data');
         $imageData = file_get_contents($file->getRealPath());
-
+    
         $issue = ProjectIssue::create([
-            'project_id'  => $project_id,
-            'reported_by' => Auth::id(),
-            'category'    => 'material_problems',
-            'description' => $request->description,
-            'status'      => 'pending',
+            'project_id'              => $project_id,
+            'reported_by'             => Auth::id(),
+            'category'                => 'material_problems',
+            'description'             => $request->description,
+            'status'                  => 'pending',
             'withdrawal_item_damaged' => $request->withdrawal_item_damaged,
-            'damaged_amount' => $request->damaged_amount,
+            'damaged_amount'          => $request->damaged_amount,
         ]);
-
+    
         IssueImage::create([
             'issue_id'   => $issue->id,
             'image_data' => $imageData,
         ]);
-
+    
         $withdrawalItem->quantity -= $request->damaged_amount;
         $withdrawalItem->save();
-
+    
         return redirect()->back()->with('success', 'รายงานปัญหาและปรับยอดวัสดุเรียบร้อยแล้ว');
     }
 
@@ -790,51 +790,56 @@ class ProjectController extends Controller
 
     public function storeRefillIssue(Request $request, $id)
     {
-        $issue        = ProjectIssue::find($id);
+        $issue          = ProjectIssue::find($id);
         $withdrawalItem = WithdrawalItem::find($issue->withdrawal_item_damaged);
-
+    
         $withdrawalItem->quantity += $request->refill_amount;
         $withdrawalItem->save();
-
-        $price = Price::where('material_id', $withdrawalItem->material_id)->where('lot', $withdrawalItem->lot)->first();
-
-        if ($price) {
-            $price->increment('quantity', $request->refill_amount);
-
-            MaterialLog::create([
-                'material_id' => $withdrawalItem->material_id,
-                'price_id'    => $price->id,
-                'user_id'     => Auth::id(),
-                'direction'   => 'in',
-                'quantitylog' => $request->refill_amount,
-                'project_id'  => $issue->project_id,
-                'source'      => 'issue_refill',       
-                'note'        => 'เติมวัสดุจากปัญหา' . ': ' . $issue->description,
-            ]);
-        }
-
+    
+        $price = Price::where('material_id', $withdrawalItem->material_id)
+            ->where('lot', $withdrawalItem->lot)
+            ->first();
+    
+        MaterialLog::create([
+            'material_id' => $withdrawalItem->material_id,
+            'price_id'    => $price?->id,
+            'user_id'     => Auth::id(),
+            'direction'   => 'in',
+            'quantitylog' => $request->refill_amount,
+            'project_id'  => $issue->project_id,
+            'source'      => 'issue_refill',
+            'note'        => 'เติมวัสดุจากปัญหา: ' . $issue->description,
+        ]);
+    
         $issue->update([
             'status'          => 'resolved',
-            'refilled_amount' => $request->refill_amount
+            'refilled_amount' => $request->refill_amount,
         ]);
-
+    
         return redirect()->route('technician.projects.issues.detail', $issue->project_id)
             ->with('success', 'เติมวัสดุและอัปเดตสถานะเสร็จสิ้นเรียบร้อยแล้ว');
     }
 
     public function undoRefillIssue($id)
     {
-        $issue = ProjectIssue::find($id);
+        $issue          = ProjectIssue::find($id);
         $withdrawalItem = WithdrawalItem::find($issue->withdrawal_item_damaged);
-
+    
         $withdrawalItem->quantity -= $issue->refilled_amount;
         $withdrawalItem->save();
-
+    
+        MaterialLog::where('project_id', $issue->project_id)
+            ->where('source', 'issue_refill')
+            ->where('material_id', $withdrawalItem->material_id)
+            ->latest()
+            ->first()
+            ?->delete();
+    
         $issue->update([
-            'status' => 'in_progress',
-            'refilled_amount' => null
+            'status'          => 'in_progress',
+            'refilled_amount' => null,
         ]);
-
+    
         return redirect()->back()->with('success', 'ยกเลิกการเติมวัสดุเรียบร้อยแล้ว สามารถกดเติมใหม่ได้');
     }
 
@@ -909,7 +914,6 @@ class ProjectController extends Controller
 
 
 
-    //ยืนยันการติดตั้ง
     public function confirmworkcompletedpage($id){
         
         $project = $this->qerydataproject($id);
@@ -961,7 +965,6 @@ class ProjectController extends Controller
 
 
 
-    //ยกเลิกงาน
     public function cancellinstalling($id)
     {
         $project = Project::find($id);
@@ -988,7 +991,6 @@ class ProjectController extends Controller
     }
 
 
-    //แสดงรายละเอียด
     public function projectalldetail($id)
     {
 
@@ -1100,7 +1102,6 @@ class ProjectController extends Controller
     }
 
 
-    //คืน
     public function managewithdrawals()
     {
         $withdrawals = Withdrawal::whereHas('project')
@@ -1133,30 +1134,58 @@ class ProjectController extends Controller
         return view('technician.projects.withdraw.managewithdrawals', compact('groupwithdrawals', 'statusColors'));
     }
 
+    
+
     public function withdrawdetails($id)
     {
         $project = Project::with(['projectname', 'customer'])->find($id);
-    
+
         if (!$project) {
             return redirect()->back()->with('error', 'ไม่พบข้อมูลงานนี้');
         }
-    
-        $withdrawals = Withdrawal::with([
-            'withdrawnBy',
-            'items.material.aluminiumItem.aluminiumType',
-            'items.material.aluminiumItem.aluminumSurfaceFinish',
-            'items.material.aluminiumItem.aluminiumLengths',
-            'items.material.glassItem.glassType',
-            'items.material.glassItem.colourItem',
-            'items.material.glassItem.glassSize',
-            'items.material.accessoryItem.accessoryType',
-            'items.material.consumableItem.consumabletype',
-            'items.material.toolItem.toolType',
-        ])->where('project_id', $project->id)->where('withdrawn_by', Auth::id()) ->latest()->get();
-    
-        $returnedMaterialIds = MaterialLog::where('project_id', $id)->where('user_id', Auth::id()) ->where('direction', 'in')->whereIn('source', ['return_material', 'return_tool'])->pluck('material_id')->unique()->toArray();
-    
-        return view('technician.projects.withdraw.withdrawdetails',compact('project', 'withdrawals', 'returnedMaterialIds'));
+
+        $currentItems = WithdrawalItem::whereHas('withdrawal', function ($q) use ($id) {
+                $q->where('project_id', $id)->where('withdrawn_by', Auth::id()); 
+            })
+            ->where('quantity', '>', 0)
+            ->with([
+                'withdrawal.withdrawnBy',
+                'material.aluminiumItem.aluminiumType',
+                'material.aluminiumItem.aluminumSurfaceFinish',
+                'material.glassItem.glassType',
+                'material.glassItem.colourItem',
+                'material.accessoryItem.accessoryType',
+                'material.consumableItem.consumabletype',
+                'material.toolItem.toolType',
+            ])->get();
+
+        $materialLogs = MaterialLog::with([
+                'material.aluminiumItem.aluminiumType',
+                'material.aluminiumItem.aluminumSurfaceFinish',
+                'material.glassItem.glassType',
+                'material.glassItem.colourItem',
+                'material.accessoryItem.accessoryType',
+                'material.consumableItem.consumabletype',
+                'material.toolItem.toolType',
+                'user',
+                'price.aluminiumlength',
+                'price.glassSize',
+            ])
+            ->where('project_id', $id)
+            ->whereIn('source', ['withdraw', 'return_material', 'return_tool', 'issue_refill', 'manual'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        
+        $returnedMaterialIds = MaterialLog::where('project_id', $id)
+            ->where('user_id', Auth::id()) 
+            ->whereIn('source', ['return_material'])
+            ->pluck('material_id')
+            ->unique()
+            ->toArray();
+
+        return view('technician.projects.withdraw.withdrawdetails',
+            compact('project', 'currentItems', 'materialLogs','returnedMaterialIds'));
     }
 
     public function withdrawtoolspage($id)
@@ -1342,21 +1371,24 @@ class ProjectController extends Controller
 
     public function editWithdrawalItem(Request $request, $id)
     {
-        
-        $item   = WithdrawalItem::find($id);
+        $item      = WithdrawalItem::find($id);
         $projectId = $item->withdrawal->project_id;
-        $oldQty = $item->quantity;
-        $newQty = (int) $request->quantity;
-        $diff   = $newQty - $oldQty;
-
+        $oldQty    = $item->quantity;
+        $newQty    = (int) $request->quantity;
+        $diff      = $newQty - $oldQty;
+    
         if ($diff != 0) {
             $price = Price::where('material_id', $item->material_id)
                 ->where('lot', $item->lot)
                 ->first();
-
+    
             if ($price) {
-                $price->decrement('quantity', $diff); 
-
+                if ($diff > 0) {
+                    $price->decrement('quantity', $diff);
+                } else {
+                    $price->increment('quantity', abs($diff));
+                }
+    
                 MaterialLog::create([
                     'material_id' => $item->material_id,
                     'price_id'    => $price->id,
@@ -1364,12 +1396,12 @@ class ProjectController extends Controller
                     'direction'   => $diff > 0 ? 'out' : 'in',
                     'quantitylog' => abs($diff),
                     'project_id'  => $projectId,
-                    'source'      => 'manual',                          
-                    'note'        => 'แก้ไขจำนวน: ' . $request->reason
+                    'source'      => 'manual',
+                    'note'        => 'แก้ไขจำนวน: ' . $request->reason,
                 ]);
             }
         }
-
+    
         WithdrawalItemLog::create([
             'withdrawal_item_id' => $item->id,
             'old_quantity'       => $oldQty,
@@ -1377,11 +1409,11 @@ class ProjectController extends Controller
             'reason'             => $request->reason,
             'edited_by'          => Auth::id(),
         ]);
-
+    
         $item->update(['quantity' => $newQty]);
-
-        
-        return redirect()->route('technician.projects.edit_withdrawal_item_page', $id)->with('success', 'แก้ไขจำนวนเรียบร้อยแล้ว');
+    
+        return redirect()->route('technician.projects.edit_withdrawal_item_page', $id)
+            ->with('success', 'แก้ไขจำนวนเรียบร้อยแล้ว');
     }
 
     public function withdrawtoolsstore(Request $request, $id)
