@@ -103,10 +103,26 @@
                     @if(!$project->trashed())
 
                         @if ($project->status == 'waiting_survey')
-                        <form action="{{ route('technician.projects.updatestatussurveying', $project->id) }}" method="post" style="margin:0;">
-                            @csrf
-                            <button class="btn btn-secondary btn-full-text">สำรวจหน้างาน</button>
-                        </form>
+                            @if(!empty($project->survey_date) && now()->format('Y-m-d') >= \Carbon\Carbon::parse($project->survey_date)->format('Y-m-d'))
+                                <form action="{{ route('technician.projects.updatestatussurveying', $project->id) }}" method="post" style="margin:0;">
+                                    @csrf
+                                    <button class="btn btn-secondary btn-full-text">สำรวจหน้างาน</button>
+                                </form>
+                            @else
+                                <button class="btn btn-secondary btn-full-text" style="height: max-content; opacity: 0.6; cursor: not-allowed;" disabled>
+                                    รอถึงวันทำงานจึงจะสามารถเริ่มติดตั้งได้ (
+                                    {{ $project->survey_date
+                                                ? \Carbon\Carbon::parse($project->survey_date)
+                                                ->locale('th') 
+                                                ->addYears(543) 
+                                                ->isoFormat('D MMMM YYYY') 
+                                                : 'ยังไม่ได้กำหนดวันทำงาน' 
+                                            }}
+                                    )
+                                </button>
+
+                            @endif
+                        
 
 
 
@@ -128,16 +144,8 @@
                         @elseif($project->status == 'ready_to_withdraw')
 
                         @elseif($project->status == 'materials_withdrawn')
-                            @if (\Carbon\Carbon::parse($project->installation_start_date)->addDay()->isFuture())
-                            <form action="{{ route('admin.projects.cancelWithdrawal', $project->id) }}" method="POST" style="margin: 0;" onsubmit="return confirm('ยืนยันการยกเลิกการเบิก? ระบบจะคืนจำนวนวัสดุทั้งหมดกลับเข้าคลังและเปลี่ยนสถานะเป็นพร้อมเบิก');">
-                                @csrf
-                                <button type="submit" class="btn btn-delecte btn-full-text" style="height: max-content;">
-                                    ยกเลิกการเบิกวัสดุ
-                                </button>
-                            </form>
-                            @endif
                             @if(!empty($project->installation_start_date) && now()->format('Y-m-d') >= $project->installation_start_date)
-                            <form action="{{ route('admin.projects.updatestatusinstalling', $project->id) }}" method="POST" style="margin: 0;">
+                            <form action="{{ route('technician.projects.updatestatusinstalling', $project->id) }}" method="POST" style="margin: 0;">
                                 @csrf
                                 <button type="submit" class="btn btn-secondary btn-full-text" style="height: max-content;">
                                     เริ่มการติดตั้ง
@@ -160,10 +168,10 @@
 
                         @elseif($project->status == 'installing')
                         <div style="display: flex; flex-direction:row; gap: 5px;">
-                            <a href="{{ route('admin.projects.choosetypeissues', $project->id) }}" class="btn  btn-edit btn-full-text">แจ้งปัญหา</a>
-                            <a href="{{ route('admin.projects.confirmworkcompletedpage', $project->id) }}" class="btn btn-secondary btn-full-text">ยืนยันการทำงานเสร็จสิ้น</a>
+                            <a href="{{ route('technician.projects.choosetypeissues', $project->id) }}" class="btn  btn-edit btn-full-text">แจ้งปัญหา</a>
+                            <a href="{{ route('technician.projects.confirmworkcompletedpage', $project->id) }}" class="btn btn-secondary btn-full-text">ยืนยันการทำงานเสร็จสิ้น</a>
                             @if (\Carbon\Carbon::parse($project->installation_start_date)->addDay()->isFuture())
-                            <form action="{{ route('admin.projects.cancellinstalling', $project->id) }}" method="POST" style="margin: 0;">
+                            <form action="{{ route('technician.projects.cancellinstalling', $project->id) }}" method="POST" style="margin: 0;">
                                 @csrf
                                 <button type="submit" class="btn btn-delecte btn-full-text" style="height: max-content;">
                                     ยกเลิกการติกตั้ง
@@ -173,7 +181,7 @@
                         </div>
                             
                         @elseif($project->status == 'completed')
-                            <form action="{{ route('admin.projects.updatestatusinstalling', $project->id) }}" method="POST" style="margin: 0;">
+                            <form action="{{ route('technician.projects.updatestatusinstalling', $project->id) }}" method="POST" style="margin: 0;">
                             @csrf
                                 <button class="btn btn-danger btn-full-text" style="height: max-content;">ยังติดตั้งไม่สำเร็จ</button>
                             </form>
@@ -183,7 +191,7 @@
                         @endif
                     </div>
                     <div style="display: flex; flex-direction: column; gap:5px; justify-content: end;">
-                        <a href="{{ route('admin.projects.alldetail', $project->id) }}" class="btn btn-primary btn-full-text" title="ดูรายละเอียดเต็ม" style="{{ $project->trashed() ? 'pointer-events: none; opacity: 0.5;' : '' }}">
+                        <a href="{{ route('technician.projects.alldetail',$project->id) }}" class="btn btn-primary btn-full-text" title="ดูรายละเอียดเต็ม" style="{{ $project->trashed() ? 'pointer-events: none; opacity: 0.5;' : '' }}">
                             ดูรายละเอียดทั้งหมด
                         </a>
                     </div>

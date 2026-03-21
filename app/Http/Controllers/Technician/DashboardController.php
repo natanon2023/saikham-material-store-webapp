@@ -59,46 +59,40 @@ class DashboardController extends Controller
 {
     public function dashboard()
     {
-        $statuses = [
-            'waiting_survey',
-            'pending_survey',
-            'surveying',
-            'pending_quotation',
-            'waiting_approval',
-            'approved',
-            'material_planning',
-            'waiting_purchase',
-            'ready_to_withdraw',
-            'materials_withdrawn',
-            'installing',
-            'completed',
-            'cancelled'
-        ];
+        $userId = Auth::id();
 
-        $query = Project::with('projectname')->whereNotNull('survey_date');
+        $query = Project::with(['projectname', 'customer', 'installers'])
+            ->whereNotNull('survey_date')
+            ->where(function($q) use ($userId) {
+                $q->where('assigned_surveyor_id', $userId)
+                ->orWhereHas('installers', function($q2) use ($userId) {
+                    $q2->where('user_id', $userId);
+                });
+            });
 
-        $events = $query->withTrashed()->with(['projectname', 'customer'])->get()->flatMap(function ($pj) {
+        $events = $query->withTrashed()->get()->flatMap(function ($pj) use ($userId) {
             $customerName = $pj->customer->first_name ?? 'ไม่ระบุลูกค้า';
-            $projectName = $pj->projectname->name ?? 'ไม่มีชื่อโครงการ';
-            $statusLabel = $this->getStatusLabel($pj->status);
-            $color = $this->getStatusColor($pj->status);
+            $projectName  = $pj->projectname->name ?? 'ไม่มีชื่องาน';
 
             if ($pj->trashed()) {
-            $statusLabel = 'ยกเลิก';
-            $color = '#DC143C';
+                $statusLabel = 'ยกเลิก';
+                $color       = '#DC143C';
             } else {
                 $statusLabel = $this->getStatusLabel($pj->status);
-                $color = $this->getStatusColor($pj->status);
+                $color       = $this->getStatusColor($pj->status);
             }
+
+            $isSurveyor  = ($pj->assigned_surveyor_id == $userId);
+            $isInstaller = $pj->installers->contains('id', $userId);
 
             $items = [];
 
-            if ($pj->survey_date) {
+            if ($isSurveyor && $pj->survey_date) {
                 $items[] = [
-                    'id'    => $pj->id . '_survey',
-                    'title' => ($pj->trashed() ? " (ยกเลิก)" : ""). "[สำรวจ] " . $customerName . " - " . $projectName ,
-                    'start' => date('Y-m-d', strtotime($pj->survey_date)),
-                    'url'   => route('technician.projects.index', $pj->id),
+                    'id'              => $pj->id . '_survey',
+                    'title'           => ($pj->trashed() ? "(ยกเลิก) " : "") . "[สำรวจ] " . $customerName . " - " . $projectName,
+                    'start'           => date('Y-m-d', strtotime($pj->survey_date)),
+                    'url'             => route('technician.projects.index', $pj->id),
                     'backgroundColor' => $color,
                     'borderColor'     => $color,
                     'allDay'          => true,
@@ -106,13 +100,13 @@ class DashboardController extends Controller
                 ];
             }
 
-            if ($pj->installation_start_date && $pj->installation_end_date) {
+            if ($isInstaller && $pj->installation_start_date && $pj->installation_end_date) {
                 $items[] = [
-                    'id'    => $pj->id . '_install',
-                    'title' => ($pj->trashed() ? " (ยกเลิก)" : "")."[ติดตั้ง] " . $customerName . " - " . $projectName . " (" . $statusLabel . ")",
-                    'start' => date('Y-m-d', strtotime($pj->installation_start_date)),
-                    'end'   => date('Y-m-d', strtotime($pj->installation_end_date . ' +1 day')),
-                    'url'   => route('technician.projects.index', $pj->id),
+                    'id'              => $pj->id . '_install',
+                    'title'           => ($pj->trashed() ? "(ยกเลิก) " : "") . "[ติดตั้ง] " . $customerName . " - " . $projectName . " (" . $statusLabel . ")",
+                    'start'           => date('Y-m-d', strtotime($pj->installation_start_date)),
+                    'end'             => date('Y-m-d', strtotime($pj->installation_end_date . ' +1 day')),
+                    'url'             => route('technician.projects.index', $pj->id),
                     'backgroundColor' => $color,
                     'borderColor'     => $color,
                     'allDay'          => true,
@@ -122,7 +116,7 @@ class DashboardController extends Controller
 
             return $items;
         });
-            
+
         $eventCount = $query->count();
 
         return view('technician.dashboard', compact('events', 'eventCount'));

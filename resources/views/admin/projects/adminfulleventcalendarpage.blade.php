@@ -7,7 +7,7 @@
     <div class="boxmaterial" style="display: flex; justify-content: space-between; align-items: center;">
         <h3><i class="fa fa-calendar"></i> ตารางงานของฉัน</h3>
         <div>
-            งานทั้งหมด: {{ count($events) }} งาน
+            งานทั้งหมด: {{ $eventCount }} งาน
         </div>
     </div>
 

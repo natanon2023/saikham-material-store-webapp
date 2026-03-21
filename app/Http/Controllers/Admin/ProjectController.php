@@ -1137,9 +1137,12 @@ class ProjectController extends Controller
         $technician = User::where('role', 'technician')->get();
 
 
-        $satatuswaiting =[
+        $satatuswaiting1 =[
             'waiting_survey',
-            'pending_survey',
+            'pending_survey' 
+        ];
+
+        $satatuswaiting =[
             'surveying',
             'pending_quotation'   
         ];
@@ -1198,7 +1201,7 @@ class ProjectController extends Controller
 
 
 
-        return view('admin.projects.alldetail.detailpage', compact('project', 'customerall', 'projectname', 'technician', 'statuspayment', 'satatusopen', 'statusmaterialplanningopen','satatuswaiting','satatusonline','statusopendatework'));
+        return view('admin.projects.alldetail.detailpage', compact('project', 'customerall', 'projectname', 'technician', 'statuspayment', 'satatusopen', 'statusmaterialplanningopen','satatuswaiting','satatusonline','statusopendatework','satatuswaiting1'));
     }
 
     public function addautersurver(Request $request)
@@ -1432,12 +1435,11 @@ class ProjectController extends Controller
                         $description = "อลูมิเนียม {$aluName} (ราคาเหมา ความยาว {$flatlen} ม.)";
                     }
                 } elseif ($type == 'กระจก') {
-                    $needArea = $m_w * $m_h;
                     $stock = Price::where('material_id', $material->id)
                         ->where('quantity', '>', 0)
                         ->whereHas('glassSize', function ($q) use ($m_w, $m_h) {
                             $q->where('width_meter', '>=', $m_w)
-                                ->where('length_meter', '>=', $m_h);
+                            ->where('length_meter', '>=', $m_h);
                         })
                         ->orderBy('id', 'asc')
                         ->first();
@@ -1445,29 +1447,28 @@ class ProjectController extends Controller
                     if ($stock && $stock->glassSize) {
                         $sheetW = $stock->glassSize->width_meter;
                         $sheetH = $stock->glassSize->length_meter;
-                        $sheetArea = $sheetW * $sheetH;
 
-                        $qtyuse = ceil($needArea / $sheetArea) * 2;
+                        $qtyuse      = 2;
                         $selectprice = $stock->price;
                         $selectlot   = $stock->lot;
                         $item->calculated_price_id = $stock->id;
-                        $remark = "ใช้กระจก {$sheetW}×{$sheetH} ม. จำนวน {$qtyuse} แผ่น";
+                        $remark      = "ใช้กระจก {$sheetW}×{$sheetH} ม. จำนวน {$qtyuse} แผ่น (×2 กันแตก)";
 
-                        $glassName = $material->glassItem->glassType->name ?? '';
+                        $glassName  = $material->glassItem->glassType->name ?? '';
                         $glassColor = $material->glassItem->colourItem->name ?? '';
-                        $description = "กระจก{$glassName} สี{$glassColor} (ขนาด {$sheetW}x{$sheetH} ม.)";
+                        $description = "กระจก{$glassName} สี{$glassColor} (ขนาด {$sheetW}×{$sheetH} ม.)";
+
                     } else {
                         $flatW = 2;
                         $flatH = 2;
-                        $flatArea = $flatW * $flatH;
-                        $qtyuse = ceil($needArea / $flatArea) * 2;
+                        $qtyuse      = 2; 
                         $selectprice = 400;
                         $selectlot   = 'ไม่มีของ';
                         $item->calculated_price_id = null;
-                        $remark = "ใช้กระจกเหมา {$flatW}×{$flatH} ม. 400 บ. ต่อ แผ่น จำนวน {$qtyuse} แผ่น";
+                        $remark      = "ใช้กระจกเหมา {$flatW}×{$flatH} ม. 400 บ./แผ่น จำนวน {$qtyuse} แผ่น (×2 กันแตก)";
 
-                        $glassName = $material->glassItem->glassType->name ?? '';
-                        $description = "กระจก{$glassName} (ราคาเหมา {$flatW}x{$flatH} ม.)";
+                        $glassName   = $material->glassItem->glassType->name ?? '';
+                        $description = "กระจก{$glassName} (ราคาเหมา {$flatW}×{$flatH} ม.)";
                     }
                 } else {
                     $stock = Price::where('material_id', $material->id)->where('quantity', '>', 0)->orderBy('id', 'asc')->first();
@@ -1670,6 +1671,8 @@ class ProjectController extends Controller
 
     
 
+    
+
     public function withdrawpage($id)
     {
         $project = Project::with([
@@ -1688,8 +1691,24 @@ class ProjectController extends Controller
             ->pluck('total_out', 'material_id')
             ->toArray();
 
+        $stockSummary = [];
+        $firstPriceSummary = [];
+        $quotationMats = $project->quotation?->quotationMaterials ?? collect();
+
+        foreach ($quotationMats as $qmat) {
+            if (!$qmat->material_id) continue;
+
+            $allLots = Price::where('material_id', $qmat->material_id)
+                ->where('quantity', '>', 0)
+                ->orderBy('id', 'asc')
+                ->get();
+
+            $stockSummary[$qmat->material_id]     = $allLots->sum('quantity');
+            $firstPriceSummary[$qmat->material_id] = $allLots->first();
+        }
+
         return view('admin.projects.withdraw.withdrawpage',
-            compact('project', 'withdrawnSummary', 'users'));
+            compact('project', 'withdrawnSummary', 'users', 'stockSummary', 'firstPriceSummary'));
     }
 
     public function withdrawform(Request $request, $id)
@@ -1706,24 +1725,27 @@ class ProjectController extends Controller
 
         $itemsToWithdraw = [];
         foreach ($selectedPriceIds as $pid) {
-            $price = Price::with('material')->find($pid);
+            $price = Price::with([
+                'material.aluminiumItem.aluminiumType',
+                'material.aluminiumItem.aluminumSurfaceFinish',
+                'material.glassItem.glassType',
+                'material.glassItem.colourItem',
+                'material.accessoryItem.accessoryType',
+                'material.consumableItem.consumabletype',
+                'material.toolItem.toolType',
+            ])->find($pid);
+
             if (!$price) continue;
 
             $mat = $price->material;
-            $description = '-';
-            if ($mat) {
-                if ($mat->aluminiumItem) {
-                    $description = ($mat->aluminiumItem->aluminiumType->name ?? '-') . ' สี ' . ($mat->aluminiumItem->aluminumSurfaceFinish->name ?? '-');
-                } elseif ($mat->glassItem) {
-                    $description = ($mat->glassItem->glassType->name ?? '-') . ' สี ' . ($mat->glassItem->colourItem->name ?? '-');
-                } elseif ($mat->accessoryItem) {
-                    $description = $mat->accessoryItem->accessoryType->name ?? '-';
-                } elseif ($mat->consumableItem) {
-                    $description = $mat->consumableItem->consumabletype->name ?? '-';
-                } elseif ($mat->toolItem) {
-                    $description = $mat->toolItem->toolType->name ?? '-';
-                }
-            }
+            $description = match(true) {
+                $mat?->aluminiumItem  !== null => ($mat->aluminiumItem->aluminiumType->name ?? '-') . ' สี ' . ($mat->aluminiumItem->aluminumSurfaceFinish->name ?? '-'),
+                $mat?->glassItem      !== null => ($mat->glassItem->glassType->name ?? '-') . ' สี ' . ($mat->glassItem->colourItem->name ?? '-'),
+                $mat?->accessoryItem  !== null => $mat->accessoryItem->accessoryType->name ?? '-',
+                $mat?->consumableItem !== null => $mat->consumableItem->consumabletype->name ?? '-',
+                $mat?->toolItem       !== null => $mat->toolItem->toolType->name ?? '-',
+                default => '-',
+            };
 
             $itemsToWithdraw[] = [
                 'price_id'      => $pid,
@@ -1756,21 +1778,30 @@ class ProjectController extends Controller
         ]);
 
         foreach ($selectedPriceIds as $price_id) {
-            $price = Price::find($price_id);
-            if (!$price) continue;
+            $firstPrice = Price::find($price_id);
+            if (!$firstPrice) continue;
 
-            $qtyToWithdraw = (int)($customQtys[$price_id] ?? 0);
-            $actualDeduct  = min($price->quantity, $qtyToWithdraw);
+            $qtyNeeded = (int)($customQtys[$price_id] ?? 0);
+            if ($qtyNeeded <= 0) continue;
 
-            if ($actualDeduct > 0) {
-                $price->decrement('quantity', $actualDeduct);
+            $allLots = Price::where('material_id', $firstPrice->material_id)
+                ->where('quantity', '>', 0)
+                ->orderBy('id', 'asc')
+                ->get();
+
+            foreach ($allLots as $price) {
+                if ($qtyNeeded <= 0) break;
+
+                $take = min($price->quantity, $qtyNeeded);
+                $price->decrement('quantity', $take);
+                $qtyNeeded -= $take;
 
                 MaterialLog::create([
                     'material_id' => $price->material_id,
                     'price_id'    => $price->id,
                     'user_id'     => Auth::id(),
                     'direction'   => 'out',
-                    'quantitylog' => $actualDeduct,
+                    'quantitylog' => $take,
                     'project_id'  => $project->id,
                     'source'      => 'withdraw',
                 ]);
@@ -1779,7 +1810,7 @@ class ProjectController extends Controller
                     'withdrawal_id' => $withdrawal->id,
                     'material_id'   => $price->material_id,
                     'lot'           => $price->lot,
-                    'quantity'      => $actualDeduct,
+                    'quantity'      => $take,
                 ]);
             }
         }
@@ -1792,7 +1823,7 @@ class ProjectController extends Controller
             ->groupBy('material_id')
             ->pluck('total', 'material_id');
 
-        $allDone = $quotationMats->every(function($qmat) use ($withdrawnSummary) {
+        $allDone = $quotationMats->every(function ($qmat) use ($withdrawnSummary) {
             if (!$qmat->material_id) return true;
             return ($withdrawnSummary[$qmat->material_id] ?? 0) >= $qmat->quantity;
         });
@@ -2088,7 +2119,9 @@ class ProjectController extends Controller
             return $items;
         });
 
-        return view('admin.projects.adminfulleventcalendarpage', compact('events'));
+        $eventCount = $query->count();
+
+        return view('admin.projects.adminfulleventcalendarpage', compact('events','eventCount'));
     }
 
     private function getStatusLabel($status)

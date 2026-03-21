@@ -152,17 +152,6 @@
 
                 @endforeach
             </table>
-            @if($project->customerneed->count() > 0)
-                @if ($project->status == 'surveying')
-                <div style="margin-top: 20px; text-align: right;">
-                    <form action="{{ route('technician.projects.updatestatuspendingquotation') }}" method="post">
-                        @csrf
-                        <input type="hidden" name="id" value="{{ $project->id }}">
-                        <button type="submit" class="btn btn-secondary">บันทึกความต้องการ</button>
-                    </form>
-                </div>
-                @endif
-            @endif
         </div>
     </div>
 

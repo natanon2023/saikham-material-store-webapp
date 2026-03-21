@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.technician')
 
 @section('content')
 <div class="main-content">
@@ -6,7 +6,7 @@
 
     <div class="boxmaterial" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h3 style="margin: 0;">เลือกวัสดุเพื่อเบิก</h3>
-        <a href="{{ route('admin.projects.index', $project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
+        <a href="{{ route('technician.projects.index', $project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
     </div>
 
     @php
@@ -29,7 +29,7 @@
         </div>
     @endif
 
-    <form action="{{ route('admin.projects.withdrawform', $project->id) }}" method="POST">
+    <form action="{{ route('technician.projects.withdrawform', $project->id) }}" method="POST">
         @csrf
         <div class="boxmaterial">
             <h3 style="margin-bottom:15px;">รายการวัสดุตามใบเสนอราคา</h3>
@@ -54,9 +54,14 @@
                 <tbody>
                     @foreach($quotationMats as $qmat)
                         @php
-                            $priceRecord = $firstPriceSummary[$qmat->material_id] ?? null;
-                            $stockQty    = $stockSummary[$qmat->material_id] ?? 0;
+                            $priceRecord = $qmat->material_id
+                                ? \App\Models\Price::where('material_id', $qmat->material_id)
+                                    ->where('quantity', '>', 0)
+                                    ->orderBy('id', 'asc')
+                                    ->first()
+                                : null;
 
+                            $stockQty    = $priceRecord ? $priceRecord->quantity : 0;
                             $reqQty      = $qmat->quantity;
                             $already     = $qmat->material_id
                                 ? min($remainingWithdrawn[$qmat->material_id] ?? 0, $reqQty)
@@ -84,13 +89,13 @@
                                     <br><small style="color:#888;">{{ $qmat->remark }}</small>
                                 @endif
                                 @if($priceRecord)
-                                    <br><small style="color:#1e8e3e;">สต็อกรวมทุกล็อต: <b>{{ $stockQty }}</b></small>
+                                    <br><small style="color:#1e8e3e;">สต็อกคงเหลือ: <b>{{ $stockQty }}</b></small>
                                 @else
                                     <br><small style="color:#d93025;">ไม่มีของในสต็อก</small>
                                 @endif
                             </td>
                             <td align="center">
-                                {{ $stockQty > 0 ? 'หลายล็อต' : '-' }}
+                                {{ $priceRecord ? $priceRecord->lot : '-' }}
                             </td>
                             <td align="center">
                                 <b>{{ $reqQty }}</b>

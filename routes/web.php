@@ -411,9 +411,65 @@ Route::middleware(['auth', 'verified', 'role:technician'])->group(function () {
         Route::get('/editformcustomerneed/{id}',[TechnicianProjectController::class,'editformcustomerneed'])->name('editformcustomerneed');
         Route::put('/updatecustomerneed/{id}', [TechnicianProjectController::class, 'updatecustomerneed'])->name('updatecustomerneed');
         Route::delete('deletecustomerneed/{id}',[TechnicianProjectController::class,'deletecustomerneed'])->name('deletecustomerneed');
+        Route::get('/formprojectimagedetail/{id}',[TechnicianProjectController::class,'formprojectimagedetail'])->name('formprojectimagedetail');
+        Route::post('/createprojectimagedetail',[TechnicianProjectController::class,'createprojectimagedetail'])->name('createprojectimagedetail');
+        Route::get('/formcustomerneeddetial/{id}',[TechnicianProjectController::class,'formcustomerneeddetial'])->name('formcustomerneeddetial');
+        Route::post('/addcustomerneeddetial',[TechnicianProjectController::class,'addcustomerneeddetial'])->name('addcustomerneeddetial');
 
         //อัปเดตจากสำรวจ
         Route::post('/updatestatuspendingquotation',[TechnicianProjectController::class,'updatestatuspendingquotation']) ->name('updatestatuspendingquotation');
+
+        //เริ่มติดตั้ง
+        Route::post('{id}/installing', [TechnicianProjectController::class, 'updatestatusinstalling'])->name('updatestatusinstalling');
+
+        //แจ้งปัยหา
+        Route::get('/choosetypeissues/{id}',[TechnicianProjectController::class,'choosetypeissues'])->name('choosetypeissues');
+        Route::get('/issues/create/{id}',[TechnicianProjectController::class,'createIssue'])->name('issues.create');
+        Route::get('/generalissues/{id}',[TechnicianProjectController::class,'generalissues'])->name('generalissues');
+        Route::post('/projects/{id}/issues', [TechnicianProjectController::class, 'storeIssue'])->name('issues.store');
+        Route::post('projects/{id}/storegeneralissues', [TechnicianProjectController::class, 'storegeneralissues'])->name('storegeneralissues');
+
+        Route::get('/manageproblemsindex', [TechnicianProjectController::class, 'manageproblemsindex'])->name('manageproblemsindex');
+        Route::get('projects/issues/{project_id}/detail', [TechnicianProjectController::class, 'issuedetail'])->name('issues.detail');
+        Route::get('projects/issues/{id}/edit', [TechnicianProjectController::class, 'editIssue'])->name('issues.edit');
+        Route::delete('projects/issues/{id}', [TechnicianProjectController::class, 'destroyissue'])->name('issues.destroy');
+        Route::post('projects/issues/{id}/updateIssuegeneralproblems', [TechnicianProjectController::class, 'updateIssuegeneralproblems'])->name('issues.updateIssuegeneralproblems');
+        Route::post('projects/issues/{id}/update', [TechnicianProjectController::class, 'updateIssue'])->name('issues.update');
+        Route::post('projects/issues/{id}/restore', [TechnicianProjectController::class, 'restoreissue'])->name('issues.restore');
+        
+        
+
+
+
+        //ยืนยันการติดตั้ง
+        Route::get('/confirmworkcompletedpage/{id}',[TechnicianProjectController::class,'confirmworkcompletedpage'])->name('confirmworkcompletedpage');
+        Route::post('projects/customerneed/{need_id}/upload-after-image', [TechnicianProjectController::class, 'uploadAfterImage'])->name('uploadafterimage');
+        Route::delete('projects/customerneed/{need_id}/delete-after-image', [TechnicianProjectController::class, 'deleteAfterImage'])->name('deleteafterimage');
+        Route::post('{id}/completed', [TechnicianProjectController::class, 'updatestatuscompleted'])->name('updatestatuscompleted');
+        Route::delete('/project/{id}/remove-installer', [TechnicianProjectController::class, 'removeInstaller'])->name('removeinstaller');
+
+
+        //ยกเลิกการติดตั้ง
+        Route::post('/cancellinstalling/{id}',[TechnicianProjectController::class,'cancellinstalling']) ->name('cancellinstalling');
+
+        //รายละเอียดทั้งหมด
+        Route::get('/detail/{id}', [TechnicianProjectController::class, 'projectalldetail'])->name('alldetail');
+
+        //คืนวัสดุ
+        Route::get('/managewithdrawals', [TechnicianProjectController::class, 'managewithdrawals'])->name('managewithdrawals');
+        Route::get('/{id}/withdrawdetails', [TechnicianProjectController::class, 'withdrawdetails'])->name('withdrawdetails');
+        Route::get('projects/{id}/withdrawtools', [TechnicianProjectController::class, 'withdrawtoolspage'])->name('withdrawtoolspage');
+        Route::get('/projects/{id}/return-history',[TechnicianProjectController::class, 'returnHistory'])->name('return_history');
+        Route::get('/projects/{id}/edit-history',[TechnicianProjectController::class, 'editHistory'])->name('edit_history');
+        Route::get('/projects/{id}/return-materials',[TechnicianProjectController::class, 'returnMaterialsPage'])->name('return_materials_page');
+        Route::post('/projects/{id}/return-materials',[TechnicianProjectController::class, 'storeReturnMaterials'])->name('store_return_materials');
+        Route::get('/withdrawal-item/{id}/edit',[TechnicianProjectController::class, 'editWithdrawalItemPage'])->name('edit_withdrawal_item_page');
+        Route::put('/withdrawal-item/{id}/edit',[TechnicianProjectController::class, 'editWithdrawalItem'])->name('edit_withdrawal_item');
+        Route::post('projects/{id}/withdrawtools/store', [TechnicianProjectController::class, 'withdrawtoolsstore'])->name('withdrawtoolsstore');
+        Route::post('/withdrawal-item/{id}/return-tool',[TechnicianProjectController::class, 'returnTool'])->name('return_tool');
+        
+
+
 
 
 

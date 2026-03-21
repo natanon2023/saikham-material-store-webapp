@@ -15,6 +15,20 @@
                 <div class="tooltip">ปฏิทิน</div>
             </a>
         </li>
+        <li class="nav-item">
+            <a href="{{ route('technician.projects.manageproblemsindex') }}" class="nav-link active">
+                <i class="fa-solid fa-anchor-circle-exclamation nav-icon"></i>
+                <span class="nav-text">จัดการปัญหา</span>
+                <div class="tooltip">จัดการปัญหา</div>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ route('technician.projects.managewithdrawals') }}" class="nav-link active">
+                <i class="fa-solid fa-arrow-rotate-left nav-icon"></i>
+                <span class="nav-text">ประวัติการเบิกและคืนวัสดุ</span>
+                <div class="tooltip">ประวัติการเบิกและคืนวัสดุ</div>
+            </a>
+        </li>
     </ul>
 
     <div class="user-section">
