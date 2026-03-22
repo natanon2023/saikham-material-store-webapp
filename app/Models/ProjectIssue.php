@@ -11,7 +11,7 @@ class ProjectIssue extends Model
     use HasFactory,SoftDeletes;
 
     protected $fillable = [
-        'project_id', 'reported_by', 'category', 'description', 'status','withdrawal_item_damaged','damaged_amount','refilled_amount'
+        'project_id', 'reported_by', 'category', 'description', 'status','withdrawal_item_damaged','damaged_amount','refilled_amount','requested_amount'
     ];
 
     public function project()

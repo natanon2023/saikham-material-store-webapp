@@ -67,7 +67,7 @@
 
             <div class="form-group" style="margin-top: 15px;">
                 <label class="form-label">รายละเอียดเพิ่มเติม (ถ้ามี)</label>
-                <textarea name="description" class="form-input" rows="3" placeholder="ระบุรายละเอียดเพิ่มเติม..."></textarea>
+                <textarea name="description" class="form-input" rows="3" placeholder="ระบุรายละเอียดเพิ่มเติม..." required></textarea>
             </div>
 
             <div style="margin-top: 15px;">

@@ -131,8 +131,8 @@ class DashboardController extends Controller
     public function topreporters(){
         $data = DB::table('project_issues')
             ->join('users', 'project_issues.reported_by', '=', 'users.id')
-            ->select('users.name', DB::raw('COUNT(*) as total'))
-            ->groupBy('users.id', 'users.name')
+            ->select('users.id', 'users.name', 'users.role', DB::raw('count(*) as total'))
+            ->groupBy('users.id', 'users.name','users.role')
             ->orderByDesc('total')
             ->limit(5)
             ->get();
@@ -302,10 +302,9 @@ class DashboardController extends Controller
     }
 
 
-    public function suppliers()
-    {
-        return DB::table('dealers')->select('name', 'status')->get();
-    }
+    
+
+
     
 
     

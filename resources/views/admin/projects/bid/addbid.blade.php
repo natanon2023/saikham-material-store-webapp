@@ -92,14 +92,8 @@ $quotation = \App\Models\Quotation::where('project_id', $project->id)->latest()-
                 <input type="hidden" value="{{ $project->id }}" name="id">
                 <button type="submit" class="btn btn-secondary">ยืนยันการเสนอราคา</button>
             </form>
-            <a href="{{ route('admin.projects.pdf.quotation', $project->id) }}" target="_blank" class="btn" style="background:#17a2b8; color:white;">
-                <i class="fas fa-file-pdf"></i> PDF
-            </a>
             @else
             <a href="{{ route('admin.projects.alldetail',$project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
-            <a href="{{ route('admin.projects.pdf.quotation', $project->id) }}" target="_blank" class="btn" style="background:#17a2b8; color:white;">
-                <i class="fas fa-file-pdf"></i> PDF
-            </a>
             @endif
         </div>
     </div>

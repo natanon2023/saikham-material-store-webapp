@@ -109,6 +109,9 @@ class ProjectController extends Controller
     {
         $request->validate([
             'homeimg' => 'nullable|image|max:10240',
+        ],[
+            'homeimg.mimes' => 'ระบบไม่รองรับไฟล์รูปภาพประเภทนี้ (เช่น WEBP) กรุณาใช้ไฟล์ JPG หรือ PNG เท่านั้น',
+            'homeimg.max' => 'ขนาดไฟล์รูปภาพต้องไม่เกิน 10MB',
         ]);
 
         $project = Project::find($request->id);
@@ -119,6 +122,12 @@ class ProjectController extends Controller
 
         if ($request->hasFile('homeimg')) {
             $file = $request->file('homeimg');
+
+            $source = @imagecreatefromstring(file_get_contents($file->getRealPath()));
+            
+            if (!$source) {
+                return redirect()->back()->with('error', 'ไฟล์รูปภาพไม่รองรับหรือไฟล์เสีย กรุณาแปลงไฟล์เป็น JPG หรือ PNG ก่อนอัปโหลด');
+            }
 
             $source = imagecreatefromstring(file_get_contents($file->getRealPath()));
             $width  = imagesx($source);
@@ -582,7 +591,7 @@ class ProjectController extends Controller
         }
     
         if ($request->damaged_amount > $withdrawalItem->quantity) {
-            return redirect()->back()->with('error', 'จำนวนที่แจ้งเสียมากกว่าจำนวนที่มีอยู่');
+            return redirect()->back()->with('error', 'แจ้งจำนวนมากกว่าที่มีอยู่');
         }
     
         $file = $request->file('image_data');

@@ -50,7 +50,7 @@
                 <tr>
                     <td class="text-center">1</td>
                     <td>ค่ารับเหมาติดตั้งกระจกอลูมิเนียม (รวมค่าวัสดุและค่าบริการ)</td>
-                    <td class="text-right">{{ number_format($sumincome, 2) }}</td>
+                    <td >{{ number_format($sumincome, 2) }}</td>
                 </tr>
             </tbody>
         </table>

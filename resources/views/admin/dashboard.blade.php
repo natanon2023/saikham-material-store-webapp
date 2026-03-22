@@ -305,7 +305,7 @@
     <div class="chart-card">
         <div class="chart-card-top">
             <div>
-                <h4 class="chart-card-title">ความหนาแน่นของลูกค้าแบ่งตามพื้นที่ จังหวัดอุบลราชธานี</h4>
+                <h4 class="chart-card-title">ความหนาแน่นของลูกค้าแบ่งตามพื้นที่ในจังหวัดอุบลราชธานี</h4>
                 <p class="chart-card-desc">วิเคราะห์เพื่อวางแผนเส้นทางจัดส่งและการทำโปรโมชั่นในพื้นที่</p>
             </div>
             <select id="amphureFilter" class="amphure-select">
@@ -504,48 +504,67 @@
 
     async function renderTopReportersChart() {
         try {
-            const res = await fetch('/admin/api/topreporters');
+            const res  = await fetch('/admin/api/topreporters');
             const data = await res.json();
 
-            const labels = data.map(item => 'ช่าง ' + item.name);
+            const labels = data.map(item => {
+                const prefix = item.role === 'admin' ? '' : '';
+                return `${prefix} ${item.name}`;
+            });
+
             const totals = data.map(item => parseInt(item.total));
+
+            const colors = data.map(item =>
+                item.role === 'admin' ? '#D4B483' : '#334E68'
+            );
 
             const options = {
                 series: [{ name: 'จำนวนการรายงาน (ครั้ง)', data: totals }],
-                chart: { 
-                    type: 'bar', 
-                    height: 350, 
-                    fontFamily: 'inherit', 
-                    toolbar: { show: false } 
+                chart: {
+                    type: 'bar',
+                    height: 350,
+                    fontFamily: 'inherit',
+                    toolbar: { show: false }
                 },
-                plotOptions: { 
-                    bar: { 
-                        borderRadius: 4, 
-                        horizontal: true, 
-                        distributed: true, 
+                plotOptions: {
+                    bar: {
+                        borderRadius: 4,
+                        horizontal: true,
+                        distributed: true,
                         barHeight: '60%'
-                    } 
+                    }
                 },
-                colors: ['#334E68', '#D4B483', '#7d87b3', '#082F49', '#0369A1'],
-                dataLabels: { 
-                    enabled: true, 
-                    textAnchor: 'start', 
-                    style: { colors: ['#fff'] }, 
-                    offsetX: 0 
+                colors: colors,
+                dataLabels: {
+                    enabled: true,
+                    textAnchor: 'start',
+                    style: { colors: ['#fff'] },
+                    offsetX: 0
                 },
-                xaxis: { 
+                xaxis: {
                     categories: labels,
                     labels: { style: { fontSize: '12px' } }
                 },
-                yaxis: { 
+                yaxis: {
                     labels: { style: { fontSize: '13px', fontWeight: 500 } }
                 },
-                legend: { show: false }, 
-                tooltip: { theme: 'light' }
+                legend: {
+                    show: true,
+                    customLegendItems: ['ช่าง', 'แอดมิน'],
+                    markers: { fillColors: ['#334E68', '#D4B483'] }
+                },
+                tooltip: {
+                    theme: 'light',
+                    y: {
+                        formatter: val => `${val} ครั้ง`
+                    }
+                }
             };
 
             if (charts.topReporters) charts.topReporters.destroy();
-            charts.topReporters = new ApexCharts(document.querySelector("#topReportersChart"), options);
+            charts.topReporters = new ApexCharts(
+                document.querySelector("#topReportersChart"), options
+            );
             charts.topReporters.render();
 
         } catch (error) {
