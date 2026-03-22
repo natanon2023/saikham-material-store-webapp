@@ -41,7 +41,11 @@
         </div>
 
         <div class="boxmaterial">
-            <h4 style="margin-bottom:10px;">สรุปรายการที่กำลังจะเบิก</h4>
+            <div style="display: flex; justify-content:space-between; margin-bottom:20px; margin-top:20px;">
+                <h4 style="margin-bottom:10px;">สรุปรายการที่กำลังจะเบิก</h4>
+                จำนวนวัสดุทั้งหมด {{ collect($itemsToWithdraw)->sum('qty') }} ชิ้น
+            </div>
+            
             <table width="100%" cellpadding="8" cellspacing="0" style="border-collapse:collapse; border:1px solid #eee;">
                 <thead style="background:#f9f9f9;">
                     <tr align="center">

@@ -57,7 +57,7 @@
                 </td>
                 <td align="center">
                     @if($issue->category == 'material_problems')
-                        วัสดุเสียหาย
+                        ปัญหาวัสดุ
                     @else
                         ปัญหาทั่วไป
                     @endif

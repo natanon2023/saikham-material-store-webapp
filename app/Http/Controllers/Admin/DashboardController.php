@@ -112,13 +112,32 @@ class DashboardController extends Controller
     }
 
     public function materialcompare(){
-        $planned = DB::table('quotation_materials')->selectRaw('SUM(quantity) as total')->value('total');
+        $withdrawn = DB::table('material_logs')
+            ->where('direction', 'out')
+            ->where('source', 'withdraw')
+            ->sum('quantitylog');
 
-        $actual = DB::table('project_purchase_items')->selectRaw('SUM(quantity) as total')->value('total');
+        $returned = DB::table('material_logs')
+            ->where('direction', 'in')
+            ->whereIn('source', ['return_material', 'return_tool'])
+            ->sum('quantitylog');
 
         return response()->json([
-            'planned' => $planned ?? 0, 'actual' => $actual ?? 0
+            'withdrawn' => $withdrawn ?? 0, 
+            'returned'  => $returned ?? 0
         ]);
+    }
+
+    public function topreporters(){
+        $data = DB::table('project_issues')
+            ->join('users', 'project_issues.reported_by', '=', 'users.id')
+            ->select('users.name', DB::raw('COUNT(*) as total'))
+            ->groupBy('users.id', 'users.name')
+            ->orderByDesc('total')
+            ->limit(5)
+            ->get();
+            
+        return response()->json($data);
     }
 
 

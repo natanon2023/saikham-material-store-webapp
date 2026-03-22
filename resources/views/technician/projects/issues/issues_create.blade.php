@@ -53,13 +53,13 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">ภาพวัสดุที่เสียหาย</label>
+                    <label class="form-label">ภาพวัสดุ</label>
                     <input type="file" name="image_data" class="form-input" accept="image/*" multiple required>
                 </div>
             
 
                 <div class="form-group">
-                    <label class="form-label">จำนวนที่เสียหาย</label>
+                    <label class="form-label">จำนวน</label>
                     <input type="number" name="damaged_amount"  class="form-input" min="1" placeholder="จำนวน" required>
                 </div>
                 
@@ -95,7 +95,7 @@
                 </td>
                 <td align="center">
                     @if($issue->category == 'material_problems')
-                        วัสดุเสียหาย
+                        ปัญหาวัสดุ
                     @else
                         ปัญหาทั่วไป
                     @endif

@@ -286,17 +286,19 @@
     <div class="chart-grid-half">
         <div class="chart-card">
             <div class="chart-card-header">
-                <h4 class="chart-card-title">ผลิตภัณฑ์ที่ได้รับความนิยมสูงสุด (Top 5)</h4>
+                <h4 class="chart-card-title">ผลิตภัณฑ์ที่ได้รับความนิยมสูงสุด 5 อันดับ</h4>
                 <p class="chart-card-desc">ช่วยประกอบการตัดสินใจในการสต็อกวัสดุ</p>
             </div>
             <div id="topProductChart" class="chart-area"></div>
         </div>
-        <div class="chart-card">
-            <div class="chart-card-header">
-                <h4 class="chart-card-title">เปรียบเทียบจำนวนวัสดุ(ประเมิน VS สั่งซื้อจริง)</h4>
-                <p class="chart-card-desc">เปรียบเทียบจำนวนวัสดุที่ประเมินไว้ในใบเสนอราคากับที่สั่งซื้อจริง เพื่อตรวจสอบความแม่นยำในการคำนวณและควบคุมต้นทุนไม่ให้รั่วไหล</p>
+        <div class="chart-card" >
+            <div class="chart-card-header" style="margin-bottom: 15px;">
+                <h4 class="chart-card-title">เปรียบเทียบสัดส่วนวัสดุ (เบิกออก VS คืนคลัง)</h4>
+                <p class="chart-card-desc">
+                    เปรียบเทียบจำนวนวัสดุทั้งหมดที่ช่างเบิกออกไปใช้งาน กับจำนวนวัสดุที่เหลือใช้และนำกลับมาคืน เพื่อประเมินความแม่นยำในการสั่งของ
+                </p>
             </div>
-            <div id="materialCompareChart" class="chart-area"></div>
+            <div id="materialCompareChart"></div>
         </div>
     </div>
 
@@ -312,6 +314,16 @@
         </div>
         <div id="areaChart" class="chart-area-lg"></div>
     </div>
+    <div class="chart-card" style="margin-top: 20px;">
+            <div class="chart-card-header" style="margin-bottom: 15px;">
+                <h4 class="chart-card-title">5 อันดับ พนักงานที่รายงานปัญหาบ่อยที่สุด</h4>
+                <p class="chart-card-desc">
+                    สถิติการแจ้งปัญหาหน้างานแยกตามบุคคล (อาจบ่งบอกถึงความรับผิดชอบ หรืออัตราการทำของเสียหาย)
+                </p>
+            </div>
+        <div id="topReportersChart"></div>
+    </div>
+
 
 </div>
 
@@ -325,6 +337,7 @@
         renderIssueChart();
         renderTopProductChart();
         renderMaterialCompareChart();
+        renderTopReportersChart();
         await loadAmphures();
         renderAreaChart();
 
@@ -468,26 +481,75 @@
             const data = await res.json();
 
             const options = {
-                series: [
-                    { name: 'จำนวนที่วางแผน (ชิ้น)', data: [data.planned || 0] },
-                    { name: 'จำนวนที่ซื้อจริง (ชิ้น)', data: [data.actual || 0] }
-                ],
-                chart: { type: 'bar', height: 350, toolbar: { show: false }, fontFamily: 'inherit' },
-                plotOptions: { bar: { horizontal: false, columnWidth: '50%', borderRadius: 4, dataLabels: { position: 'top' } } },
-                colors: ['#D4B483', '#334E68'],
-                dataLabels: { enabled: true, offsetY: -20, style: { fontSize: '12px', colors: ["#304758"] } },
-                stroke: { show: true, width: 2, colors: ['transparent'] },
-                xaxis: { categories: ['วัสดุภาพรวม (ชิ้น)'] },
-                yaxis: { title: { text: 'จำนวนหน่วย' } },
-                fill: { opacity: 1 },
-                tooltip: { y: { formatter: function (val) { return val + " หน่วย" } } }
+                chart: { type: 'bar', height: 300, fontFamily: 'inherit', toolbar: { show: false } },
+                series: [{
+                    name: 'จำนวน (ชิ้น)',
+                    data: [data.withdrawn || 0, data.returned || 0] 
+                }],
+                xaxis: { categories: ['เบิกใช้งาน', 'คืนเข้าคลัง'] },
+                colors: ['#D4B483', '#334E68'], 
+                plotOptions: { bar: { distributed: true, borderRadius: 4, columnWidth: '50%' } },
+                dataLabels: { enabled: true, style: { colors: ['#fff'] } },
+                legend: { show: false }
             };
 
             if (charts.materialCompare) charts.materialCompare.destroy();
             charts.materialCompare = new ApexCharts(document.querySelector("#materialCompareChart"), options);
             charts.materialCompare.render();
+
         } catch (error) {
             console.error("Error loading material compare chart:", error);
+        }
+    }
+
+    async function renderTopReportersChart() {
+        try {
+            const res = await fetch('/admin/api/topreporters');
+            const data = await res.json();
+
+            const labels = data.map(item => 'ช่าง ' + item.name);
+            const totals = data.map(item => parseInt(item.total));
+
+            const options = {
+                series: [{ name: 'จำนวนการรายงาน (ครั้ง)', data: totals }],
+                chart: { 
+                    type: 'bar', 
+                    height: 350, 
+                    fontFamily: 'inherit', 
+                    toolbar: { show: false } 
+                },
+                plotOptions: { 
+                    bar: { 
+                        borderRadius: 4, 
+                        horizontal: true, 
+                        distributed: true, 
+                        barHeight: '60%'
+                    } 
+                },
+                colors: ['#334E68', '#D4B483', '#7d87b3', '#082F49', '#0369A1'],
+                dataLabels: { 
+                    enabled: true, 
+                    textAnchor: 'start', 
+                    style: { colors: ['#fff'] }, 
+                    offsetX: 0 
+                },
+                xaxis: { 
+                    categories: labels,
+                    labels: { style: { fontSize: '12px' } }
+                },
+                yaxis: { 
+                    labels: { style: { fontSize: '13px', fontWeight: 500 } }
+                },
+                legend: { show: false }, 
+                tooltip: { theme: 'light' }
+            };
+
+            if (charts.topReporters) charts.topReporters.destroy();
+            charts.topReporters = new ApexCharts(document.querySelector("#topReportersChart"), options);
+            charts.topReporters.render();
+
+        } catch (error) {
+            console.error("Error loading top reporters chart:", error);
         }
     }
 
@@ -522,7 +584,7 @@
             const options = {
                 series: [{ name: 'จำนวนงานติดตั้ง', data: totals }],
                 chart: { type: 'bar', height: 400, toolbar: { show: false }, fontFamily: 'inherit' },
-                colors: ['#D4B483'],
+                colors: ['#D4B483','#7d87b3'],
                 plotOptions: { bar: { borderRadius: 4, columnWidth: '40%', distributed: true } },
                 dataLabels: { enabled: false },
                 legend: { show: false },

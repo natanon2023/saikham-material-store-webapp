@@ -374,15 +374,17 @@ $quotation = \App\Models\Quotation::where('project_id', $project->id)->latest()-
             </thead>
             <tbody>
                 @foreach ($need->productset->productsetitem->sortBy('material.material_type') as $item)
-                <tr>
-                    <td align="center"><b>{{ $item->calculated_material_type }}</b></td>
-                    <td align="center">{{ $item->calculated_description }}</td>
-                    <td align="center">{{ $item->calculated_lot }}</td>
-                    <td align="right">{{ number_format($item->calculated_unit_price, 2) }}</td>
-                    <td align="center">{{ $item->calculated_qty }}</td>
-                    <td align="right"><b>{{ number_format($item->calculated_total, 2) }}</b></td>
-                    <td align="center">{{ $item->calculated_remark }}</td>
-                </tr>
+                    @if($item->material) 
+                    <tr>
+                        <td align="center"><b>{{ $item->calculated_material_type }}</b></td>
+                        <td align="center">{{ $item->calculated_description }}</td>
+                        <td align="center">{{ $item->calculated_lot }}</td>
+                        <td align="right">{{ number_format($item->calculated_unit_price, 2) }}</td>
+                        <td align="center">{{ $item->calculated_qty }}</td>
+                        <td align="right"><b>{{ number_format($item->calculated_total, 2) }}</b></td>
+                        <td align="center">{{ $item->calculated_remark }}</td>
+                    </tr>
+                    @endif
                 @endforeach
             </tbody>
         </table>

@@ -1265,25 +1265,25 @@ class ProjectController extends Controller
             $totalExpenses += $expense->amount;
         }
 
-        $laborSurveying      = $project->labor_cost_surveying; 
-        $laborInstallPerDay  = $project->daily_labor_rate * $installerCount; 
-        $laborInstallTotal   = $project->estimated_work_days * $laborInstallPerDay;
-        $totalLabor          = $laborSurveying + $laborInstallTotal;
+        $laborSurveying     = $project->labor_cost_surveying;
+        $laborInstallPerDay = $project->daily_labor_rate * $installerCount;
+        $laborInstallTotal  = $project->estimated_work_days * $laborInstallPerDay;
+        $totalLabor         = $laborSurveying + $laborInstallTotal;
 
-        $sumtotal = $sumProductTotal + $totalExpenses + $totalLabor;
-        $sevic = $sumtotal * 0.20;
-        $sumincome = $sumtotal + $sevic;
-        $pricevat = $sumincome * 0.07;
+        $sumtotal    = $sumProductTotal + $totalExpenses + $totalLabor;
+        $sevic       = $sumtotal * 0.20;
+        $sumincome   = $sumtotal + $sevic;
+        $pricevat    = $sumincome * 0.07;
         $grand_total = $sumincome + $pricevat;
 
         $quotation = Quotation::create([
-            'project_id'    => $project->id,
-            'total_product_amount' => $sumProductTotal,
-            'total_expense_amount' => $totalExpenses,
-            'total_labor_amount'   => $totalLabor,
-            'service_charge_amount' => $sevic,
-            'vat_amount'    => $pricevat,
-            'grand_total'   => $grand_total,
+            'project_id'             => $project->id,
+            'total_product_amount'   => $sumProductTotal,
+            'total_expense_amount'   => $totalExpenses,
+            'total_labor_amount'     => $totalLabor,
+            'service_charge_amount'  => $sevic,
+            'vat_amount'             => $pricevat,
+            'grand_total'            => $grand_total,
         ]);
 
         foreach ($project->customerneed as $need) {
@@ -1291,7 +1291,7 @@ class ProjectController extends Controller
                 'quotation_id' => $quotation->id,
                 'item_name'    => $need->productset->productSetName->name,
                 'description'  => "ขนาด " . $need->width . " x " . $need->height . " ซม.",
-                'quantity'          => $need->quantity,
+                'quantity'     => $need->quantity,
                 'unit_price'   => $need->calculated_total,
                 'total_price'  => $need->quantity * $need->calculated_total,
                 'item_type'    => 'product',
@@ -1299,15 +1299,19 @@ class ProjectController extends Controller
 
             foreach ($need->productset->productsetitem as $item) {
                 $mat = $item->material;
+
+                if (!$mat) continue;
+
                 $matDetail = $mat->name ?? '-';
+
                 if ($mat->aluminiumItem) {
-                    $matDetail = ($mat->aluminiumItem->aluminiumType->name ?? '') . " สี " . ($mat->aluminiumItem->aluminumSurfaceFinish->name ?? '');
+                    $matDetail = ($mat->aluminiumItem?->aluminiumType?->name ?? '') . " สี " . ($mat->aluminiumItem?->aluminumSurfaceFinish?->name ?? '');
                 } elseif ($mat->glassItem) {
-                    $matDetail = ($mat->glassItem->glassType->name ?? '') . " สี " . ($mat->glassItem->colourItem->name ?? '');
+                    $matDetail = ($mat->glassItem?->glassType?->name ?? '') . " สี " . ($mat->glassItem?->colourItem?->name ?? '');
                 } elseif ($mat->accessoryItem) {
-                    $matDetail = $mat->accessoryItem->accessoryType->name ?? '';
+                    $matDetail = $mat->accessoryItem?->accessoryType?->name ?? '';
                 } elseif ($mat->consumableItem) {
-                    $matDetail = $mat->consumableItem->consumabletype->name ?? '';
+                    $matDetail = $mat->consumableItem?->consumabletype?->name ?? '';
                 }
 
                 QuotationMaterial::create([
@@ -1324,9 +1328,7 @@ class ProjectController extends Controller
             }
         }
 
-        $project->update([
-            'status' => 'waiting_approval'
-        ]);
+        $project->update(['status' => 'waiting_approval']);
 
         return redirect()->route('admin.projects.alldetail', $project->id)->with('success', 'บันทึกใบเสนอราคาและล็อคข้อมูลสำเร็จ รอลูกค้าอนุมัติ');
     }
@@ -1388,20 +1390,22 @@ class ProjectController extends Controller
         ])->find($id);
 
         foreach ($project->customerneed as $need) {
-            $m_w = $need->width / 100;
-            $m_h = $need->height / 100;
-            $needTotal = 0;
+            $m_w         = $need->width / 100;
+            $m_h         = $need->height / 100;
+            $needTotal   = 0;
             $requestlent = max($m_w, $m_h);
 
             foreach ($need->productset->productsetitem as $item) {
                 $material = $item->material;
-                $type = $material->material_type;
 
+                if (!$material) continue;
+
+                $type        = $material->material_type;
                 $selectprice = 0;
-                $selectlot = '';
-                $remark = '';
-                $qtyuse = 0;
-                $description = ''; 
+                $selectlot   = '';
+                $remark      = '';
+                $qtyuse      = 0;
+                $description = '';
 
                 if ($type == 'อลูมิเนียม') {
                     $totalneedlen = ($m_w * 2) + ($m_h * 2);
@@ -1415,42 +1419,38 @@ class ProjectController extends Controller
                         ->orderBy('id', 'asc')
                         ->get();
 
-
                     $stock = $allMatchingStock->first();
 
-                    if ($stock) {
-                        $len     = $stock->aluminiumlength->length_meter;
-                        $qtyuse  = ceil($totalneedlen / $len);
-                        $totalAvailable = $allMatchingStock->sum('quantity');
+                    $aluName  = $material->aluminiumItem?->aluminiumType?->name ?? '';
+                    $aluColor = $material->aluminiumItem?->aluminumSurfaceFinish?->name ?? '';
 
-                        if($totalAvailable >= $qtyuse){
-                            $selectprice = $stock->price;
-                            $selectlot   = $stock->lot;
+                    if ($stock) {
+                        $len            = $stock->aluminiumlength->length_meter;
+                        $qtyuse         = ceil($totalneedlen / $len);
+                        $totalAvailable = $allMatchingStock->sum('quantity');
+                        $description    = "อลูมิเนียม {$aluName} สี{$aluColor} (ความยาว {$len} ม.)";
+
+                        if ($totalAvailable >= $qtyuse) {
+                            $selectprice               = $stock->price;
+                            $selectlot                 = $stock->lot;
                             $item->calculated_price_id = $stock->id;
-                            $remark = "ใช้อลูมิเนียมยาว {$len} ม. จำนวน {$qtyuse} เส้น";
-                            $aluName  = $material->aluminiumItem->aluminiumType->name ?? '';
-                            $aluColor = $material->aluminiumItem->aluminumSurfaceFinish->name ?? '';
-                            $description = "อลูมิเนียม {$aluName} สี{$aluColor} (ความยาว {$len} ม.)";
-                        }else {
-                            $qtyuse      = ceil($totalneedlen / $len);
-                            $selectprice = $stock->price;
-                            $selectlot   = 'ไม่มีของ';
+                            $remark                    = "ใช้อลูมิเนียมยาว {$len} ม. จำนวน {$qtyuse} เส้น";
+                        } else {
+                            $selectprice               = $stock->price;
+                            $selectlot                 = 'ไม่มีของ';
                             $item->calculated_price_id = null;
-                            $remark = "สต็อกมีแค่ {$totalAvailable} เส้น ต้องการ {$qtyuse} เส้น";
-                            $aluName  = $material->aluminiumItem->aluminiumType->name ?? '';
-                            $aluColor = $material->aluminiumItem->aluminumSurfaceFinish->name ?? '';
-                            $description = "อลูมิเนียม {$aluName} สี{$aluColor} (ความยาว {$len} ม.)";
+                            $remark                    = "สต็อกมีแค่ {$totalAvailable} เส้น ต้องการ {$qtyuse} เส้น";
                         }
                     } else {
-                        $flatlen = 6;
-                        $qtyuse = ceil($totalneedlen / $flatlen);
-                        $selectprice = 300;
-                        $selectlot = 'ไม่มีของ';
+                        $flatlen                   = 6;
+                        $qtyuse                    = ceil($totalneedlen / $flatlen);
+                        $selectprice               = 300;
+                        $selectlot                 = 'ไม่มีของ';
                         $item->calculated_price_id = null;
-                        $remark = "ใช้ราคาเหมา 300 บ. ต่อ เส้น ({$flatlen} ม.) จำนวน {$qtyuse} เส้น";
-                        $aluName = $material->aluminiumItem->aluminiumType->name ?? '';
-                        $description = "อลูมิเนียม {$aluName} (ราคาเหมา ความยาว {$flatlen} ม.)";
+                        $remark                    = "ใช้ราคาเหมา 300 บ. ต่อเส้น ({$flatlen} ม.) จำนวน {$qtyuse} เส้น";
+                        $description               = "อลูมิเนียม {$aluName} (ราคาเหมา ความยาว {$flatlen} ม.)";
                     }
+
                 } elseif ($type == 'กระจก') {
                     $allMatchingStock = Price::where('material_id', $material->id)
                         ->where('quantity', '>', 0)
@@ -1462,84 +1462,83 @@ class ProjectController extends Controller
                         ->orderBy('id', 'asc')
                         ->get();
 
-                    $stock = $allMatchingStock->first();
-                    $qtyuse = 2; 
+                    $stock  = $allMatchingStock->first();
+                    $qtyuse = 2;
 
-
-                    
+                    $glassName  = $material->glassItem?->glassType?->name ?? '';
+                    $glassColor = $material->glassItem?->colourItem?->name ?? '';
 
                     if ($stock && $stock->glassSize) {
                         $totalAvailable = $allMatchingStock->sum('quantity');
-                        $sheetW = $stock->glassSize->width_meter;
-                        $sheetH = $stock->glassSize->length_meter;
-                        if($totalAvailable >= $qtyuse){
-                          $selectprice = $stock->price;
-                            $selectlot   = $stock->lot;
+                        $sheetW         = $stock->glassSize->width_meter;
+                        $sheetH         = $stock->glassSize->length_meter;
+                        $description    = "กระจก{$glassName} สี{$glassColor} (ขนาด {$sheetW}×{$sheetH} ม.)";
+
+                        if ($totalAvailable >= $qtyuse) {
+                            $selectprice               = $stock->price;
+                            $selectlot                 = $stock->lot;
                             $item->calculated_price_id = $stock->id;
-                            $remark = "ใช้กระจก {$sheetW}×{$sheetH} ม. จำนวน {$qtyuse} แผ่น (×2 กันแตก)";
-                        }else {
-                            $selectprice = $stock->price;
-                            $selectlot   = 'ไม่มีของ';
+                            $remark                    = "ใช้กระจก {$sheetW}×{$sheetH} ม. จำนวน {$qtyuse} แผ่น (×2 กันแตก)";
+                        } else {
+                            $selectprice               = $stock->price;
+                            $selectlot                 = 'ไม่มีของ';
                             $item->calculated_price_id = null;
-                            $remark = "สต็อกมีแค่ {$totalAvailable} แผ่น ต้องการ {$qtyuse} แผ่น";
+                            $remark                    = "สต็อกมีแค่ {$totalAvailable} แผ่น ต้องการ {$qtyuse} แผ่น";
                         }
-                        $glassName   = $material->glassItem->glassType->name ?? '';
-                        $glassColor  = $material->glassItem->colourItem->name ?? '';
-                        $description = "กระจก{$glassName} สี{$glassColor} (ขนาด {$sheetW}×{$sheetH} ม.)";
                     } else {
-                        $flatW = 2;
-                        $flatH = 2;
-                        $selectprice = 400;
-                        $selectlot   = 'ไม่มีของ';
+                        $flatW                     = 2;
+                        $flatH                     = 2;
+                        $selectprice               = 400;
+                        $selectlot                 = 'ไม่มีของ';
                         $item->calculated_price_id = null;
-                        $remark = "ไม่มีกระจกขนาดพอ ใช้ราคาเหมา 400 บ./แผ่น จำนวน {$qtyuse} แผ่น";
-                        $glassName   = $material->glassItem->glassType->name ?? '';
-                        $description = "กระจก{$glassName} (ราคาเหมา {$flatW}×{$flatH} ม.)";
+                        $remark                    = "ไม่มีกระจกขนาดพอ ใช้ราคาเหมา 400 บ./แผ่น จำนวน {$qtyuse} แผ่น";
+                        $description               = "กระจก{$glassName} (ราคาเหมา {$flatW}×{$flatH} ม.)";
                     }
+
                 } else {
-                    $allStock = Price::where('material_id', $material->id)
+                    $allStock       = Price::where('material_id', $material->id)
                         ->where('quantity', '>', 0)
                         ->orderBy('id', 'asc')
                         ->get();
 
-                    $stock = $allStock->first();
-                    $qtyuse = 1;
+                    $stock          = $allStock->first();
+                    $qtyuse         = 1;
+                    $totalAvailable = $allStock->sum('quantity');
 
-
-                    if ($stock && $allStock->sum('quantity') >= $qtyuse) {
-                        $selectprice = $stock->price;
-                        $selectlot = $stock->lot;
+                    if ($stock && $totalAvailable >= $qtyuse) {
+                        $selectprice               = $stock->price;
+                        $selectlot                 = $stock->lot;
                         $item->calculated_price_id = $stock->id;
-                        $remark = '-';
+                        $remark                    = '-';
                     } else {
-                        $selectprice = 100;
-                        $selectlot = 'ไม่มีของ';
-                        $remark = 'ใช้ราคาเหมา 100 บ.';
+                        $selectprice               = 100;
+                        $selectlot                 = 'ไม่มีของ';
                         $item->calculated_price_id = null;
+                        $remark                    = 'ใช้ราคาเหมา 100 บ.';
                     }
+
                     if ($type == 'อุปกรณ์เสริม') {
-                        $accName = $material->accessoryItem->accessoryType->name ?? '';
+                        $accName     = $material->accessoryItem?->accessoryType?->name ?? '';
                         $description = "อุปกรณ์เสริม: {$accName}";
                     } elseif ($type == 'วัสดุสิ้นเปลือง') {
-                        $conName = $material->consumableItem->consumabletype->name ?? '';
+                        $conName     = $material->consumableItem?->consumabletype?->name ?? '';
                         $description = "วัสดุสิ้นเปลือง: {$conName}";
                     } elseif ($type == 'เครื่องมือช่าง') {
-                        $toolName = $material->toolItem->toolType->name ?? '';
+                        $toolName    = $material->toolItem?->toolType?->name ?? '';
                         $description = "เครื่องมือช่าง: {$toolName}";
                     } else {
                         $description = "วัสดุอื่นๆ";
                     }
                 }
 
-                $total_item_price = $qtyuse * $selectprice;
-                $item->calculated_description = $description;
+                $total_item_price               = $qtyuse * $selectprice;
+                $item->calculated_description   = $description;
                 $item->calculated_material_type = $type;
-                
-                $item->calculated_lot = $selectlot;
-                $item->calculated_unit_price = $selectprice;
-                $item->calculated_qty = $qtyuse;
-                $item->calculated_total = $total_item_price;
-                $item->calculated_remark = $remark;
+                $item->calculated_lot           = $selectlot;
+                $item->calculated_unit_price    = $selectprice;
+                $item->calculated_qty           = $qtyuse;
+                $item->calculated_total         = $total_item_price;
+                $item->calculated_remark        = $remark;
 
                 $needTotal += $total_item_price;
             }
@@ -1559,17 +1558,13 @@ class ProjectController extends Controller
 
     public function addbiddocument($id)
     {
-        $project = Project::with([
-            'customer.province',
-            'customer.amphure',
-            'customer.tambon',
-            'projectname',
-            'projectexpenses.type',
-            'customerneed.productset.productSetName',
+        $project = $this->getCalculatedProject($id);
+
+        $project->load([
             'customerneed.projectImage.imagetype',
             'quotation.items',
             'quotation.quotationMaterials'
-        ])->find($id);
+        ]);
 
         $statusopenqtc = [
             'pending_quotation',
@@ -1577,7 +1572,7 @@ class ProjectController extends Controller
             'waiting_approval'
         ];
 
-        return view('admin.projects.bid.addbiddocument', compact('project','statusopenqtc'));
+        return view('admin.projects.bid.addbiddocument', compact('project', 'statusopenqtc'));
     }
 
     public function receipt($id)
@@ -3304,6 +3299,8 @@ class ProjectController extends Controller
         return $pdf->stream('ใบกำกับภาษี-' . ($project->tax_invoice_number ?? $project->id) . '.pdf');
     }
 
+
+    
 
 
 

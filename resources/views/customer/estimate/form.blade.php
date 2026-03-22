@@ -112,7 +112,7 @@
 
 <div style="max-width: 1100px; margin: 0 auto; padding: 0 1rem;" >
     <div style="display: flex; justify-content:end; margin-bottom:20px;">
-      <a href="{{ url()->previous() }}" class=" btn btn-primary">ย้อนกลับ</a>
+      <a href="{{ route('customer.showcustomerproducts')}}" class=" btn btn-primary">ย้อนกลับ</a>
     </div>
     
     <div class="est-card">
