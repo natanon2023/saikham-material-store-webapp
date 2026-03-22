@@ -18,7 +18,7 @@
             <div class="box-control">
                 <div class="form-group">
                     <label class="form-label">เลขประจำตัวผู้เสียภาษี</label>
-                    <input type="text" name="tax_id_number" class="form-input" required>
+                    <input type="text"  name="tax_id_number" class="form-input" required maxlength="13" pattern="\d{13}" title="กรุณากรอกตัวเลขให้ครบ 13 หลัก"  oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 13);">
                 </div>
 
                 <div class="form-group">
@@ -51,7 +51,7 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">เบอร์โทร</label>
-                    <input type="text" name="phone" class="form-input" required>
+                    <input type="text" name="phone" class="form-input" required maxlength="10" pattern="\d{10}" title="กรุณากรอกตัวเลขให้ครบ 10 หลัก"  oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);">
                 </div>
                 <div class="form-group">
                     <label class="form-label">อีเมล (ถ้ามี)</label>

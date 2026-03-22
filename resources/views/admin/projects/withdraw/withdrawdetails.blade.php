@@ -69,7 +69,7 @@
     <div class="boxmaterial" style="margin-bottom: 20px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
             <h4 style="margin: 0;">วัสดุที่เหลืออยู่กับช่างตอนนี้</h4>
-            <span style="font-size: 0.85em; color: #666;">{{ $currentItems->count() }} รายการ</span>
+            <span style="font-size: 0.85em; color: #666;">จำนวนวัสดุทั้งหมด {{ $currentItems->sum('quantity') }} ชิ้น</span>
         </div>
 
         @if($currentItems->isEmpty())

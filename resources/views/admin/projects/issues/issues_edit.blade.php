@@ -42,12 +42,12 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">ภาพวัสดุที่เสียหาย (เลือกใหม่หากต้องการเปลี่ยนรูป)</label>
+                    <label class="form-label">ภาพวัสดุ (เลือกใหม่หากต้องการเปลี่ยนรูป)</label>
                     <input type="file" name="image_data" class="form-input" accept="image/*">
                 </div>
             
                 <div class="form-group">
-                    <label class="form-label">จำนวนที่เสียหาย</label>
+                    <label class="form-label">จำนวนที่</label>
                     <input type="number" name="damaged_amount" class="form-input" min="1" value="{{ $issue->damaged_amount }}" required>
                 </div>
                 

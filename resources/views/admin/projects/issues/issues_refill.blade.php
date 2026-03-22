@@ -9,7 +9,7 @@
         </div>
         <div style="display: flex; flex-direction: row; text-align: center;">
             <div style="flex: auto; background-color: #334E68; padding: 10px; color:#ffffff;">
-                จำนวนที่เสียหาย {{ $issue->damaged_amount }}
+                จำนวน {{ $issue->damaged_amount }}
             </div>
         </div>
     </div>

@@ -29,7 +29,7 @@
                     <td>{{ $issue->reporter->name ?? '-' }}</td>
                     <td>
                         @if($issue->category == 'material_problems')
-                            วัสดุเสียหาย
+                            ปัญหาวัสดุ
                         @else
                             ปัญหาทั่วไป
                         @endif
@@ -60,7 +60,7 @@
                                     @elseif ($material->material_type == 'เครื่องมือช่าง')
                                         เครื่องมือช่าง - {{ $material->toolItem->toolType->name ?? '' }} - {{ $material->toolItem->description ?? '' }}
                                     @endif
-                                    (จำนวนเสียหาย {{ $issue->damaged_amount ?? 0 }})
+                                    <span >(จำนวน {{ $issue->damaged_amount ?? 0 }})</span>
                             </div>
                         @endif
                         <div>{{ $issue->description ?? ' ' }}</div>

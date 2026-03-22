@@ -54,7 +54,7 @@
             <div style="color: #888; font-size: 0.9em; margin-bottom: 3px;">ประเภทปัญหา</div>
             <div>
                 @if($issue->category == 'material_problems')
-                    วัสดุเสียหาย
+                    ปัญหาวัสดุ
                 @else
                     ปัญหาทั่วไป
                 @endif
@@ -69,7 +69,7 @@
 
         @if($issue->category == 'material_problems' && $issue->withdrawalitemdamaged)
         <div style="grid-column: 1 / -1; border-top: 1px dashed #ccc; padding-top: 20px; margin-top: 10px;">
-            <div style="color: #888; font-size: 0.9em; margin-bottom: 5px;">วัสดุที่เสียหาย</div>
+            <div style="color: #888; font-size: 0.9em; margin-bottom: 5px;">วัสดุ</div>
             <div>
                 @php $material = $issue->withdrawalitemdamaged->material; @endphp
                 @if ($material->material_type == 'อลูมิเนียม')

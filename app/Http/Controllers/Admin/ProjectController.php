@@ -1405,82 +1405,113 @@ class ProjectController extends Controller
 
                 if ($type == 'อลูมิเนียม') {
                     $totalneedlen = ($m_w * 2) + ($m_h * 2);
-                    $stock = Price::where('material_id', $material->id)
+
+                    $allMatchingStock = Price::where('material_id', $material->id)
                         ->where('quantity', '>', 0)
-                        ->whereHas('aluminiumlength', function ($show) use ($requestlent) {
-                            $show->where('length_meter', '>=', $requestlent);
+                        ->whereHas('aluminiumlength', function ($q) use ($requestlent) {
+                            $q->where('length_meter', '>=', $requestlent);
                         })
+                        ->with('aluminiumlength')
                         ->orderBy('id', 'asc')
-                        ->first();
+                        ->get();
+
+
+                    $stock = $allMatchingStock->first();
 
                     if ($stock) {
-                        $len = $stock->aluminiumlength->length_meter;
-                        $qtyuse = ceil($totalneedlen / $len);
-                        $selectprice = $stock->price;
-                        $selectlot = $stock->lot;
-                        $item->calculated_price_id = $stock->id;
-                        $remark = "ใช้อลูมิเนียมยาว {$len} ม. จำนวน {$qtyuse} เส้น";
-                        
-                        $aluName = $material->aluminiumItem->aluminiumType->name ?? '';
-                        $aluColor = $material->aluminiumItem->aluminumSurfaceFinish->name ?? '';
-                        $description = "อลูมิเนียม {$aluName} สี{$aluColor} (ความยาว {$len} ม.)";
+                        $len     = $stock->aluminiumlength->length_meter;
+                        $qtyuse  = ceil($totalneedlen / $len);
+                        $totalAvailable = $allMatchingStock->sum('quantity');
+
+                        if($totalAvailable >= $qtyuse){
+                            $selectprice = $stock->price;
+                            $selectlot   = $stock->lot;
+                            $item->calculated_price_id = $stock->id;
+                            $remark = "ใช้อลูมิเนียมยาว {$len} ม. จำนวน {$qtyuse} เส้น";
+                            $aluName  = $material->aluminiumItem->aluminiumType->name ?? '';
+                            $aluColor = $material->aluminiumItem->aluminumSurfaceFinish->name ?? '';
+                            $description = "อลูมิเนียม {$aluName} สี{$aluColor} (ความยาว {$len} ม.)";
+                        }else {
+                            $qtyuse      = ceil($totalneedlen / $len);
+                            $selectprice = $stock->price;
+                            $selectlot   = 'ไม่มีของ';
+                            $item->calculated_price_id = null;
+                            $remark = "สต็อกมีแค่ {$totalAvailable} เส้น ต้องการ {$qtyuse} เส้น";
+                            $aluName  = $material->aluminiumItem->aluminiumType->name ?? '';
+                            $aluColor = $material->aluminiumItem->aluminumSurfaceFinish->name ?? '';
+                            $description = "อลูมิเนียม {$aluName} สี{$aluColor} (ความยาว {$len} ม.)";
+                        }
                     } else {
                         $flatlen = 6;
                         $qtyuse = ceil($totalneedlen / $flatlen);
                         $selectprice = 300;
                         $selectlot = 'ไม่มีของ';
-                        $remark = "ใช้ราคาเหมา 300 บ. ต่อ เส้น ({$flatlen} ม.) จำนวน {$qtyuse} เส้น";
                         $item->calculated_price_id = null;
-                        
+                        $remark = "ใช้ราคาเหมา 300 บ. ต่อ เส้น ({$flatlen} ม.) จำนวน {$qtyuse} เส้น";
                         $aluName = $material->aluminiumItem->aluminiumType->name ?? '';
                         $description = "อลูมิเนียม {$aluName} (ราคาเหมา ความยาว {$flatlen} ม.)";
                     }
                 } elseif ($type == 'กระจก') {
-                    $stock = Price::where('material_id', $material->id)
+                    $allMatchingStock = Price::where('material_id', $material->id)
                         ->where('quantity', '>', 0)
                         ->whereHas('glassSize', function ($q) use ($m_w, $m_h) {
                             $q->where('width_meter', '>=', $m_w)
                             ->where('length_meter', '>=', $m_h);
                         })
+                        ->with('glassSize')
                         ->orderBy('id', 'asc')
-                        ->first();
+                        ->get();
+
+                    $stock = $allMatchingStock->first();
+                    $qtyuse = 2; 
+
+
+                    
 
                     if ($stock && $stock->glassSize) {
+                        $totalAvailable = $allMatchingStock->sum('quantity');
                         $sheetW = $stock->glassSize->width_meter;
                         $sheetH = $stock->glassSize->length_meter;
-
-                        $qtyuse      = 2;
-                        $selectprice = $stock->price;
-                        $selectlot   = $stock->lot;
-                        $item->calculated_price_id = $stock->id;
-                        $remark      = "ใช้กระจก {$sheetW}×{$sheetH} ม. จำนวน {$qtyuse} แผ่น (×2 กันแตก)";
-
-                        $glassName  = $material->glassItem->glassType->name ?? '';
-                        $glassColor = $material->glassItem->colourItem->name ?? '';
+                        if($totalAvailable >= $qtyuse){
+                          $selectprice = $stock->price;
+                            $selectlot   = $stock->lot;
+                            $item->calculated_price_id = $stock->id;
+                            $remark = "ใช้กระจก {$sheetW}×{$sheetH} ม. จำนวน {$qtyuse} แผ่น (×2 กันแตก)";
+                        }else {
+                            $selectprice = $stock->price;
+                            $selectlot   = 'ไม่มีของ';
+                            $item->calculated_price_id = null;
+                            $remark = "สต็อกมีแค่ {$totalAvailable} แผ่น ต้องการ {$qtyuse} แผ่น";
+                        }
+                        $glassName   = $material->glassItem->glassType->name ?? '';
+                        $glassColor  = $material->glassItem->colourItem->name ?? '';
                         $description = "กระจก{$glassName} สี{$glassColor} (ขนาด {$sheetW}×{$sheetH} ม.)";
-
                     } else {
                         $flatW = 2;
                         $flatH = 2;
-                        $qtyuse      = 2; 
                         $selectprice = 400;
                         $selectlot   = 'ไม่มีของ';
                         $item->calculated_price_id = null;
-                        $remark      = "ใช้กระจกเหมา {$flatW}×{$flatH} ม. 400 บ./แผ่น จำนวน {$qtyuse} แผ่น (×2 กันแตก)";
-
+                        $remark = "ไม่มีกระจกขนาดพอ ใช้ราคาเหมา 400 บ./แผ่น จำนวน {$qtyuse} แผ่น";
                         $glassName   = $material->glassItem->glassType->name ?? '';
                         $description = "กระจก{$glassName} (ราคาเหมา {$flatW}×{$flatH} ม.)";
                     }
                 } else {
-                    $stock = Price::where('material_id', $material->id)->where('quantity', '>', 0)->orderBy('id', 'asc')->first();
-                    if ($stock) {
+                    $allStock = Price::where('material_id', $material->id)
+                        ->where('quantity', '>', 0)
+                        ->orderBy('id', 'asc')
+                        ->get();
+
+                    $stock = $allStock->first();
+                    $qtyuse = 1;
+
+
+                    if ($stock && $allStock->sum('quantity') >= $qtyuse) {
                         $selectprice = $stock->price;
                         $selectlot = $stock->lot;
-                        $qtyuse = 1;
-                        $remark = '-';
                         $item->calculated_price_id = $stock->id;
+                        $remark = '-';
                     } else {
-                        $qtyuse = 1;
                         $selectprice = 100;
                         $selectlot = 'ไม่มีของ';
                         $remark = 'ใช้ราคาเหมา 100 บ.';

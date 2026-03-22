@@ -61,13 +61,20 @@ class DashboardController extends Controller
     {
         $userId = Auth::id();
 
-        $query = Project::with(['projectname', 'customer', 'installers'])
-            ->whereNotNull('survey_date')
-            ->where(function($q) use ($userId) {
-                $q->where('assigned_surveyor_id', $userId)
-                ->orWhereHas('installers', function($q2) use ($userId) {
-                    $q2->where('user_id', $userId);
+        $query = Project::with(['projectname', 'customer', 'installers'])->where(function($q) use ($userId) {
+                
+                $q->where(function($q1) use ($userId) {
+                    $q1->where('assigned_surveyor_id', $userId)
+                    ->whereNotNull('survey_date');
+                })
+                ->orWhere(function($q2) use ($userId) {
+                    $q2->whereHas('installers', function($q3) use ($userId) {
+                        $q3->where('users.id', $userId); 
+                    })
+                    ->whereNotNull('installation_start_date')
+                    ->whereNotNull('installation_end_date');
                 });
+                
             });
 
         $events = $query->withTrashed()->get()->flatMap(function ($pj) use ($userId) {
@@ -83,6 +90,7 @@ class DashboardController extends Controller
             }
 
             $isSurveyor  = ($pj->assigned_surveyor_id == $userId);
+            
             $isInstaller = $pj->installers->contains('id', $userId);
 
             $items = [];
@@ -105,7 +113,7 @@ class DashboardController extends Controller
                     'id'              => $pj->id . '_install',
                     'title'           => ($pj->trashed() ? "(ยกเลิก) " : "") . "[ติดตั้ง] " . $customerName . " - " . $projectName . " (" . $statusLabel . ")",
                     'start'           => date('Y-m-d', strtotime($pj->installation_start_date)),
-                    'end'             => date('Y-m-d', strtotime($pj->installation_end_date . ' +1 day')),
+                    'end'             => date('Y-m-d', strtotime($pj->installation_end_date . ' + 1 day')), 
                     'url'             => route('technician.projects.index', $pj->id),
                     'backgroundColor' => $color,
                     'borderColor'     => $color,

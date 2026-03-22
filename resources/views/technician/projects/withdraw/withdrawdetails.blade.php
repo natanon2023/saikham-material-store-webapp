@@ -33,6 +33,7 @@
         $totalWithdraw = $materialLogs->where('source', 'withdraw')->sum('quantitylog');
         $totalReturn   = $materialLogs->whereIn('source', ['return_material', 'return_tool'])->sum('quantitylog');
         $totalRefill   = $materialLogs->where('source', 'issue_refill')->sum('quantitylog');
+        
     @endphp
 
     <div class="boxmaterial" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -51,25 +52,12 @@
         </div>
     </div>
 
-    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;">
-        <div style="background: #fdecea; padding: 14px; ">
-            <div style="font-size: 0.8em; color: #c0392b; margin-bottom: 4px;">เบิกออกจากคลังทั้งหมด</div>
-            <div style="font-size: 1.6em; font-weight: bold; color: #c0392b;">{{ $totalWithdraw }}</div>
-        </div>
-        <div style="background: #fff3e0; padding: 14px; ">
-            <div style="font-size: 0.8em; color: #e65100; margin-bottom: 4px;">เติมวัสดุจากปัญหาจากปัญหาที่แจ้ง</div>
-            <div style="font-size: 1.6em; font-weight: bold; color: #e65100;">{{ $totalRefill }}</div>
-        </div>
-        <div style="background: #e8f5e9; padding: 14px;" >
-            <div style="font-size: 0.8em; color: #1e8e3e; margin-bottom: 4px;">คืนเข้าคลังแล้วทั้งหมด</div>
-            <div style="font-size: 1.6em; font-weight: bold; color: #1e8e3e;">{{ $totalReturn }}</div>
-        </div>
-    </div>
+    
 
     <div class="boxmaterial" style="margin-bottom: 20px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
             <h4 style="margin: 0;">วัสดุที่เหลืออยู่กับช่างตอนนี้</h4>
-            <span style="font-size: 0.85em; color: #666;">{{ $currentItems->count() }} รายการ</span>
+            <span style="font-size: 0.85em; color: #666;">จำนวนวัสดุทั้งหมด {{ $currentItems->sum('quantity') }} ชิ้น</span>
         </div>
 
         @if($currentItems->isEmpty())
