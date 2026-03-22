@@ -75,6 +75,22 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
     });
 
     Route::get('/admin/dashboard', [AdminDashboard::class, 'index'])->name('admin.dashboard');
+    Route::get('/admin/api/revenue', [AdminDashboard::class, 'revenue']);
+    Route::get('/admin/api/cost', [AdminDashboard::class, 'cost']);
+    Route::get('/admin/api/topproduct', [AdminDashboard::class, 'topproduct']);
+    Route::get('/admin/api/issies', [AdminDashboard::class, 'issies']);
+    Route::get('/admin/api/materialcompare', [AdminDashboard::class, 'materialcompare']);
+    Route::get('/chart/area', [AdminDashboard::class, 'area']);
+    Route::get('/chart/top-area', [AdminDashboard::class, 'topArea']);
+    Route::get('/chart/amphures', [AdminDashboard::class, 'amphures']);
+    Route::get('/chart/summary', [AdminDashboard::class, 'summary']);
+    Route::get('/chart/cost-breakdown', [AdminDashboard::class, 'costBreakdown']);
+    Route::get('/chart/revenue-source', [AdminDashboard::class, 'revenueSource']);
+    Route::get('/chart/latest-project', [AdminDashboard::class, 'latestProject']);
+    Route::get('/chart/pipeline', [AdminDashboard::class, 'pipeline']);
+    Route::get('/chart/top-products', [AdminDashboard::class, 'topProducts']);
+    Route::get('/chart/suppliers', [AdminDashboard::class, 'suppliers']);
+
 
     Route::prefix('materials')->name('admin.materials.')->group(function () {
         Route::get('/', [MaterialController::class, 'index'])->name('index');
