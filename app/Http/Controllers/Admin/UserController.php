@@ -45,20 +45,7 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed', 
-            'role' => 'required',
-            'phone_number' => 'required',
-            'province_id' => 'required',
-            'amphure_id' => 'required',
-            'tambon_id' => 'required',
-        ], [
-            'email.unique' => 'อีเมลนี้ถูกใช้งานไปแล้ว',
-            'password.confirmed' => 'รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน',
-            'password.min' => 'รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษร',
-        ]);
+        
 
         try {
             $user = User::create([
@@ -75,8 +62,8 @@ class UserController extends Controller
                 'user_id'      => $user->id,
                 'house_number' => $request->house_number,
                 'moo'          => $request->moo,
-                'alley'        => $request->alley ?? 'ไม่มีข้อมูล',
-                'road'         => $request->road ?? 'ไม่มีข้อมูล',
+                'alley'        => $request->alley,
+                'road'         => $request->road,
                 'village'      => $request->village,
                 'province_id'  => $request->province_id,
                 'amphure_id'   => $request->amphure_id,
@@ -117,44 +104,7 @@ class UserController extends Controller
     {
         $user = User::with('profile')->find($id);
 
-        $validator = Validator::make($request->all(), [
-            'name'       => ['required', 'string', 'max:255', "unique:users,name,{$id}"],
-            'email'      => ['required', 'string', 'email', 'max:255', "unique:users,email,{$id}"],
-            'password'   => ['nullable', 'string', 'min:6', 'max:255', 'confirmed'],
-            'role'       => ['required', 'in:technician,admin'],
-            'last_name'     => 'required|string|max:255',
-            'nickname'      => 'required|string|max:255',
-            'phone_number'  => ['required', 'string', 'max:20', "unique:users,phone_number,{$id}"],
-
-            'house_number'  => 'nullable|string|max:100',
-            'moo'           => 'nullable|string|max:50',
-            'road'          => 'nullable|string|max:255',
-            'village'       => 'nullable|string|max:255',
-            'alley'         => 'nullable|string|max:255',
-            'province_id'   => 'required|exists:thai_provinces,id',
-            'amphure_id'    => 'required|exists:thai_amphures,id',
-            'tambon_id'     => 'required|exists:thai_tambons,id',
-            'birth_date'    => 'nullable|date|before:today',
-        ], [
-            'name.required' => 'กรุณากรอกชื่อ',
-            'name.unique' => 'ชื่อนี้ถูกใช้งานแล้ว',
-            'email.required' => 'กรุณากรอกอีเมล',
-            'email.unique' => 'อีเมลนี้ถูกใช้งานแล้ว',
-            'password.confirmed' => 'รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน',
-            'role.required' => 'กรุณาเลือก Role',
-            'last_name.required' => 'กรุณากรอกนามสกุล',
-            'nickname.required' => 'กรุณากรอกชื่อเล่น',
-            'phone_number.required' => 'กรุณากรอกเบอร์โทรศัพท์',
-            'phone_number.unique' => 'เบอร์โทรนี้ถูกใช้งานแล้ว',
-            'province_id.required' => 'กรุณาเลือกจังหวัด',
-            'amphure_id.required' => 'กรุณาเลือกอำเภอ',
-            'tambon_id.required' => 'กรุณาเลือกตำบล',
-            'birth_date.before' => 'วันเกิดต้องเป็นวันที่ผ่านมาแล้ว',
-        ]);
-
-        if ($validator->fails()) {
-            return back()->withErrors($validator)->withInput();
-        }
+    
 
         $userData = [
             'name'         => $request->name,

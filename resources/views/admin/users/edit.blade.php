@@ -7,7 +7,7 @@
         <div class="boxmaterial" style="display: flex; justify-content: space-between; margin-bottom: 20px;">
             <h3>แก้ไขข้อมูลผู้ใช้: {{ $user->name }} {{ $user->last_name }}</h3>
             <a href="{{ route('admin.users.index') }}" class="btn btn-primary">
-                 ย้อนกลับ
+                ย้อนกลับ
             </a>
         </div>
 
@@ -16,7 +16,6 @@
                 @csrf
                 @method('PUT')
 
-                
                 <div style="margin-bottom: 15px; font-size: 16px; font-weight: bold;">
                     ข้อมูลทั่วไป
                 </div>
@@ -25,8 +24,7 @@
                 <div class="box-control">
                     <div class="form-group">
                         <label class="form-label">ชื่อ :</label>
-                        <input class="form-input" type="text" name="name"
-                               value="{{ old('name', $user->name) }}" placeholder="พิมพ์ชื่อ">
+                        <input class="form-input" type="text" name="name" value="{{ old('name', $user->name) }}" placeholder="พิมพ์ชื่อ">
                         @error('name')
                             <div style="color:red; margin-top: 10px;">{{ $message }}</div>
                         @enderror
@@ -34,8 +32,7 @@
 
                     <div class="form-group">
                         <label class="form-label">นามสกุล :</label>
-                        <input class="form-input" type="text" name="last_name"
-                               value="{{ old('last_name', $user->last_name) }}" placeholder="พิมพ์นามสกุล">
+                        <input class="form-input" type="text" name="last_name" value="{{ old('last_name', $user->last_name) }}" placeholder="พิมพ์นามสกุล">
                         @error('last_name')
                             <div style="color:red; margin-top: 10px;">{{ $message }}</div>
                         @enderror
@@ -43,8 +40,7 @@
 
                     <div class="form-group">
                         <label class="form-label">ชื่อเล่น :</label>
-                        <input class="form-input" type="text" name="nickname"
-                               value="{{ old('nickname', $user->nickname) }}" placeholder="พิมพ์ชื่อเล่น">
+                        <input class="form-input" type="text" name="nickname" value="{{ old('nickname', $user->nickname) }}" placeholder="พิมพ์ชื่อเล่น">
                         @error('nickname')
                             <div style="color:red; margin-top: 10px;">{{ $message }}</div>
                         @enderror
@@ -52,8 +48,7 @@
 
                     <div class="form-group">
                         <label class="form-label">วันเกิด :</label>
-                        <input class="form-input" type="date" name="birth_date"
-                               value="{{ old('birth_date', optional($user->profile)->birth_date) }}">
+                        <input class="form-input" type="date" name="birth_date" value="{{ old('birth_date', optional($user->profile)->birth_date) }}">
                         @error('birth_date')
                             <div style="color:red; margin-top: 10px;">{{ $message }}</div>
                         @enderror
@@ -61,8 +56,7 @@
 
                     <div class="form-group">
                         <label class="form-label">อีเมล :</label>
-                        <input class="form-input" type="email" name="email"
-                               value="{{ old('email', $user->email) }}" placeholder="พิมพ์อีเมล">
+                        <input class="form-input" type="email" name="email" value="{{ old('email', $user->email) }}" placeholder="พิมพ์อีเมล">
                         @error('email')
                             <div style="color:red; margin-top: 10px;">{{ $message }}</div>
                         @enderror
@@ -70,8 +64,7 @@
 
                     <div class="form-group">
                         <label class="form-label">เบอร์โทรศัพท์ :</label>
-                        <input class="form-input" type="text" name="phone_number"
-                               value="{{ old('phone_number', $user->phone_number) }}" placeholder="พิมพ์เบอร์โทรศัพท์">
+                        <input class="form-input" type="text" name="phone_number" value="{{ old('phone_number', $user->phone_number) }}" placeholder="พิมพ์เบอร์โทรศัพท์ 10 หลัก">
                         @error('phone_number')
                             <div style="color:red; margin-top: 10px;">{{ $message }}</div>
                         @enderror
@@ -79,8 +72,7 @@
 
                     <div class="form-group">
                         <label class="form-label">รหัสผ่านใหม่ :</label>
-                        <input class="form-input" type="password" name="password"
-                               placeholder="ไม่ต้องกรอกหากไม่ต้องการเปลี่ยน">
+                        <input class="form-input" type="password" name="password" placeholder="ไม่ต้องกรอกหากไม่ต้องการเปลี่ยน">
                         @error('password')
                             <div style="color:red; margin-top: 10px;">{{ $message }}</div>
                         @enderror
@@ -91,8 +83,7 @@
 
                     <div class="form-group">
                         <label class="form-label">ยืนยันรหัสผ่านใหม่ :</label>
-                        <input class="form-input" type="password" name="password_confirmation"
-                               placeholder="ยืนยันรหัสผ่านใหม่">
+                        <input class="form-input" type="password" name="password_confirmation" placeholder="ยืนยันรหัสผ่านใหม่">
                         @error('password_confirmation')
                             <div style="color:red; margin-top: 10px;">{{ $message }}</div>
                         @enderror
@@ -119,9 +110,7 @@
                 <div class="box-control">
                     <div class="form-group">
                         <label class="form-label">บ้านเลขที่ :</label>
-                        <input class="form-input" type="text" name="house_number"
-                               value="{{ old('house_number', optional($user->profile)->house_number) }}"
-                               placeholder="พิมพ์บ้านเลขที่ (ไม่จำเป็น)">
+                        <input class="form-input" type="text" name="house_number" value="{{ old('house_number', optional($user->profile)->house_number) }}" placeholder="พิมพ์บ้านเลขที่">
                         @error('house_number')
                             <div style="color:red; margin-top: 10px;">{{ $message }}</div>
                         @enderror
@@ -129,9 +118,7 @@
 
                     <div class="form-group">
                         <label class="form-label">หมู่ที่ :</label>
-                        <input class="form-input" type="text" name="moo"
-                               value="{{ old('moo', optional($user->profile)->moo) }}"
-                               placeholder="พิมพ์หมู่ที่ (ไม่จำเป็น)">
+                        <input class="form-input" type="number" name="moo" value="{{ old('moo', optional($user->profile)->moo) }}" placeholder="พิมพ์หมู่ที่ (ตัวเลขเท่านั้น)" min="1">
                         @error('moo')
                             <div style="color:red; margin-top: 10px;">{{ $message }}</div>
                         @enderror
@@ -139,9 +126,7 @@
 
                     <div class="form-group">
                         <label class="form-label">ถนน :</label>
-                        <input class="form-input" type="text" name="road"
-                               value="{{ old('road', optional($user->profile)->road) }}"
-                               placeholder="ถ้าไม่มี พิมพ์ -">
+                        <input class="form-input" type="text" name="road" value="{{ old('road', optional($user->profile)->road) }}" placeholder="ถ้าไม่มี ปล่อยว่างได้">
                         @error('road')
                             <div style="color:red; margin-top: 10px;">{{ $message }}</div>
                         @enderror
@@ -149,9 +134,7 @@
 
                     <div class="form-group">
                         <label class="form-label">ซอย :</label>
-                        <input class="form-input" type="text" name="alley"
-                               value="{{ old('alley', optional($user->profile)->alley) }}"
-                               placeholder="ถ้าไม่มี พิมพ์ -">
+                        <input class="form-input" type="text" name="alley" value="{{ old('alley', optional($user->profile)->alley) }}" placeholder="ถ้าไม่มี ปล่อยว่างได้">
                         @error('alley')
                             <div style="color:red; margin-top: 10px;">{{ $message }}</div>
                         @enderror
@@ -159,20 +142,18 @@
 
                     <div class="form-group">
                         <label class="form-label">หมู่บ้าน/ชุมชน :</label>
-                        <input class="form-input" type="text" name="village"
-                               value="{{ old('village', optional($user->profile)->village) }}"
-                               placeholder="พิมพ์ชื่อหมู่บ้านหรือชุมชน (ไม่จำเป็น)">
+                        <input class="form-input" type="text" name="village" value="{{ old('village', optional($user->profile)->village) }}" placeholder="พิมพ์ชื่อหมู่บ้านหรือชุมชน">
                         @error('village')
                             <div style="color:red; margin-top: 10px;">{{ $message }}</div>
                         @enderror
                     </div>
+
                     <div class="form-group">
                         <label class="form-label">จังหวัด :</label>
                         <select class="form-select" name="province_id" id="province_select" onchange="loadAmphures(this.value)">
                             <option value="">เลือกจังหวัด</option>
                             @foreach ($provinces as $province)
-                                <option value="{{ $province->id }}"
-                                    {{ old('province_id', optional($user->profile)->province_id) == $province->id ? 'selected' : '' }}>
+                                <option value="{{ $province->id }}" {{ old('province_id', optional($user->profile)->province_id) == $province->id ? 'selected' : '' }}>
                                     {{ $province->name_th }}
                                 </option>
                             @endforeach
@@ -253,14 +234,11 @@
                     const option = document.createElement('option');
                     option.value = amphure.id;
                     option.textContent = amphure.name;
-
                     if (amphure.id == '{{ old("amphure_id", optional($user->profile)->amphure_id) }}') {
                         option.selected = true;
                     }
-
                     amphureSelect.appendChild(option);
                 });
-
                 const selectedAmphureId = '{{ old("amphure_id", optional($user->profile)->amphure_id) }}';
                 if (selectedAmphureId) {
                     loadTambons(selectedAmphureId);
@@ -278,12 +256,9 @@
                     const option = document.createElement('option');
                     option.value = tambon.id;
                     option.textContent = tambon.name;
-
-
                     if (tambon.id == '{{ old("tambon_id", optional($user->profile)->tambon_id) }}') {
                         option.selected = true;
                     }
-
                     tambonSelect.appendChild(option);
                 });
             }
@@ -295,5 +270,27 @@
                 loadAmphures(selectedProvinceId);
             }
         });
+
+        
     </script>
+    <script>
+            const password = document.querySelector('input[name="password"]');
+            const passwordConfirm = document.querySelector('input[name="password_confirmation"]');
+
+            passwordConfirm.addEventListener('input', function() {
+                if (password.value && this.value !== password.value) {
+                    this.setCustomValidity('รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน');
+                } else {
+                    this.setCustomValidity('');
+                }
+            });
+
+            password.addEventListener('input', function() {
+                if (passwordConfirm.value && passwordConfirm.value !== this.value) {
+                    passwordConfirm.setCustomValidity('รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน');
+                } else {
+                    passwordConfirm.setCustomValidity('');
+                }
+            });
+        </script>
 @endsection

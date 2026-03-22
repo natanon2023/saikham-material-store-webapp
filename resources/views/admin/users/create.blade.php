@@ -30,53 +30,71 @@
             <div style="margin-top: 30px; margin-bottom: 15px; font-size: 16px; font-weight: bold">
                 ข้อมูลทั่วไป
             </div>
-
             <hr>
 
             <div class="box-control">
                 <div class="form-group">
                     <label class="form-label">ชื่อ :</label>
-                    <input class="form-input" type="text" name="name" value="{{ old('name') }}" placeholder="พิมพ์ชื่อ" required>
+                    <input class="form-input" type="text" name="name" value="{{ old('name') }}" placeholder="พิมพ์ชื่อ" pattern="^[ก-๙a-zA-Z\s]+$" title="กรอกตัวอักษรเท่านั้น" required>
+                    @error('name')
+                        <div style="color:red; margin-top: 5px;">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">นามสกุล :</label>
-                    <input class="form-input" type="text" name="last_name" value="{{ old('last_name') }}"
-                        placeholder="พิมพ์นามสกุล" required>
+                    <input class="form-input" type="text" name="last_name" value="{{ old('last_name') }}" placeholder="พิมพ์นามสกุล" pattern="^[ก-๙a-zA-Z\s]+$" title="กรอกตัวอักษรเท่านั้น" required>
+                    @error('last_name')
+                        <div style="color:red; margin-top: 5px;">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">ชื่อเล่น :</label>
-                    <input class="form-input" type="text" name="nickname" value="{{ old('nickname') }}"
-                        placeholder="พิมพ์ชื่อเล่น" required>
+                    <input class="form-input" type="text" name="nickname" value="{{ old('nickname') }}" placeholder="พิมพ์ชื่อเล่น" pattern="^[ก-๙a-zA-Z\s]+$" title="กรอกตัวอักษรเท่านั้น" required>
+                    @error('nickname')
+                        <div style="color:red; margin-top: 5px;">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">วันเกิด :</label>
-                    <input class="form-input" type="date" name="birth_date" value="{{ old('birth_date') }}" required>
+                    <input class="form-input" type="date" name="birth_date" value="{{ old('birth_date') }}" max="{{ date('Y-m-d') }}" required>
+                    @error('birth_date')
+                        <div style="color:red; margin-top: 5px;">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">อีเมล :</label>
-                    <input class="form-input" type="email" name="email" value="{{ old('email') }}"
-                        placeholder="พิมพ์อีเมล" required>
+                    <input class="form-input" type="email" name="email" value="{{ old('email') }}" placeholder="พิมพ์อีเมล" required>
+                    @error('email')
+                        <div style="color:red; margin-top: 5px;">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">เบอร์โทรศัพท์ :</label>
-                    <input class="form-input" type="text" name="phone_number" value="{{ old('phone_number') }}"
-                        placeholder="พิมพ์เบอร์โทรศัพท์" required>
+                    <input class="form-input" type="tel" name="phone_number" value="{{ old('phone_number') }}" placeholder="พิมพ์เบอร์โทรศัพท์ 10 หลัก" pattern="^0[0-9]{9}$" maxlength="10" title="เบอร์โทรต้องมี 10 หลัก และขึ้นต้นด้วย 0" required>
+                    @error('phone_number')
+                        <div style="color:red; margin-top: 5px;">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">รหัสผ่าน :</label>
-                    <input class="form-input" type="password" name="password" placeholder="ตั้งค่ารหัสผ่าน" required>
+                    <input class="form-input" type="password" name="password" placeholder="ตั้งค่ารหัสผ่าน (อย่างน้อย 8 ตัวอักษร)" minlength="8" required>
+                    @error('password')
+                        <div style="color:red; margin-top: 5px;">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">ยืนยันรหัสผ่าน :</label>
-                    <input class="form-input" type="password" name="password_confirmation"
-                        placeholder="กรอกรหัสผ่านที่ตั้งค่าอีกครั้งเพื่อยืนยัน" required>
+                    <input class="form-input" type="password" name="password_confirmation" placeholder="กรอกรหัสผ่านที่ตั้งค่าอีกครั้งเพื่อยืนยัน" minlength="8" required>
+                    @error('password_confirmation')
+                        <div style="color:red; margin-top: 5px;">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="form-group">
@@ -86,45 +104,56 @@
                         <option value="technician" {{ old('role') == 'technician' ? 'selected' : '' }}>ช่าง</option>
                         <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>แอดมิน</option>
                     </select>
+                    @error('role')
+                        <div style="color:red; margin-top: 5px;">{{ $message }}</div>
+                    @enderror
                 </div>
-
             </div>
 
             <div style="margin-top: 30px; margin-bottom: 15px; font-size: 16px; font-weight: bold">
                 ข้อมูลที่อยู่
             </div>
-
             <hr>
 
             <div class="box-control">
                 <div class="form-group">
                     <label class="form-label">บ้านเลขที่ :</label>
-                    <input class="form-input" type="text" name="house_number" value="{{ old('house_number') }}"
-                        placeholder="พิมพ์บ้านเลขที่" required>
+                    <input class="form-input" type="text" name="house_number" value="{{ old('house_number') }}" placeholder="เช่น 123 หรือ 123/4" pattern="^[0-9/]+$" title="กรอกเฉพาะตัวเลขและ /" required>
+                    @error('house_number')
+                        <div style="color:red; margin-top: 5px;">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">หมู่ที่ :</label>
-                    <input class="form-input" type="text" name="moo" value="{{ old('moo') }}"
-                        placeholder="พิมพ์หมู่ที่" required>
+                    <input class="form-input" type="number" name="moo" value="{{ old('moo') }}" placeholder="พิมพ์หมู่ที่" min="1" max="999" required>
+                    @error('moo')
+                        <div style="color:red; margin-top: 5px;">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">ถนน :</label>
-                    <input class="form-input" type="text" name="road" value="{{ old('road') }}"
-                        placeholder="ถ้ามี">
+                    <input class="form-input" type="text" name="road" value="{{ old('road') }}" placeholder="ถ้ามี" maxlength="100">
+                    @error('road')
+                        <div style="color:red; margin-top: 5px;">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">ซอย :</label>
-                    <input class="form-input" type="text" name="alley" value="{{ old('alley') }}"
-                        placeholder="ถ้ามี">
+                    <input class="form-input" type="text" name="alley" value="{{ old('alley') }}" placeholder="ถ้ามี" maxlength="100">
+                    @error('alley')
+                        <div style="color:red; margin-top: 5px;">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">หมู่บ้าน/ชุมชน :</label>
-                    <input class="form-input" type="text" name="village" value="{{ old('village') }}"
-                        placeholder="พิมพ์ชื่อหมู่บ้านหรือชุมชน" required>
+                    <input class="form-input" type="text" name="village" value="{{ old('village') }}" placeholder="พิมพ์ชื่อหมู่บ้านหรือชุมชน" maxlength="255" required>
+                    @error('village')
+                        <div style="color:red; margin-top: 5px;">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="form-group">
@@ -137,47 +166,49 @@
                                 value="{{ $provinces->firstWhere('id', old('province_id'))->name_th ?? '' }}"
                                 data-selected-id="{{ old('province_id') }}"
                                 data-selected-name="{{ $provinces->firstWhere('id', old('province_id'))->name_th ?? '' }}">
-                            <input type="hidden" name="province_id" id="selected_province_id"
-                                value="{{ old('province_id') }}" required>
+                            <input type="hidden" name="province_id" id="selected_province_id" value="{{ old('province_id') }}" required>
                             <div class="dropdown-list" id="province_search_dropdown">
                                 @foreach ($provinces as $province)
-                                <div class="dropdown-item" data-province-id="{{ $province->id }}"
-                                    data-province-name="{{ $province->name_th }}">
+                                <div class="dropdown-item" data-province-id="{{ $province->id }}" data-province-name="{{ $province->name_th }}">
                                     {{ $province->name_th }}
                                 </div>
                                 @endforeach
                             </div>
                         </div>
                         @else
-                        <select class="form-select" name="province_id" id="province_select"
-                            onchange="loadAmphures(this.value)" style="flex: 1;" required>
+                        <select class="form-select" name="province_id" id="province_select" onchange="loadAmphures(this.value)" style="flex: 1;" required>
                             <option value="">เลือกจังหวัด</option>
                             @foreach ($provinces as $province)
-                            <option value="{{ $province->id }}"
-                                {{ old('province_id') == $province->id ? 'selected' : '' }}>
+                            <option value="{{ $province->id }}" {{ old('province_id') == $province->id ? 'selected' : '' }}>
                                 {{ $province->name_th }}
                             </option>
                             @endforeach
                         </select>
                         @endif
                     </div>
+                    @error('province_id')
+                        <div style="color:red; margin-top: 5px;">{{ $message }}</div>
+                    @enderror
                 </div>
-
 
                 <div class="form-group">
                     <label class="form-label">อำเภอ/เขต :</label>
-                    <select class="form-select" name="amphure_id" id="amphure_select"
-                        onchange="loadTambons(this.value)" disabled required>
+                    <select class="form-select" name="amphure_id" id="amphure_select" onchange="loadTambons(this.value)" disabled required>
                         <option value="">เลือกอำเภอ/เขต</option>
                     </select>
+                    @error('amphure_id')
+                        <div style="color:red; margin-top: 5px;">{{ $message }}</div>
+                    @enderror
                 </div>
-
 
                 <div class="form-group">
                     <label class="form-label">ตำบล/แขวง :</label>
                     <select class="form-select" name="tambon_id" id="tambon_select" disabled required>
                         <option value="">เลือกตำบล/แขวง</option>
                     </select>
+                    @error('tambon_id')
+                        <div style="color:red; margin-top: 5px;">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="form-group">
@@ -190,53 +221,6 @@
     </div>
 </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const provinceSelect = document.getElementById('province_id');
-        const amphureSelect = document.getElementById('amphure_id');
-        const tambonSelect = document.getElementById('tambon_id');
-
-        provinceSelect.addEventListener('change', function() {
-            const provinceId = this.value;
-            amphureSelect.innerHTML = '<option value="">เลือกอำเภอ</option>';
-            tambonSelect.innerHTML = '<option value="">เลือกตำบล</option>';
-
-            if (provinceId) {
-                fetch(`/admin/get-amphures/${provinceId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        data.forEach(amphure => {
-                            amphureSelect.innerHTML +=
-                                `<option value="${amphure.id}">${amphure.name_th}</option>`;
-                        });
-                    })
-                    .catch(error => {
-                        console.error('Error fetching amphures:', error);
-                    });
-            }
-        });
-
-
-        amphureSelect.addEventListener('change', function() {
-            const amphureId = this.value;
-            tambonSelect.innerHTML = '<option value="">เลือกตำบล</option>';
-
-            if (amphureId) {
-                fetch(`/admin/get-tambons/${amphureId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        data.forEach(tambon => {
-                            tambonSelect.innerHTML +=
-                                `<option value="${tambon.id}">${tambon.name_th}</option>`;
-                        });
-                    })
-                    .catch(error => {
-                        console.error('Error fetching tambons:', error);
-                    });
-            }
-        });
-    });
-</script>
 <script>
     const provinceMap = {};
     @foreach($provinces as $province)
@@ -251,7 +235,7 @@
     if (!provinceAmphureMap['{{ $province->id }}']) {
         provinceAmphureMap['{{ $province->id }}'] = [];
     }
-    @foreach($province -> amphures as $amphure)
+    @foreach($province->amphures as $amphure)
     provinceAmphureMap['{{ $province->id }}'].push({
         id: '{{ $amphure->id }}',
         name: '{{ $amphure->name_th }}'
@@ -265,7 +249,7 @@
     if (!amphureTambonMap['{{ $amphure->id }}']) {
         amphureTambonMap['{{ $amphure->id }}'] = [];
     }
-    @foreach($amphure -> tambons as $tambon)
+    @foreach($amphure->tambons as $tambon)
     amphureTambonMap['{{ $amphure->id }}'].push({
         id: '{{ $tambon->id }}',
         name: '{{ $tambon->name_th }}'
@@ -273,9 +257,7 @@
     @endforeach
     @endforeach
     @endif
-</script>
 
-<script>
     function loadAmphures(provinceId) {
         const amphureSelect = document.getElementById('amphure_select');
         const tambonSelect = document.getElementById('tambon_select');
@@ -286,15 +268,12 @@
         tambonSelect.disabled = true;
 
         if (provinceId && provinceAmphureMap[provinceId]) {
-            const amphures = provinceAmphureMap[provinceId];
-
-            amphures.forEach(amphure => {
+            provinceAmphureMap[provinceId].forEach(amphure => {
                 const option = document.createElement('option');
                 option.value = amphure.id;
                 option.textContent = amphure.name;
                 amphureSelect.appendChild(option);
             });
-
             amphureSelect.disabled = false;
         }
     }
@@ -306,21 +285,17 @@
         tambonSelect.disabled = true;
 
         if (amphureId && amphureTambonMap[amphureId]) {
-            const tambons = amphureTambonMap[amphureId];
-
-            tambons.forEach(tambon => {
+            amphureTambonMap[amphureId].forEach(tambon => {
                 const option = document.createElement('option');
                 option.value = tambon.id;
                 option.textContent = tambon.name;
                 tambonSelect.appendChild(option);
             });
-
             tambonSelect.disabled = false;
         }
     }
 
-    @if($provinces -> count() > 5)
-
+    @if($provinces->count() > 5)
     function setupProvinceSearch() {
         const searchInput = document.getElementById('province_search_input');
         const dropdown = document.getElementById('province_search_dropdown');
@@ -340,41 +315,41 @@
 
         searchInput.addEventListener('input', function() {
             const filter = this.value.toLowerCase();
-            const items = dropdown.querySelectorAll('.dropdown-item');
-
-            items.forEach(item => {
-                const text = item.textContent.toLowerCase();
-                if (text.includes(filter)) {
-                    item.style.display = '';
-                } else {
-                    item.style.display = 'none';
-                }
+            dropdown.querySelectorAll('.dropdown-item').forEach(item => {
+                item.style.display = item.textContent.toLowerCase().includes(filter) ? '' : 'none';
             });
         });
 
         dropdown.querySelectorAll('.dropdown-item').forEach(item => {
             item.addEventListener('click', function() {
-                const provinceId = this.getAttribute('data-province-id');
-                const provinceName = this.getAttribute('data-province-name');
-
-                searchInput.value = provinceName;
-                hiddenInput.value = provinceId;
+                searchInput.value = this.getAttribute('data-province-name');
+                hiddenInput.value = this.getAttribute('data-province-id');
                 dropdown.style.display = 'none';
-
-                loadAmphures(provinceId);
+                loadAmphures(hiddenInput.value);
             });
         });
     }
-
     setupProvinceSearch();
     @endif
+</script>
+<script>
+    const password = document.querySelector('input[name="password"]');
+    const passwordConfirm = document.querySelector('input[name="password_confirmation"]');
 
-    function getSelectedProvinceId() {
-        @if($provinces -> count() > 5)
-        return document.getElementById('selected_province_id').value;
-        @else
-        return document.getElementById('province_select').value;
-        @endif
-    }
+    passwordConfirm.addEventListener('input', function() {
+        if (this.value !== password.value) {
+            this.setCustomValidity('รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+
+    password.addEventListener('input', function() {
+        if (passwordConfirm.value && passwordConfirm.value !== this.value) {
+            passwordConfirm.setCustomValidity('รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน');
+        } else {
+            passwordConfirm.setCustomValidity('');
+        }
+    });
 </script>
 @endsection
