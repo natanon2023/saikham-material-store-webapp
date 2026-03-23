@@ -145,25 +145,21 @@
 
                         @elseif($project->status == 'materials_withdrawn')
                             @if(!empty($project->installation_start_date) && now()->format('Y-m-d') >= $project->installation_start_date)
-                            <form action="{{ route('technician.projects.updatestatusinstalling', $project->id) }}" method="POST" style="margin: 0;">
-                                @csrf
-                                <button type="submit" class="btn btn-secondary btn-full-text" style="height: max-content;">
-                                    เริ่มการติดตั้ง
-                                </button>
-                            </form>
+                                @if($project->installers->count() > 0)
+                                    <a href="{{ route('technician.projects.withdrawpage', $project->id) }}" 
+                                    class="btn btn-secondary btn-full-text">เบิกวัสดุ</a>
+                                @else
+                                    <button class="btn btn-secondary btn-full-text" 
+                                            style="opacity: 0.6; cursor: not-allowed;" disabled>
+                                        ยังไม่ได้กำหนดช่าง
+                                    </button>
+                                @endif
                             @else
-                            <button class="btn btn-secondary btn-full-text" style="height: max-content; opacity: 0.6; cursor: not-allowed;" disabled>
-                                รอถึงวันทำงานจึงจะสามารถเริ่มติดตั้งได้ (
-                                {{ $project->installation_start_date 
-                                            ? \Carbon\Carbon::parse($project->installation_start_date)
-                                            ->locale('th') 
-                                            ->addYears(543) 
-                                            ->isoFormat('D MMMM YYYY') 
-                                            : 'ยังไม่ได้กำหนดวันทำงาน' 
-                                        }}
-                                )
-                            </button>
-
+                                <button class="btn btn-secondary btn-full-text" 
+                                        style="opacity: 0.6; cursor: not-allowed;" disabled>
+                                    รอวันทำงานเบิกของได้
+                                </button>
+                            @endif
                         @endif
 
                         @elseif($project->status == 'installing')
