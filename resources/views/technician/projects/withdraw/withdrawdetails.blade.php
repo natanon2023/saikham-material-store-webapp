@@ -222,7 +222,7 @@
                             color: {{ $isOut ? '#c0392b' : '#1e8e3e' }};">
                             {{ $cfg['sign'] }}{{ $log->quantitylog }}
                         </td>
-                        <td style="padding: 10px; font-size: 0.85em;">
+                        <td align="center" style="padding: 10px; font-size: 0.85em;">
                             {{ $log->user?->name ?? 'ระบบ' }}
                         </td>
                         <td align="center" style="padding: 10px; font-size: 0.85em; color: #666;">

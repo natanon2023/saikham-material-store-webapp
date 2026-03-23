@@ -324,7 +324,6 @@
         <div id="topReportersChart"></div>
     </div>
 
-
 </div>
 
 <script>

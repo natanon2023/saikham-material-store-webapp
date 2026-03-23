@@ -8,8 +8,8 @@
 
     <form action="{{ route('customer.cakestatuspage') }}" method="GET">
         <div>
-            <input type="text" name="phone" placeholder="กรอกเบอร์โทรศัพท์" value="{{ $phone }}" class="form-input" style="width: 70%;">
-            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-magnifying-glass"></i>ค้นหา</button>
+            <input type="text" name="phone" placeholder="กรอกเบอร์โทรศัพท์" value="{{ $phone }}" class="form-input" style="width: 70%;" required  maxlength="10" pattern="\d{10}" title="กรุณากรอกตัวเลขให้ครบ 10 หลัก"  oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);">
+            <button type="submit" class="btn btn-primary" ><i class="fa-solid fa-magnifying-glass"></i>ค้นหา</button>
         </div>
     </form>
 

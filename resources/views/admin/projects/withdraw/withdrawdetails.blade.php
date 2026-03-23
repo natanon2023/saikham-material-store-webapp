@@ -220,7 +220,7 @@
                                 {{ $cfg['label'] }}
                             </span>
                         </td>
-                        <td style="padding: 10px;">
+                        <td  style="padding: 10px;">
                             <div style="font-size: 0.8em; color: #888;">{{ $mat?->material_type ?? '-' }}</div>
                             <div style="font-weight: 500;">{{ $detail }}</div>
                             @if($sizeText)
@@ -234,7 +234,7 @@
                             color: {{ $isOut ? '#c0392b' : '#1e8e3e' }};">
                             {{ $cfg['sign'] }}{{ $log->quantitylog }}
                         </td>
-                        <td style="padding: 10px; font-size: 0.85em;">
+                        <td  align="center" style="padding: 10px; font-size: 0.85em;">
                             {{ $log->user?->name ?? 'ระบบ' }}
                         </td>
                         <td align="center" style="padding: 10px; font-size: 0.85em; color: #666;">
