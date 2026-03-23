@@ -85,7 +85,7 @@ class Project extends Model
 
     public function customerneed()
     {
-        return $this->hasMany(Customerneed::class,'project_id');
+        return $this->hasMany(CustomerNeed::class,'project_id');
     }
 
     public function withdrawals()
