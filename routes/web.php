@@ -89,7 +89,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
     Route::get('/chart/latest-project', [AdminDashboard::class, 'latestProject']);
     Route::get('/chart/pipeline', [AdminDashboard::class, 'pipeline']);
     Route::get('/chart/top-products', [AdminDashboard::class, 'topProducts']);
-    Route::get('/admin/api/topreporters', [AdminDashboard::class, 'topreporters']);
+    Route::get('/admin/api/topreporters', [AdminDashboard::class, 'topReporters']);
 
 
     Route::prefix('materials')->name('admin.materials.')->group(function () {

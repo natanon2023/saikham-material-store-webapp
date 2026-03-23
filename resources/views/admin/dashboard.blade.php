@@ -315,13 +315,18 @@
         <div id="areaChart" class="chart-area-lg"></div>
     </div>
     <div class="chart-card" style="margin-top: 20px;">
-            <div class="chart-card-header" style="margin-bottom: 15px;">
+        <div class="chart-card-top">
+            <div>
                 <h4 class="chart-card-title">5 อันดับ พนักงานที่รายงานปัญหาบ่อยที่สุด</h4>
-                <p class="chart-card-desc">
-                    สถิติการแจ้งปัญหาหน้างานแยกตามบุคคล (อาจบ่งบอกถึงความรับผิดชอบ หรืออัตราการทำของเสียหาย)
-                </p>
+                <p class="chart-card-desc">สถิติการแจ้งปัญหาหน้างานแยกตามบุคคล (อาจบ่งบอกถึงความรับผิดชอบ หรืออัตราการทำของเสียหาย)</p>
             </div>
-        <div id="topReportersChart"></div>
+            <select id="issueCategoryFilter" class="amphure-select" onchange="renderTopReportersChart(this.value)">
+                <option value="">ทั้งหมด</option>
+                <option value="material_problems">ปัญหาวัสดุ</option>
+                <option value="general_problems">ปัญหาทั่วไป</option>
+            </select>
+        </div>
+        <div id="topReportersChart" class="chart-area"></div>
     </div>
 
 </div>
@@ -501,71 +506,53 @@
         }
     }
 
-    async function renderTopReportersChart() {
+    async function renderTopReportersChart(filter = '') {
         try {
-            const res  = await fetch('/admin/api/topreporters');
+            const url = filter
+                ? `/admin/api/topreporters?category=${filter}`
+                : '/admin/api/topreporters';
+
+            const res = await fetch(url);
+            
+            if (!res.ok) {
+                console.error("API Error HTTP:", res.status);
+                return;
+            }
+
             const data = await res.json();
+            console.log("Data from API:", data); 
 
-            const labels = data.map(item => {
-                const prefix = item.role === 'admin' ? '' : '';
-                return `${prefix} ${item.name}`;
-            });
-
-            const totals = data.map(item => parseInt(item.total));
-
-            const colors = data.map(item =>
-                item.role === 'admin' ? '#D4B483' : '#334E68'
-            );
+            const labels = data.length ? data.map(item => item.name) : ['ไม่มีข้อมูล'];
+            const totals = data.length ? data.map(item => parseInt(item.total)) : [0];
+            const colors = data.length
+                ? data.map(item => item.role === 'admin' ? '#D4B483' : '#334E68')
+                : ['#e5e7eb'];
 
             const options = {
                 series: [{ name: 'จำนวนการรายงาน (ครั้ง)', data: totals }],
-                chart: {
-                    type: 'bar',
-                    height: 350,
-                    fontFamily: 'inherit',
-                    toolbar: { show: false }
-                },
-                plotOptions: {
-                    bar: {
-                        borderRadius: 4,
-                        horizontal: true,
-                        distributed: true,
-                        barHeight: '60%'
-                    }
-                },
+                chart: { type: 'bar', height: 350, fontFamily: 'inherit', toolbar: { show: false } },
+                plotOptions: { bar: { borderRadius: 4, horizontal: true, distributed: true, barHeight: '60%' } },
                 colors: colors,
                 dataLabels: {
                     enabled: true,
                     textAnchor: 'start',
                     style: { colors: ['#fff'] },
+                    formatter: (val) => val === 0 ? 'ไม่มีข้อมูล' : val + ' ครั้ง',
                     offsetX: 0
                 },
-                xaxis: {
-                    categories: labels,
-                    labels: { style: { fontSize: '12px' } }
-                },
-                yaxis: {
-                    labels: { style: { fontSize: '13px', fontWeight: 500 } }
-                },
+                xaxis: { categories: labels, labels: { style: { fontSize: '12px' } } },
+                yaxis: { labels: { style: { fontSize: '13px', fontWeight: 500 } } },
                 legend: {
-                    show: true,
+                    show: data.length > 0,
                     customLegendItems: ['ช่าง', 'แอดมิน'],
                     markers: { fillColors: ['#334E68', '#D4B483'] }
                 },
-                tooltip: {
-                    theme: 'light',
-                    y: {
-                        formatter: val => `${val} ครั้ง`
-                    }
-                }
+                tooltip: { theme: 'light', y: { formatter: val => `${val} ครั้ง` } }
             };
 
             if (charts.topReporters) charts.topReporters.destroy();
-            charts.topReporters = new ApexCharts(
-                document.querySelector("#topReportersChart"), options
-            );
+            charts.topReporters = new ApexCharts(document.querySelector("#topReportersChart"), options);
             charts.topReporters.render();
-
         } catch (error) {
             console.error("Error loading top reporters chart:", error);
         }
