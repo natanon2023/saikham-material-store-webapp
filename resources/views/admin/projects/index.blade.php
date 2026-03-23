@@ -134,54 +134,44 @@
                     <a href="{{ route('admin.projects.restockpage', $project->id) }}" class="btn btn-secondary btn-full-text">เติมสต็อกวัสดุ</a>
                     
                     @elseif($project->status == 'ready_to_withdraw')
-                        @if(!empty($project->installation_start_date) && now()->format('Y-m-d') >= $project->installation_start_date)
-                            @if($project->installers->count() > 0)
-                                <a href="{{ route('admin.projects.withdrawpage', $project->id) }}" 
-                                class="btn btn-secondary btn-full-text">เบิกวัสดุ</a>
-                            @else
-                                <button class="btn btn-secondary btn-full-text" 
-                                        style="opacity: 0.6; cursor: not-allowed;" disabled>
-                                    ยังไม่ได้กำหนดช่าง
-                                </button>
-                            @endif
+                        @if(!empty($project->installation_start_date) && now()->format('Y-m-d') >= \Carbon\Carbon::parse($project->installation_start_date)->format('Y-m-d') )
+                            <a href="{{ route('admin.projects.withdrawpage', $project->id) }}" class="btn btn-secondary btn-full-text">เบิกวัสดุ</a>
                         @else
-                            <button class="btn btn-secondary btn-full-text" 
-                                    style="opacity: 0.6; cursor: not-allowed;" disabled>
+                            <button class="btn btn-secondary btn-full-text" style="height: max-content; opacity: 0.6; cursor: not-allowed;" disabled>
                                 รอวันทำงานเบิกของได้
                             </button>
                         @endif
-                    @endif
-                    <a href="{{ route('admin.projects.installingpage', $project->id) }}" class="btn btn-secondary btn-full-text">กำหนดวันทำงาน</a>
+                        <a href="{{ route('admin.projects.installingpage', $project->id) }}" class="btn btn-secondary btn-full-text">กำหนดวันทำงาน</a>
                     @elseif($project->status == 'materials_withdrawn')
                         @if (\Carbon\Carbon::parse($project->installation_start_date)->addDay()->isFuture())
-                        <form action="{{ route('admin.projects.cancelWithdrawal', $project->id) }}" method="POST" style="margin: 0;" onsubmit="return confirm('ยืนยันการยกเลิกการเบิก? ระบบจะคืนจำนวนวัสดุทั้งหมดกลับเข้าคลังและเปลี่ยนสถานะเป็นพร้อมเบิก');">
-                            @csrf
-                            <button type="submit" class="btn btn-delecte btn-full-text" style="height: max-content;">
-                                ยกเลิกการเบิกวัสดุ
-                            </button>
-                        </form>
+                            <form action="{{ route('admin.projects.cancelWithdrawal', $project->id) }}" method="POST" style="margin: 0;" onsubmit="return confirm('ยืนยันการยกเลิกการเบิก? ระบบจะคืนจำนวนวัสดุทั้งหมดกลับเข้าคลังและเปลี่ยนสถานะเป็นพร้อมเบิก');">
+                                @csrf
+                                <button type="submit" class="btn btn-delecte btn-full-text" style="height: max-content;">
+                                    ยกเลิกการเบิกวัสดุ
+                                </button>
+                            </form>
                         @endif
                         @if(!empty($project->installation_start_date) && now()->format('Y-m-d') >= \Carbon\Carbon::parse($project->installation_start_date)->format('Y-m-d'))
-                        <form action="{{ route('admin.projects.updatestatusinstalling', $project->id) }}" method="POST" style="margin: 0;">
-                            @csrf
-                            <button type="submit" class="btn btn-secondary btn-full-text" style="height: max-content;">
-                                เริ่มการติดตั้ง
-                            </button>
-                        </form>
+                            <form action="{{ route('admin.projects.updatestatusinstalling', $project->id) }}" method="POST" style="margin: 0;">
+                                @csrf
+                                <button type="submit" class="btn btn-secondary btn-full-text" style="height: max-content;">
+                                    เริ่มการติดตั้ง
+                                </button>
+                            </form>
                         @else
-                        <button class="btn btn-secondary btn-full-text" style="height: max-content; opacity: 0.6; cursor: not-allowed;" disabled>
-                            รอถึงวันทำงานจึงจะสามารถเริ่มติดตั้งได้ (
-                            {{ $project->installation_start_date 
-                                        ? \Carbon\Carbon::parse($project->installation_start_date)
-                                        ->locale('th') 
-                                        ->addYears(543) 
-                                        ->isoFormat('D MMMM YYYY') 
-                                        : 'ยังไม่ได้กำหนดวันทำงาน' 
-                                    }}
-                            )
-                        </button>
+                            <button class="btn btn-secondary btn-full-text" style="height: max-content; opacity: 0.6; cursor: not-allowed;" disabled>
+                                รอถึงวันทำงานจึงจะสามารถเริ่มติดตั้งได้ (
+                                {{ $project->installation_start_date 
+                                            ? \Carbon\Carbon::parse($project->installation_start_date)
+                                            ->locale('th') 
+                                            ->addYears(543) 
+                                            ->isoFormat('D MMMM YYYY') 
+                                            : 'ยังไม่ได้กำหนดวันทำงาน' 
+                                        }}
+                                )
+                            </button>
 
-                    @endif
+                        @endif
 
                     @elseif($project->status == 'installing')
                     <div style="display: flex; flex-direction:row; gap: 5px;">
