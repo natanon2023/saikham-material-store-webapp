@@ -4,7 +4,7 @@
 <div class="main-content">
     <div class="boxmaterial" style="display: flex; justify-content :space-between">
         <h3>เพิ่มชื่องาน</h3>
-        <a href="javascript:history.back()" class="btn btn-primary">ย้อนกลับ</a>
+        <a href="{{ route('admin.projects.formpendingsurvey') }}" class="btn btn-primary">ย้อนกลับ</a>
     </div>
 
     <div class="box">

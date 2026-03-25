@@ -8,13 +8,15 @@
 
     <div class="boxmaterial" style="display: flex; justify-content :space-between">
         <h3>เพิ่มชื่อรายการค่าใช้จ่าย</h3>
-        <a href="javascript:history.back()" class="btn btn-primary">ย้อนกลับ</a>
+        <a href="{{ $backUrl }}" class="btn btn-primary">ย้อนกลับ</a>
     </div>
 
     <div class="box">
         <form action="{{ route('admin.projects.createexpense') }}" method="post">
             @csrf
-            <input type="hidden" name="project_id" value="{{ $project->id }}">
+            @isset($project)
+                <input type="hidden" name="project_id" value="{{ $project->id }}">
+            @endisset
             <div class="box-control">
                 <div class="form-group">
                     <label class="form-label">ชื่อรายการค่าใช้จ่าย</label>
@@ -56,7 +58,9 @@
                     <form action="{{ route('admin.projects.updateexpense', $ex->id) }}" method="POST">
                         @csrf
                         @method('PUT')
-                        <input type="hidden" name="project_id" value="{{ $project->id }}">
+                        @isset($project)
+                            <input type="hidden" name="project_id" value="{{ $project->id }}">
+                        @endisset
                         <div class="form-group" style="display: flex; flex-direction: column; gap: 5px; justify-content: center;">
                             <input type="text" name="name" value="{{ $ex->name }}" class="form-input" placeholder="ชื่อรายการ" required> 
                             <input type="text" name="description" value="{{ $ex->description }}" class="form-input" placeholder="รายละเอียด">

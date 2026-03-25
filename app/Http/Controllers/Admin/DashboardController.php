@@ -146,7 +146,6 @@ class DashboardController extends Controller
             ->orderByDesc('total')
             ->limit(5);
 
-
         if ($request->filled('category')) {
             $query->where('project_issues.category', $request->category);
         }

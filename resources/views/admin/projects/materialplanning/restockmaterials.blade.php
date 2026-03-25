@@ -5,8 +5,8 @@
     @include('components.successanderror')
 
     <div class="boxmaterial"  style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h3 style="margin: 0; color: #333;">รายการวัสดุที่ต้องสั่งซื้อ</h3>
-        <a href="{{ route('admin.projects.index', $project->id) }}" class="btn btn-primary" >ย้อนกลับ</a>
+        <h3 style="margin: 0; color: #333;">เติมสต็อกวัสดุ</h3>
+        <a href="{{ route('admin.projects.alldetail', $project->id) }}" class="btn btn-primary" >ย้อนกลับ</a>
     </div>
 
     @if($allComplete && count($purchaseItems) > 0)

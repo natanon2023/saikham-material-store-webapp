@@ -5,7 +5,7 @@
         <div style="background-color: #ffffff; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
             <h4 style="margin-bottom: 20px;">ขั้นตอนการบันทึกข้อมูล</h4>
-            <a href="{{ route('admin.projects.index',$projects->id) }}" class="btn btn-primary">ย้อนกลับ</a>
+            <a href="{{ route('admin.projects.alldetail',$projects->id) }}" class="btn btn-primary">ย้อนกลับ</a>
         </div>
         <div style="display: flex; flex-direction: row; text-align: center;">
             <div style="flex: auto; background-color: #334E68; padding: 10px; color:#ffffff ;" >

@@ -85,16 +85,12 @@ $quotation = \App\Models\Quotation::where('project_id', $project->id)->latest()-
             <h3 style="margin: 0;">ออกใบเสนอราคา</h3>
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
-            @if ($project->status == 'pending_quotation')
-            <a href="{{ route('admin.projects.index',$project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
+            <a href="{{ route('admin.projects.alldetail',$project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
             <form action="{{ route('admin.projects.satatuswaitingapproval') }}" method="post" style="margin: 0;">
                 @csrf
                 <input type="hidden" value="{{ $project->id }}" name="id">
                 <button type="submit" class="btn btn-secondary">ยืนยันการเสนอราคา</button>
             </form>
-            @else
-            <a href="{{ route('admin.projects.alldetail',$project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
-            @endif
         </div>
     </div>
 

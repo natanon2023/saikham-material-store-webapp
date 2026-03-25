@@ -3,7 +3,6 @@
 @section('content')
 <style>
     @media print {
-        /* ... CSS เดิมของคุณแจ็กกี้ ... */
         .sidebar, .navbar, header, footer, .hide-on-print, .btn { display: none !important; }
         body { background-color: white !important; margin: 0 !important; }
         .boxmaterial { box-shadow: none !important; border: none !important; }

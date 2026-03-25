@@ -134,6 +134,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
 
     Route::prefix('project')->name('admin.projects.')->group(function(){
         Route::get('/index/{id}', [ProjectController::class, 'index'])->name('index');
+        Route::get('/admin/projects/check-technician-schedule', [ProjectController::class, 'checkTechnicianSchedule'])->name('checkSchedule');
 
         Route::get('/formpendingsurvey',[ProjectController::class,'formpendingsurvey'])->name('formpendingsurvey');
         Route::post('/pendingsurvey',[ProjectController::class,'pendingsurvey'])->name('pendingsurvey');
@@ -159,7 +160,8 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
 
         Route::get('/expensedetail/{id}',[ProjectController::class,'expensedetail'])->name('expensedetail');
 
-        Route::get('/formexpense/{id}',[ProjectController::class,'formexpense'])->name('formexpense');
+        Route::get('/formexpensetype',[ProjectController::class,'formexpensetype'])->name('formexpensetype');
+        Route::get('/projects/form-options', [ProjectController::class, 'getFormOptions'])->name('getFormOptions');
         Route::post('/createexpense',[ProjectController::class,'createexpense'])->name('createexpense');
 
         Route::get('/formprojectname',[ProjectController::class,'formprojectname'])->name('formprojectname');

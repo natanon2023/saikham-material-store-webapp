@@ -161,11 +161,24 @@ class ProjectController extends Controller
     }
 
 
-    public function formexpense($id)
+    public function formexpensetype(Request $request)
     {
-        $project = Project::find($id);
         $expens = ExpenseType::withTrashed()->get();
-        return view('admin.projects.projectexpense.formexpense', compact('project', 'expens'));
+        $backUrl  = $request->query('from') === 'create'
+                ? route('admin.projects.formpendingsurvey')
+                : route('admin.dashboard'); 
+
+        return view('admin.projects.projectexpense.formexpense', compact( 'expens','backUrl'));
+    }
+
+    public function getFormOptions()
+    {
+        return response()->json([
+            'projectnames' => ProjectName::all(['id', 'name']),
+            'customers'    => Customer::all(['id', 'first_name', 'last_name']),
+            'technicians'  => User::where('role', 'technician')->get(['id', 'name', 'last_name']),
+            'expensetypes' => ExpenseType::all(['id', 'name']),
+        ]);
     }
 
     public function createexpense(Request $request)
@@ -433,12 +446,57 @@ class ProjectController extends Controller
         return redirect()->route('admin.projects.index', $project->id)->with('success', 'บันทึกข้อมูลและอัปเดตสถานะสำเร็จ');
     }
 
-    public function formpendingsurvey()
+    public function formpendingsurvey(Request $request)
     {
         $projectname = ProjectName::all();
-        $customer = Customer::all();
-        $technician = User::where('role', 'technician')->get();
-        return view("admin.projects.pendingsurvey.formpendingsurvey", compact('customer', 'technician', 'projectname'));
+        $customer    = Customer::all();
+        $technician  = User::where('role', 'technician')->get();
+        $defaultDate = $request->query('date');
+
+        $project = null;
+        $expense  = ExpenseType::all();
+        if ($request->query('project_id')) {
+            $project = Project::with([
+                'projectexpenses.type',
+                'projectexpenses.creator'
+            ])->find($request->query('project_id'));
+        }
+
+        $activeProjects = Project::with(['projectname', 'customer', 'installers'])
+            ->where('status', '!=', 'cancelled')
+            ->get();
+
+        $schedules = [];
+        foreach($activeProjects as $pj) {
+            $customerName = $pj->customer->first_name ?? 'ไม่ระบุ';
+            $projectName = $pj->projectname->name ?? 'ไม่ระบุ';
+
+            if ($pj->survey_date && $pj->assigned_surveyor_id) {
+                $schedules[] = [
+                    'tech_id' => (string) $pj->assigned_surveyor_id,
+                    'date'    => date('Y-m-d', strtotime($pj->survey_date)),
+                    'detail'  => "[นัดสำรวจ] งาน: {$projectName} (ลูกค้า: คุณ{$customerName})"
+                ];
+            }
+
+            if ($pj->installation_start_date && $pj->installation_end_date) {
+                $start = strtotime($pj->installation_start_date);
+                $end = strtotime($pj->installation_end_date);
+                foreach($pj->installers as $installer) {
+                    for ($current = $start; $current <= $end; $current += 86400) {
+                        $schedules[] = [
+                            'tech_id' => (string) $installer->id,
+                            'date'    => date('Y-m-d', $current),
+                            'detail'  => "[นัดติดตั้ง] งาน: {$projectName} (ลูกค้า: คุณ{$customerName})"
+                        ];
+                    }
+                }
+            }
+        }
+
+        return view("admin.projects.pendingsurvey.formpendingsurvey", compact(
+            'customer', 'technician', 'projectname', 'defaultDate', 'project', 'expense', 'schedules'
+        ));
     }
 
 
@@ -447,54 +505,85 @@ class ProjectController extends Controller
     {
         $prefix = 'INV' . date('ym');
         $lastProject = Project::where('tax_invoice_number', 'LIKE', $prefix . '%')->orderBy('id', 'desc')->first();
-
         $prefixqt = 'QT' . date('ym');
         $lastProjectqt = Project::where('quotation_number', 'LIKE', $prefixqt . '%')->orderBy('id', 'desc')->first();
-
         $prefixrc = 'RC' . date('ym');
         $lastProjectrc = Project::where('receipt_number', 'LIKE', $prefixrc . '%')->orderBy('id', 'desc')->first();
 
-        if ($lastProject && $lastProject->tax_invoice_number) {
-            $lastNumber = (int) substr($lastProject->tax_invoice_number, -4);
-            $nextNumber = $lastNumber + 1;
-        } else {
-            $nextNumber = 1;
-        }
-
-        if ($lastProjectqt && $lastProjectqt->quotation_number) {
-            $lastNumber = (int) substr($lastProjectqt->quotation_number, -4);
-            $nextNumberqt = $lastNumber + 1;
-        } else {
-            $nextNumberqt = 1;
-        }
-
-        if ($lastProjectrc && $lastProjectrc->receipt_number) {
-            $lastNumber = (int) substr($lastProjectrc->receipt_number, -4);
-            $nextNumberrc = $lastNumber + 1;
-        } else {
-            $nextNumberrc = 1;
-        }
-
-
-
-        $autoTaxInvoiceNumber = $prefix . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
-        $autoprefixqt = $prefixqt . str_pad($nextNumberqt, 4, '0', STR_PAD_LEFT);
-        $autoprefixrc = $prefixrc . str_pad($nextNumberrc, 4, '0', STR_PAD_LEFT);
+        $nextNumber   = $lastProject?->tax_invoice_number   ? (int)substr($lastProject->tax_invoice_number, -4)   + 1 : 1;
+        $nextNumberqt = $lastProjectqt?->quotation_number   ? (int)substr($lastProjectqt->quotation_number, -4)   + 1 : 1;
+        $nextNumberrc = $lastProjectrc?->receipt_number     ? (int)substr($lastProjectrc->receipt_number, -4)     + 1 : 1;
 
         $project = Project::create([
-            'project_name_id' => $request->project_name_id,
-            'customer_id' => $request->customer_id,
+            'project_name_id'      => $request->project_name_id,
+            'customer_id'          => $request->customer_id,
             'assigned_surveyor_id' => $request->assigned_surveyor_id,
-            'survey_date' => $request->survey_date,
-            'note' => $request->note,
+            'survey_date'          => $request->survey_date,
+            'note'                 => $request->note,
             'labor_cost_surveying' => $request->labor_cost_surveying,
-            'tax_invoice_number' => $autoTaxInvoiceNumber,
-            'quotation_number' => $autoprefixqt,
-            'receipt_number' => $autoprefixrc,
-            'created_by' => Auth::id()
+            'tax_invoice_number'   => $prefix  . str_pad($nextNumber,   4, '0', STR_PAD_LEFT),
+            'quotation_number'     => $prefixqt . str_pad($nextNumberqt, 4, '0', STR_PAD_LEFT),
+            'receipt_number'       => $prefixrc . str_pad($nextNumberrc, 4, '0', STR_PAD_LEFT),
+            'created_by'           => Auth::id(),
         ]);
 
-        return redirect()->route('admin.projects.index', $project->id)->with('success', 'เพิ่มโครงการใหม่และนัดหมายการสำรวจหน้างานสำเร็จ');
+        foreach ($request->input('expenses', []) as $exp) {
+            if (empty($exp['expense_type_id']) || empty($exp['amount'])) continue;
+
+            ProjectExpense::create([
+                'project_id'      => $project->id,
+                'expense_type_id' => $exp['expense_type_id'],
+                'description'     => $exp['description'] ?? null,
+                'amount'          => $exp['amount'],
+                'expense_date'    => $exp['expense_date'] ?? null,
+                'created_by'      => Auth::id(),
+            ]);
+        }
+
+        return redirect()
+            ->route('admin.projects.alldetail', $project->id)
+            ->with('success', 'เพิ่มโครงการใหม่และนัดหมายการสำรวจสำเร็จ');
+    }
+
+    public function checkTechnicianSchedule(Request $request)
+    {
+        $technicianId = $request->get('technician_id');
+        $dateStr = $request->get('date');
+
+        if (!$technicianId || !$dateStr) {
+            return response()->json(['status' => 'error', 'message' => 'Missing parameters']);
+        }
+
+        $targetDate = Carbon::parse($dateStr)->format('Y-m-d');
+
+        $surveyTasks = Project::where('assigned_surveyor_id', $technicianId)
+            ->whereDate('survey_date', $targetDate)
+            ->where('status', '!=', 'cancelled')
+            ->with('projectname', 'customer')
+            ->get();
+
+        $installTasks = Project::whereHas('installers', function ($q) use ($technicianId) {
+                $q->where('user_id', $technicianId);
+            })
+            ->where('status', '!=', 'cancelled')
+            ->whereDate('installation_start_date', '<=', $targetDate)
+            ->whereDate('installation_end_date', '>=', $targetDate)
+            ->with('projectname', 'customer')
+            ->get();
+
+        $tasks = [];
+        foreach ($surveyTasks as $task) {
+            $tasks[] = "[นัดสำรวจ] งาน: {$task->projectname->name} (ลูกค้า: {$task->customer->first_name})";
+        }
+        foreach ($installTasks as $task) {
+            $tasks[] = "[นัดติดตั้ง] งาน: {$task->projectname->name} (ลูกค้า: {$task->customer->first_name})";
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'has_conflict' => count($tasks) > 0,
+            'tasks' => $tasks
+        ]);
     }
 
 
@@ -1127,15 +1216,59 @@ class ProjectController extends Controller
             'customerneed.productset.productSetName',
             'projectexpenses',
             'projectexpenses.type',
-            'projectexpenses.creator'
-
-
+            'projectexpenses.creator',
+            'installers'
         ])->find($id);
 
 
         $projectname = ProjectName::all();
         $customerall = Customer::all();
         $technician = User::where('role', 'technician')->get();
+
+        $expense = ExpenseType::all(); 
+        $surveySchedules = Project::whereNotNull('assigned_surveyor_id')
+            ->whereNotNull('survey_date')
+            ->where('id', '!=', $id)
+            ->get()
+            ->map(function ($p) {
+                return [
+                    'tech_id' => (string) $p->assigned_surveyor_id,
+                    'date' => \Carbon\Carbon::parse($p->survey_date)->format('Y-m-d')
+                ];
+            })->toArray();
+
+
+        $installSchedules = [];
+        $installProjects = Project::with('installers')
+            ->whereNotNull('installation_start_date')
+            ->where('id', '!=', $id)
+            ->get();
+
+
+        foreach ($installProjects as $proj) {
+            if ($proj->installers->isEmpty()) continue;
+
+            $start = \Carbon\Carbon::parse($proj->installation_start_date);
+            $end = $proj->installation_end_date 
+                   ? \Carbon\Carbon::parse($proj->installation_end_date) 
+                   : $start->copy();
+
+            for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
+                $dateStr = $date->format('Y-m-d');
+                foreach ($proj->installers as $installer) {
+                    $installSchedules[] = [
+                        'tech_id' => (string) $installer->id,
+                        'date'    => $dateStr
+                    ];
+                }
+            }
+        }
+
+        $schedules = array_merge($surveySchedules, $installSchedules);
+
+        
+
+        
 
 
         $satatuswaiting1 =[
@@ -1202,7 +1335,7 @@ class ProjectController extends Controller
 
 
 
-        return view('admin.projects.alldetail.detailpage', compact('project', 'customerall', 'projectname', 'technician', 'statuspayment', 'satatusopen', 'statusmaterialplanningopen','satatuswaiting','satatusonline','statusopendatework','satatuswaiting1'));
+        return view('admin.projects.alldetail.detailpage', compact('project', 'customerall', 'projectname', 'technician', 'statuspayment', 'satatusopen', 'statusmaterialplanningopen','satatuswaiting','satatusonline','statusopendatework','satatuswaiting1','expense', 'schedules'));
     }
 
     public function addautersurver(Request $request)
@@ -1360,7 +1493,7 @@ class ProjectController extends Controller
 
         ProjectPurchase::where('project_id', $project->id)->delete();
         $project->update([
-            'status' => 'pending_quotation'
+            'status' => 'surveying'
         ]);
 
         return redirect()->route('admin.projects.alldetail', $project->id)->with('success', 'ลบใบเสนอราคาเดิมเรียบร้อยแล้ว สถานะกลับสู่ "รอเสนอราคา" คุณสามารถแก้ไขข้อมูลได้ทันที');
@@ -1605,7 +1738,7 @@ class ProjectController extends Controller
             'status' => 'approved'
         ]);
 
-        return redirect()->route('admin.projects.index', $project->id)->with('success', 'ลูกค้าอนุมัติและชำระเงินแล้ว');
+        return redirect()->back()->with('success', 'ลูกค้าอนุมัติและชำระเงินแล้ว');
     }
 
     public function updatestatusmaterialplanning($id)
@@ -1678,10 +1811,10 @@ class ProjectController extends Controller
             }
 
             $project->update(['status' => 'waiting_purchase']);
-            return redirect()->route('admin.projects.index', $project->id)->with('success', 'บันทึกรายการสั่งซื้อสำเร็จ');
+            return redirect()->route('admin.projects.alldetail', $project->id)->with('success', 'บันทึกรายการสั่งซื้อสำเร็จ');
         } else {
             $project->update(['status' => 'ready_to_withdraw']);
-            return redirect()->route('admin.projects.index', $project->id)->with('success', 'วัสดุมีครบในคลังแล้ว เปลี่ยนสถานะเป็นพร้อมเบิก');
+            return redirect()->route('admin.projects.alldetail', $project->id)->with('success', 'วัสดุมีครบในคลังแล้ว เปลี่ยนสถานะเป็นพร้อมเบิก');
         }
     }
 
@@ -1693,7 +1826,7 @@ class ProjectController extends Controller
             'status' => 'ready_to_withdraw'
         ]);
 
-        return redirect()->route('admin.projects.index', $project->id)->with('success', 'พร้อมเบิกวัสดุ');
+        return redirect()->route('admin.projects.alldetail', $project->id)->with('success', 'พร้อมเบิกวัสดุ');
     }
 
 
@@ -1743,8 +1876,7 @@ class ProjectController extends Controller
             $firstPriceSummary[$qmat->material_id] = $allLots->first();
         }
 
-        return view('admin.projects.withdraw.withdrawpage',
-            compact('project', 'withdrawnSummary', 'users', 'stockSummary', 'firstPriceSummary'));
+        return view('admin.projects.withdraw.withdrawpage', compact('project', 'withdrawnSummary', 'users', 'stockSummary', 'firstPriceSummary'));
     }
 
     public function withdrawform(Request $request, $id)
@@ -1795,8 +1927,7 @@ class ProjectController extends Controller
             ];
         }
 
-        return view('admin.projects.withdraw.withdrawform',
-            compact('project', 'users', 'selectedPriceIds', 'customQtys', 'itemsToWithdraw'));
+        return view('admin.projects.withdraw.withdrawform', compact('project', 'users', 'selectedPriceIds', 'customQtys', 'itemsToWithdraw'));
     }
 
     public function withdrawstore(Request $request, $id)
@@ -1869,7 +2000,7 @@ class ProjectController extends Controller
 
         if ($allDone) {
             $project->update(['status' => 'materials_withdrawn']);
-            return redirect()->route('admin.projects.index', $project->id)->with('success', 'เบิกวัสดุครบแล้ว');
+            return redirect()->route('admin.projects.alldetail', $project->id)->with('success', 'เบิกวัสดุครบแล้ว');
         }
 
         return redirect()->route('admin.projects.withdrawpage', $project->id)->with('success', 'บันทึกการเบิกบางส่วนเรียบร้อย');
@@ -1884,12 +2015,14 @@ class ProjectController extends Controller
     {
         $project = Project::find($id);
 
-        $start = Carbon::parse($request->installation_start_date);
-        $end   = $start->copy()->addDays($project->estimated_work_days - 1);
+        $start_date = \Carbon\Carbon::parse($request->installation_start_date);
+        $days = (int)($project->estimated_work_days ?? 1);
+        $end_date = $start_date->copy()->addDays($days > 0 ? $days - 1 : 0);
+
 
         $project->update([
-            'installation_start_date'  => $start,
-            'installation_end_date'    => $end
+            'installation_start_date' => $start_date->format('Y-m-d'),
+            'installation_end_date'   => $end_date->format('Y-m-d'),
         ]);
 
         return redirect()->back()->with('success', 'อัพเดตข้อมูลสำเร็จ');
@@ -1912,14 +2045,12 @@ class ProjectController extends Controller
 
     public function assignInstalleruser(Request $request, $id)
     {
-        $exists = AssignedInstaller::where('project_id', $id)->where('user_id', $request->user_id)->exists();
+        $request->validate(['user_id' => 'required']);
+        $project = Project::findOrFail($id);
 
-        if (!$exists) {
-            AssignedInstaller::create([
-                'project_id' => $id,
-                'user_id'    => $request->user_id
-            ]);
-            return redirect()->back()->with('success', 'เพิ่มช่างติดตั้งเรียบร้อยแล้ว');
+        if (!$project->installers->contains($request->user_id)) {
+            $project->installers()->attach($request->user_id);
+            return back()->with('success', 'เพิ่มช่างติดตั้งเข้าทีมสำเร็จ');
         }
 
         return redirect()->back()->with('error', 'ช่างคนนี้ถูกเพิ่มในงานนี้ไปแล้ว');
@@ -1948,7 +2079,7 @@ class ProjectController extends Controller
             'status' => 'completed'
         ]);
 
-        return redirect()->route('admin.projects.index', $project->id)->with('success', 'อัปเดตสถานะเป็น เสร็จสมบูรณ์');
+        return redirect()->route('admin.projects.alldetail', $project->id)->with('success', 'อัปเดตสถานะเป็น เสร็จสมบูรณ์');
     }
 
     public function updatestatuscancelled($id)
@@ -1959,23 +2090,90 @@ class ProjectController extends Controller
             'status' => 'cancelled'
         ]);
 
-        return redirect()->route('admin.projects.index')->with('success', 'ยกเลิกงานเรียบร้อย');
+        return redirect()->route('admin.projects.alldetail')->with('success', 'ยกเลิกงานเรียบร้อย');
     }
 
 
     public function updateProjectPendingSurvey(Request $request, $id)
     {
+        $request->validate([
+            'homeimg' => 'nullable|image|max:10240',
+        ],[
+            'homeimg.image' => 'ไฟล์ที่อัปโหลดต้องเป็นรูปภาพเท่านั้น',
+            'homeimg.max' => 'ขนาดไฟล์รูปภาพต้องไม่เกิน 10MB',
+        ]);
+
         $project = Project::find($id);
-        $project->update([
+
+        $updateData = [
             'project_name_id'      => $request->project_name_id,
             'customer_id'          => $request->customer_id,
             'survey_date'          => $request->survey_date,
             'assigned_surveyor_id' => $request->assigned_surveyor_id,
             'labor_cost_surveying' => $request->labor_cost_surveying,
             'note'                 => $request->note,
+        ];
+
+        if ($request->has('estimated_work_days')) {
+            $updateData['estimated_work_days'] = $request->estimated_work_days;
+        }
+        if ($request->has('daily_labor_rate')) {
+            $updateData['daily_labor_rate'] = $request->daily_labor_rate;
+        }
+
+        if ($request->hasFile('homeimg')) {
+            $file = $request->file('homeimg');
+
+            $source = @imagecreatefromstring(file_get_contents($file->getRealPath()));
+            
+            if (!$source) {
+                return redirect()->back()->with('error', 'ไฟล์รูปภาพไม่รองรับหรือไฟล์เสีย กรุณาแปลงไฟล์เป็น JPG หรือ PNG ก่อนอัปโหลด');
+            }
+
+            $width  = imagesx($source);
+            $height = imagesy($source);
+
+            if ($width > 1920) {
+                $newWidth  = 1920;
+                $newHeight = (int) (($height / $width) * 1920);
+
+                $resized = imagecreatetruecolor($newWidth, $newHeight);
+                imagealphablending($resized, false);
+                imagesavealpha($resized, true);
+                imagecopyresampled($resized, $source, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+                $source = $resized;
+            }
+
+            ob_start();
+            imagejpeg($source, null, 80);
+            $updateData['homeimg'] = ob_get_clean();
+            imagedestroy($source);
+        }
+
+        $project->update($updateData);
+
+        ProjectExpense::where('project_id', $project->id)->delete();
+
+        if ($request->has('expenses') && is_array($request->expenses)) {
+            foreach ($request->expenses as $exp) {
+                if (empty($exp['expense_type_id']) || empty($exp['amount'])) continue;
+
+                ProjectExpense::create([
+                    'project_id'      => $project->id,
+                    'expense_type_id' => $exp['expense_type_id'],
+                    'description'     => $exp['description'] ?? null,
+                    'amount'          => $exp['amount'],
+                    'expense_date'    => $exp['expense_date'] ?? null,
+                    'created_by'      => Auth::id(),
+                ]);
+            }
+        }
+
+        $project->update([
+            'status' => 'surveying'
         ]);
 
-        return back()->with('success', 'แก้ไขข้อมูลงานสำเร็จ');
+        return back()->with('success', 'บันทึกข้อมูลสำเร็จ');
     }
 
 
@@ -2136,7 +2334,7 @@ class ProjectController extends Controller
                     'id'    => $pj->id . '_survey',
                     'title' => ($pj->trashed() ? " (ยกเลิก)" : ""). "[สำรวจ] " . $customerName . " - " . $projectName ,
                     'start' => date('Y-m-d', strtotime($pj->survey_date)),
-                    'url'   => route('admin.projects.index', $pj->id),
+                    'url'   => route('admin.projects.alldetail', $pj->id),
                     'backgroundColor' => $color,
                     'borderColor'     => $color,
                     'allDay'          => true,
@@ -2150,7 +2348,7 @@ class ProjectController extends Controller
                     'title' => ($pj->trashed() ? " (ยกเลิก)" : "")."[ติดตั้ง] " . $customerName . " - " . $projectName . " (" . $statusLabel . ")",
                     'start' => date('Y-m-d', strtotime($pj->installation_start_date)),
                     'end'   => date('Y-m-d', strtotime($pj->installation_end_date . ' +1 day')),
-                    'url'   => route('admin.projects.index', $pj->id),
+                    'url'   => route('admin.projects.alldetail', $pj->id),
                     'backgroundColor' => $color,
                     'borderColor'     => $color,
                     'allDay'          => true,
@@ -2296,33 +2494,33 @@ class ProjectController extends Controller
         $project = Project::find($id);
         $dealers = Dealer::all();
 
-        $groupedMaterials = Material::whereIn('id', $selected_ids)
-            ->get()
-            ->map(function ($mat) {
-                $mat->display_detail = match ($mat->material_type) {
-                    'อลูมิเนียม' => ($mat->aluminiumItem->aluminiumType->name ?? '-') . " (" . ($mat->aluminiumItem->aluminumSurfaceFinish->name ?? '-') . ")",
-                    'กระจก' => ($mat->glassItem->glassType->name ?? '-') . " (" . ($mat->glassItem->colourItem->name ?? '-') . ")",
-                    'อุปกรณ์เสริม' => $mat->accessoryItem->accessoryType->name ?? '-',
-                    'วัสดุสิ้นเปลือง' => $mat->consumableItem->consumabletype->name ?? '-',
-                    default => '-'
-                };
-                return $mat;
-            })
-            ->groupBy('material_type');
+        $selectedMaterials = Material::with([
+            'aluminiumItem.aluminiumType',
+            'aluminiumItem.aluminumSurfaceFinish',
+            'glassItem.glassType',
+            'glassItem.colourItem',
+            'accessoryItem.accessoryType',
+            'consumableItem.consumabletype'
+        ])->whereIn('id', $selected_ids)->get();
 
-        return view('admin.projects.materialplanning.restockform', compact('project', 'groupedMaterials', 'dealers'));
+        return view('admin.projects.materialplanning.restockform', compact('project', 'selectedMaterials', 'dealers'));
     }
 
     public function processrestock(Request $request, $id)
     {
-        $restockGroups = $request->input('restock_group', []);
+        // รับค่า Array 'restock' ที่ส่งมาจากหน้า View ใหม่
+        $restockData = $request->input('restock', []);
 
-        foreach ($restockGroups as $type => $data) {
-            $materialIds = $data['material_ids'] ?? [];
+        foreach ($restockData as $material_id => $rows) {
+            $material = Material::find($material_id);
+            if (!$material) continue;
 
-            foreach ($materialIds as $material_id) {
-                $material = Material::find($material_id);
-                if (!$material) continue;
+            // วนลูปตามจำนวนแถว (กรณีแอดมินกด + เพิ่มรายการสเปคอื่น)
+            foreach ($rows as $row) {
+                // ถ้าไม่ได้กรอก ร้าน, จำนวน หรือ ราคา ให้ข้ามแถวนี้ไป (ป้องกันการบันทึกข้อมูลว่าง)
+                if (empty($row['dealer_id']) || empty($row['qty']) || empty($row['price'])) {
+                    continue;
+                }
 
                 $priceColumn = null;
                 $priceItemId = null;
@@ -2330,29 +2528,29 @@ class ProjectController extends Controller
                 if ($material->material_type == 'อลูมิเนียม') {
                     $aluminiumlength = AluminiumLength::firstOrCreate([
                         'aluminium_item_id' => $material->aluminium_item_id,
-                        'length_meter' => $data['length_meter']
+                        'length_meter'      => $row['length_meter'] ?? 6 
                     ]);
                     $priceColumn = 'aluminium_length_id';
                     $priceItemId = $aluminiumlength->id;
-                    
+
                 } elseif ($material->material_type == 'กระจก') {
                     $glasssize = GlassSize::firstOrCreate([
                         'glass_item_id' => $material->glass_item_id,
-                        'width_meter' => $data['width_meter'],
-                        'length_meter' => $data['length_meter'],
-                        'thickness' => $data['thickness']
+                        'width_meter'   => $row['width_meter'] ?? 0,
+                        'length_meter'  => $row['length_meter'] ?? 0,
+                        'thickness'     => $row['thickness'] ?? 0
                     ]);
                     $priceColumn = 'glass_size_id';
                     $priceItemId = $glasssize->id;
-                    
+
                 } elseif ($material->material_type == 'อุปกรณ์เสริม') {
                     $priceColumn = 'accessory_item_id';
                     $priceItemId = $material->accessory_item_id;
-                    
+
                 } elseif ($material->material_type == 'เครื่องมือช่าง') {
                     $priceColumn = 'tool_item_id';
                     $priceItemId = $material->tool_item_id;
-                    
+
                 } elseif ($material->material_type == 'วัสดุสิ้นเปลือง') {
                     $priceColumn = 'consumable_item_id';
                     $priceItemId = $material->consumable_item_id;
@@ -2360,15 +2558,15 @@ class ProjectController extends Controller
 
                 if ($priceColumn && $priceItemId) {
                     $lotCount = Price::where($priceColumn, $priceItemId)
-                        ->where('dealer_id', $data['dealer_id'])
+                        ->where('dealer_id', $row['dealer_id'])
                         ->count();
 
                     $price = Price::create([
                         'material_id' => $material->id,
                         $priceColumn  => $priceItemId,
-                        'dealer_id'   => $data['dealer_id'],
-                        'price'       => $data['price'],
-                        'quantity'    => $data['qty'],
+                        'dealer_id'   => $row['dealer_id'],
+                        'price'       => $row['price'],
+                        'quantity'    => $row['qty'],
                         'lot'         => "ล็อตที่" . ($lotCount + 1)
                     ]);
 
@@ -2377,7 +2575,7 @@ class ProjectController extends Controller
                         'price_id'    => $price->id,
                         'user_id'     => Auth::id(),
                         'direction'   => 'in',
-                        'quantitylog'    => $data['qty'],
+                        'quantitylog' => $row['qty'],
                         'source'      => 'restock',
                     ]);
                 }
@@ -2739,7 +2937,7 @@ class ProjectController extends Controller
             'status' => 'installing'
         ]);
 
-        return redirect()->route('admin.projects.index', $project->id)->with('success', 'อัปเดตสถานะเป็น กำลังติดตั้ง');
+        return redirect()->route('admin.projects.alldetail', $project->id)->with('success', 'อัปเดตสถานะเป็น กำลังติดตั้ง');
     }
 
 
@@ -3225,7 +3423,7 @@ class ProjectController extends Controller
         ]);
 
 
-        return redirect()->route('admin.projects.index',$project->id)->with('success','ยกเลิกสถานะสำเร็จ');
+        return redirect()->route('admin.projects.alldetail',$project->id)->with('success','ยกเลิกสถานะสำเร็จ');
 
     }  
 

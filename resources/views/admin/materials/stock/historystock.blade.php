@@ -97,15 +97,15 @@
                     อลูมิเนียม -
                     {{ $log->material->aluminiumItem->aluminiumType->name }} -
                     {{ $log->material->aluminiumItem->aluminumSurfaceFinish->name }} -
-                    {{ $log->material->aluminiumItem->aluminiumLengths->length_meter.' เมตร' }} 
+                    {{ $log->price->aluminiumLength->length_meter.' เมตร' }}
                 </small>
                 @elseif ($log->material->material_type == 'กระจก')
                 <small>
                     กระจก -
                     {{ $log->material->glassItem->glassType->name }} -
                     {{ 'สี'.$log->material->glassItem->colourItem->name }} -
-                    {{ 'ขนาด(กว้าง*สูง) '.'('.$log->material->glassItem->glassSize->width_meter.'*'.$log->material->glassItem->glassSize->length_meter.')'.' ซม.' }} -
-                    {{ $log->material->glassItem->glassSize->thickness.' มิลลิเมตร' }}
+                    {{ 'ขนาด(กว้าง*สูง) '.'('.$log->price->glassSize->width_meter.'*'.$log->price->glassSize->length_meter.')'.' ซม.' }} -
+                    {{ $log->price->glassSize->thickness.' มิลลิเมตร' }}
                 </small>
 
                 @elseif ($log->material->material_type == 'อุปกรณ์เสริม')

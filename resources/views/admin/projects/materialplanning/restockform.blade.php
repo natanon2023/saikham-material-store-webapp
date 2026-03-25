@@ -1,81 +1,145 @@
 @extends('layouts.admin')
 
 @section('content')
-<div class="main-content" >
-    
+<div class="main-content">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;" class="boxmaterial">
-        <h3 style="margin: 0; color: #333;">เติมสต็อกวัสดุตามประเภทวัสดุ</h3>
-        <a href="{{ route('admin.projects.restockpage', $project->id) }}" class="btn btn-primary" >ย้อนกลับ</a>
+        <h3 style="margin: 0; color: #333;">กรอกข้อมูลสั่งซื้อวัสดุแยกตามรายการ</h3>
+        <a href="{{ route('admin.projects.restockpage', $project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
     </div>
 
     <form action="{{ route('admin.projects.processrestock', $project->id) }}" method="POST">
         @csrf
 
-        @foreach ($groupedMaterials as $type => $mats)
+        @foreach ($selectedMaterials as $mat)
+            @php
+                $matName = '-';
+                if ($mat->material_type == 'อลูมิเนียม') {
+                    $matName = ($mat->aluminiumItem->aluminiumType->name ?? '') . " (" . ($mat->aluminiumItem->aluminumSurfaceFinish->name ?? '') . ")";
+                } elseif ($mat->material_type == 'กระจก') {
+                    $matName = ($mat->glassItem->glassType->name ?? '') . " (" . ($mat->glassItem->colourItem->name ?? '') . ")";
+                } elseif ($mat->material_type == 'อุปกรณ์เสริม') {
+                    $matName = $mat->accessoryItem->accessoryType->name ?? '';
+                } elseif ($mat->material_type == 'วัสดุสิ้นเปลือง') {
+                    $matName = $mat->consumableItem->consumabletype->name ?? '';
+                }
+            @endphp
+
             <div class="boxmaterial" style="margin-bottom: 20px;">
-                
-                <div style="margin-bottom: 20px;">
-                    <h4 style="margin-bottom: 10px;">{{ $type }}</h4>
-                    <div style="background: #fff;  font-size: 0.9em; ">
-                        <b style="color:#333;">รายการที่เลือก</b>
-                        <ul style="margin: 5px 0 0 0; padding-left: 20px;">
-                            @foreach($mats as $mat)
-                                <li>
-                                    {{ $mat->display_detail }}
-                                    <input type="hidden" name="restock_group[{{ $type }}][material_ids][]" value="{{ $mat->id }}">
-                                </li>
-                            @endforeach
-                        </ul>
-                    </div>
+                <div style="margin-bottom: 15px;">
+                    <h4 style="margin: 0; color: #333; padding-bottom: 10px; border-bottom: 1px solid #eee;">
+                        [{{ $mat->material_type }}] {{ $matName }}
+                    </h4>
                 </div>
 
-                <div style="display: flex; flex-wrap: wrap; gap: 15px; background: #fff; padding: 15px;  border: 1px solid #eee;">
-                    <div style="flex: 1; min-width: 150px;">
-                        <label style="font-size: 0.85em;  display:block; margin-bottom:5px;">ร้านตัวแทนจำหน่าย</label>
-                        <select name="restock_group[{{ $type }}][dealer_id]" class="form-input" required style="width: 100%; padding: 6px;">
-                            <option value="">เลือกร้าน</option>
-                            @foreach($dealers as $dealer)
-                                <option value="{{ $dealer->id }}">{{ $dealer->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div style="width: 100px;">
-                        <label style="font-size: 0.85em;  display:block; margin-bottom:5px;">จำนวน (ต่อชิ้น)</label>
-                        <input type="number" name="restock_group[{{ $type }}][qty]" class="form-input" required min="1" style="width: 100%; padding: 6px;">
-                    </div>
-                    <div style="width: 120px;">
-                        <label style="font-size: 0.85em;  display:block; margin-bottom:5px;">ต้นทุน/หน่วย</label>
-                        <input type="number"  name="restock_group[{{ $type }}][price]" class="form-input" step="0.01" required min="0" style="width: 100%; padding: 6px;">
-                    </div>
+                <table width="100%" class="restock-table" data-material-id="{{ $mat->id }}" style="border-collapse: collapse;">
+                    <thead>
+                        <tr style="text-align: left; font-size: 13px; color: #666;">
+                            <th style="padding-bottom: 10px;">ร้านตัวแทนจำหน่าย</th>
+                            <th style="padding-bottom: 10px; width: 120px;">จำนวน</th>
+                            <th style="padding-bottom: 10px; width: 150px;">ราคา/หน่วย</th>
+                            
+                            @if($mat->material_type == 'อลูมิเนียม')
+                                <th style="padding-bottom: 10px; width: 150px;">ความยาว (ม.)</th>
+                            @elseif($mat->material_type == 'กระจก')
+                                <th style="padding-bottom: 10px; width: 120px;">กว้าง (ม.)</th>
+                                <th style="padding-bottom: 10px; width: 120px;">ยาว (ม.)</th>
+                                <th style="padding-bottom: 10px; width: 120px;">หนา (มม.)</th>
+                            @endif
+                            
+                            <th style="padding-bottom: 10px; width: 50px; text-align: center;">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody class="variation-body">
+                        <tr class="variation-row">
+                            <td style="padding-bottom: 10px; padding-right: 10px;">
+                                <select name="restock[{{ $mat->id }}][0][dealer_id]" class="form-input" required style="width: 100%;">
+                                    <option value="">เลือกร้าน</option>
+                                    @foreach($dealers as $dealer)
+                                        <option value="{{ $dealer->id }}">{{ $dealer->name }}</option>
+                                    @endforeach
+                                </select>
+                            </td>
+                            <td style="padding-bottom: 10px; padding-right: 10px;">
+                                <input type="number" name="restock[{{ $mat->id }}][0][qty]" class="form-input" min="1" required style="width: 100%;">
+                            </td>
+                            <td style="padding-bottom: 10px; padding-right: 10px;">
+                                <input type="number" name="restock[{{ $mat->id }}][0][price]" class="form-input" step="0.01" min="0" required style="width: 100%;">
+                            </td>
 
-                    @if($type == 'อลูมิเนียม')
-                        <div style="width: 120px;">
-                            <label style="font-size: 0.85em;  display:block; margin-bottom:5px;">ความยาว (ม.)</label>
-                            <input type="number" step="0.01" min="6" name="restock_group[{{ $type }}][length_meter]" class="form-input" required style="width: 100%; padding: 6px;">
-                        </div>
-                    @elseif($type == 'กระจก')
-                        <div style="width: 90px;">
-                            <label style="font-size: 0.85em;  display:block; margin-bottom:5px;">กว้าง (ม.)</label>
-                            <input type="number" min="2" step="0.01" name="restock_group[{{ $type }}][width_meter]" class="form-input" required style="width: 100%; padding: 6px;">
-                        </div>
-                        <div style="width: 90px;">
-                            <label style="font-size: 0.85em;  display:block; margin-bottom:5px;">ยาว (ม.)</label>
-                            <input type="number"  min="2" step="0.01" name="restock_group[{{ $type }}][length_meter]" class="form-input" required style="width: 100%; padding: 6px;">
-                        </div>
-                        <div style="width: 90px;">
-                            <label style="font-size: 0.85em;  display:block; margin-bottom:5px;">หนา (มม.)</label>
-                            <input type="number" step="0.1" name="restock_group[{{ $type }}][thickness]" class="form-input" required style="width: 100%; padding: 6px;">
-                        </div>
-                    @endif
+                            @if($mat->material_type == 'อลูมิเนียม')
+                                <td style="padding-bottom: 10px; padding-right: 10px;">
+                                    <input type="number" name="restock[{{ $mat->id }}][0][length_meter]" class="form-input" step="0.01" min="0.01" required style="width: 100%;">
+                                </td>
+                            @elseif($mat->material_type == 'กระจก')
+                                <td style="padding-bottom: 10px; padding-right: 10px;">
+                                    <input type="number" name="restock[{{ $mat->id }}][0][width_meter]" class="form-input" step="0.01" min="0.01" required style="width: 100%;">
+                                </td>
+                                <td style="padding-bottom: 10px; padding-right: 10px;">
+                                    <input type="number" name="restock[{{ $mat->id }}][0][length_meter]" class="form-input" step="0.01" min="0.01" required style="width: 100%;">
+                                </td>
+                                <td style="padding-bottom: 10px; padding-right: 10px;">
+                                    <input type="number" name="restock[{{ $mat->id }}][0][thickness]" class="form-input" step="0.1" min="0.1" required style="width: 100%;">
+                                </td>
+                            @endif
+
+                            <td style="padding-bottom: 10px; text-align: center;">
+                                <button type="button" class="btn-icon btn-delete btn-remove-row" style="display:none;"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div style="margin-top: 5px;">
+                    <button type="button" class="btn btn-secondary btn-add-variation" style="font-size: 12px; padding: 6px 12px;">
+                        + เพิ่มรายการสเปคอื่น
+                    </button>
                 </div>
             </div>
         @endforeach
 
-        <div style="display: flex; justify-content: flex-end;">
-            <button type="submit" class="btn btn-secondary" >
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 40px;">
+            <button type="submit" class="btn btn-secondary" style="padding: 12px 30px; font-size: 16px;">
                 บันทึกสต็อกทั้งหมด
             </button>
         </div>
     </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.btn-add-variation').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const table = this.closest('.boxmaterial').querySelector('.restock-table');
+            const tbody = table.querySelector('.variation-body');
+            const newIndex = Date.now();
+            const firstRow = tbody.querySelector('.variation-row');
+            const newRow = firstRow.cloneNode(true);
+            
+            newRow.querySelectorAll('input, select').forEach(function(input) {
+                input.value = '';
+                if (input.name) {
+                    input.name = input.name.replace(/\[\d+\](\[[a-zA-Z_]+\])$/, `[${newIndex}]$1`);
+                }
+            });
+            
+            const deleteBtn = newRow.querySelector('.btn-remove-row');
+            if(deleteBtn) {
+                deleteBtn.style.display = 'inline-block';
+            }
+            
+            tbody.appendChild(newRow);
+        });
+    });
+
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.btn-remove-row')) {
+            const row = e.target.closest('.variation-row');
+            const tbody = row.closest('.variation-body');
+            
+            if (tbody.querySelectorAll('.variation-row').length > 1) {
+                row.remove();
+            }
+        }
+    });
+});
+</script>
 @endsection

@@ -45,11 +45,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; ">
             <h3 style="margin: 0;">วางแผนวัสดุ</h3>
             <div style="display: flex; gap: 10px;">
-                @if ($project->status == 'material_planning')
-                <a href="{{ route('admin.projects.index',$project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
-                @else
                 <a href="{{ route('admin.projects.alldetail',$project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
-                @endif
 
                 <button type="button" onclick="window.print()" class="btn btn-danger" style="background-color: #00CED1; color: white; border: none;">
                     <i class="fas fa-print"></i> พิมพ์ใบสั่งซื้อวัสดุ

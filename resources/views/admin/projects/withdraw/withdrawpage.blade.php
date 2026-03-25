@@ -5,8 +5,10 @@
     @include('components.successanderror')
 
     <div class="boxmaterial" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h3 style="margin: 0;">เลือกวัสดุเพื่อเบิก</h3>
-        <a href="{{ route('admin.projects.index', $project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
+        <h3 style="margin: 0;">เลือกวัสดุเพื่อเบิก (ตามใบเสนอราคา)</h3>
+        <div>
+            <a href="{{ route('admin.projects.alldetail', $project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
+        </div>
     </div>
 
     @php
@@ -24,15 +26,15 @@
     @endphp
 
     @if($allComplete && $hasItems)
-        <div style="text-align:center; padding:30px; background:#f6fdf6; border:1px solid #cce8d4; margin-bottom:20px; border-radius:8px;">
-            <h4 style="margin:0; color:#1e8e3e;">วัสดุในโครงการนี้ถูกเบิกครบตามจำนวนแล้วทั้งหมด</h4>
+        <div style="text-align:center; padding:30px; background:#f0fdf4; border:1px solid #bbf7d0; margin-bottom:20px; border-radius:8px;">
+            <h4 style="margin:0; color:#15803d;"><i class="fas fa-check-circle"></i> วัสดุในโครงการนี้ถูกเบิกครบตามแผนที่เสนอราคาไว้แล้วทั้งหมด</h4>
         </div>
     @endif
 
     <form action="{{ route('admin.projects.withdrawform', $project->id) }}" method="POST">
         @csrf
         <div class="boxmaterial">
-            <h3 style="margin-bottom:15px;">รายการวัสดุตามใบเสนอราคา</h3>
+            <h3 style="margin-bottom:15px;">รายการวัสดุตามแผนงาน</h3>
 
             @if($quotationMats->isEmpty())
                 <p style="color:#999; text-align:center; padding:20px;">ไม่พบรายการวัสดุในใบเสนอราคา</p>
@@ -41,7 +43,7 @@
                 <thead style="background:#333; color:#fff;">
                     <tr>
                         <th width="5%"  style="text-align:center;">
-                            <input type="checkbox" id="select-all" style="transform:scale(1.2); cursor:pointer;">
+                            <input type="checkbox" id="select-all" style="transform:scale(1.2); cursor:pointer;" title="เลือกทั้งหมด">
                         </th>
                         <th width="12%" style="text-align:center;">ประเภท</th>
                         <th width="30%" style="text-align:left; padding-left:10px;">รายละเอียด</th>
@@ -74,19 +76,19 @@
                                     <input type="checkbox" name="selected_price_ids[]" value="{{ $priceRecord->id }}"
                                            class="item-checkbox" style="transform:scale(1.2); cursor:pointer;">
                                 @else
-                                    <i class="fas fa-times-circle" style="color:#d93025;"></i>
+                                    <i class="fas fa-times-circle" style="color:#d93025; font-size:1.2rem;"></i>
                                 @endif
                             </td>
                             <td align="center"><b>{{ $qmat->material_type }}</b></td>
                             <td>
                                 {{ $qmat->description }}
                                 @if($qmat->remark)
-                                    <br><small style="color:#888;">{{ $qmat->remark }}</small>
+                                    <br><small style="color:#888;">หมายเหตุ: {{ $qmat->remark }}</small>
                                 @endif
                                 @if($priceRecord)
-                                    <br><small style="color:#1e8e3e;">สต็อกรวมทุกล็อต: <b>{{ $stockQty }}</b></small>
+                                    <br><small style="color:#1e8e3e;">มีในสต็อก: <b>{{ $stockQty }}</b></small>
                                 @else
-                                    <br><small style="color:#d93025;">ไม่มีของในสต็อก</small>
+                                    <br><small style="color:#d93025;">* สินค้าหมดสต็อก</small>
                                 @endif
                             </td>
                             <td align="center">
@@ -95,7 +97,7 @@
                             <td align="center">
                                 <b>{{ $reqQty }}</b>
                                 @if($already > 0)
-                                    <br><small style="color:#999;">(เบิกแล้ว {{ $already }})</small>
+                                    <br><small style="color:#eab308;">(เบิกไปแล้ว {{ $already }})</small>
                                 @endif
                             </td>
                             <td align="center">
@@ -108,18 +110,18 @@
                                            min="1" max="{{ $maxQty }}"
                                            style="width:70px; padding:4px; text-align:center; border:1px solid #ccc; border-radius:4px;"
                                            oninput="validateQty(this)">
-                                    <br><small style="color:#888;">สูงสุด {{ $maxQty }}</small>
+                                    <br><small style="color:#888;">เบิกได้สูงสุด {{ $maxQty }}</small>
                                 @else
                                     <span style="color:#999;">-</span>
                                 @endif
                             </td>
                             <td align="center">
                                 @if($isComplete)
-                                    <span style="background:#1e8e3e; color:#fff; padding:5px 10px; border-radius:20px; font-size:0.8em;">ครบแล้ว</span>
+                                    <span style="background:#10b981; color:#fff; padding:5px 10px; border-radius:20px; font-size:0.8em; font-weight: bold;">ครบแล้ว</span>
                                 @elseif(!$canWithdraw)
-                                    <span style="background:#999; color:#fff; padding:5px 10px; border-radius:20px; font-size:0.8em;">ไม่มีของ</span>
+                                    <span style="background:#6b7280; color:#fff; padding:5px 10px; border-radius:20px; font-size:0.8em; font-weight: bold;">ไม่มีของ</span>
                                 @else
-                                    <span style="background:#d93025; color:#fff; padding:5px 10px; border-radius:20px; font-size:0.8em;">ยังไม่ครบ</span>
+                                    <span style="background:#ef4444; color:#fff; padding:5px 10px; border-radius:20px; font-size:0.8em; font-weight: bold;">เบิกได้</span>
                                 @endif
                             </td>
                         </tr>
@@ -129,7 +131,7 @@
 
             @if(!$allComplete)
                 <div style="margin-top:20px; display:flex; justify-content:flex-end;">
-                    <button type="submit" class="btn btn-secondary">ไปหน้าถัดไป</button>
+                    <button type="submit" class="btn btn-secondary" style="padding: 10px 30px; font-size: 16px;">ไปหน้ายืนยันการเบิก</button>
                 </div>
             @endif
             @endif
@@ -139,7 +141,9 @@
 
 <script>
 document.getElementById('select-all').onclick = function() {
-    document.querySelectorAll('.item-checkbox').forEach(cb => cb.checked = this.checked);
+    document.querySelectorAll('.item-checkbox').forEach(cb => {
+        if(!cb.disabled) cb.checked = this.checked;
+    });
 };
 function validateQty(input) {
     let val = parseInt(input.value) || 0;

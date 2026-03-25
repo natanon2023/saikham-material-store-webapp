@@ -6,7 +6,7 @@
 
     <div class="boxmaterial" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
         <h3 style="margin: 0;">อัปโหลดภาพหลังติดตั้งและยืนยันงานเสร็จสิ้น</h3>
-        <a href="{{ route('admin.projects.index', $project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
+        <a href="{{ route('admin.projects.alldetail', $project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
     </div>
     @if($project->customerneed->isNotEmpty() && $project->customerneed->every(fn($need) => !empty($need->imageafter)))
         <div style="margin-bottom: 20px; display: flex; justify-content: end; align-items: center;">
