@@ -32,7 +32,7 @@
                     </th>
                     <th width="10%" style="text-align: center;">รูปภาพ</th>
                     <th width="40%">ประเภท / รายละเอียด</th>
-                    <th width="15%" style="text-align: center;">จำนวนที่ต้องซื้อ</th>
+                    <th width="15%" style="text-align: center;">จำนวนที่ต้องใช้</th>
                     <th width="15%" style="text-align: center;">สต็อกปัจจุบัน</th>
                     <th width="15%" style="text-align: center;">สถานะ</th>
                 </tr>

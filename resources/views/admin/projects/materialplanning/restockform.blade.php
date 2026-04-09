@@ -3,7 +3,7 @@
 @section('content')
 <div class="main-content">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;" class="boxmaterial">
-        <h3 style="margin: 0; color: #333;">กรอกข้อมูลสั่งซื้อวัสดุแยกตามรายการ</h3>
+        <h3 style="margin: 0; color: #333;">กรอกข้อมูลเพื่อเติมสต็อกวัสดุ</h3>
         <a href="{{ route('admin.projects.restockpage', $project->id) }}" class="btn btn-primary">ย้อนกลับ</a>
     </div>
 
@@ -46,7 +46,6 @@
                                 <th style="padding-bottom: 10px; width: 120px;">หนา (มม.)</th>
                             @endif
                             
-                            <th style="padding-bottom: 10px; width: 50px; text-align: center;">จัดการ</th>
                         </tr>
                     </thead>
                     <tbody class="variation-body">
@@ -82,9 +81,6 @@
                                 </td>
                             @endif
 
-                            <td style="padding-bottom: 10px; text-align: center;">
-                                <button type="button" class="btn-icon btn-delete btn-remove-row" style="display:none;"><i class="fas fa-trash"></i></button>
-                            </td>
                         </tr>
                     </tbody>
                 </table>

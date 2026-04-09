@@ -62,8 +62,7 @@
 
                 <div class="form-group">
                     <label class="form-label">วันและเวลานัดสำรวจ <span style="color:red">*</span></label>
-                    <input type="datetime-local" name="survey_date" id="survey_date" class="form-input"
-                           value="{{ $defaultDate ? $defaultDate.'T08:00' : old('survey_date') }}" required>
+                    <input type="datetime-local" name="survey_date" id="survey_date" class="form-input" value="{{ $defaultDate ? $defaultDate.'T08:00' : old('survey_date') }}"  min="{{ now()->format('Y-m-d\TH:i') }}" required>
                 </div>
 
                 <div class="form-group">
@@ -80,8 +79,7 @@
 
                 <div class="form-group">
                     <label class="form-label">ค่าแรงช่างสำรวจ <span style="color:red">*</span></label>
-                    <input type="number" name="labor_cost_surveying" class="form-input"
-                           min="0" step="0.01" value="{{ old('labor_cost_surveying') }}" required>
+                    <input type="number" name="labor_cost_surveying" class="form-input" min="0" step="0.01" value="{{ old('labor_cost_surveying') }}" required>
                 </div>
 
                 <div class="form-group">
@@ -428,5 +426,20 @@
     });
 
 })();
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var now = new Date();
+        var pad = function(n) { return String(n).padStart(2, '0'); };
+        var minVal = now.getFullYear() + '-'
+                + pad(now.getMonth() + 1) + '-'
+                + pad(now.getDate()) + 'T'
+                + pad(now.getHours()) + ':'
+                + pad(now.getMinutes());
+        surveyInput.setAttribute('min', minVal);
+
+        loadDraft();
+        updateTechnicianOptions();
+        saveDraft();
+    });
 </script>
 @endsection

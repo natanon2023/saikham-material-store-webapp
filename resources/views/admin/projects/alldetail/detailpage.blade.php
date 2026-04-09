@@ -623,7 +623,13 @@
             <div class=" box-control">
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label class="form-label">วันเริ่มงาน (ประเมินไว้ {{ $project->estimated_work_days ?? 0 }} วัน)</label>
-                    <input type="date" name="installation_start_date" id="installation_start_date" class="form-input" value="{{ $project->installation_start_date }}" required>
+                    <input type="date" 
+                    name="installation_start_date" 
+                    id="installation_start_date" 
+                    class="form-input" 
+                    value="{{ $project->installation_start_date }}" 
+                    min="{{ $project->survey_date ? \Carbon\Carbon::parse($project->survey_date)->addDays()->format('Y-m-d') : '' }}"
+                    required>
                 </div>
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label class="form-label">วันจบงาน</label>
@@ -679,7 +685,6 @@
     </div>
     </div>
     
-    <!-- กล่อง CTA สำหรับออกใบเสนอราคา (จะแสดงและพร้อมใช้เมื่อข้อมูลครบ) -->
     <div class="boxmaterial" style="margin-top: 30px; text-align: center; padding: 30px; background: {{ $isReadyForQuotation ? '#f0fdf4' : '#fff5f5' }}; border: 1px solid {{ $isReadyForQuotation ? '#bbf7d0' : '#fecaca' }};">
         <h3 style="font-size: 20px; font-weight: bold; color: {{ $isReadyForQuotation ? '#166534' : '#991b1b' }};">ขั้นตอนต่อไป: ออกใบเสนอราคา</h3>
         
@@ -965,5 +970,26 @@
         }
         updateInstallerOptions();
     });
+    (function () {
+    var startInput = document.getElementById('installation_start_date');
+    var endInput   = document.getElementById('installation_end_date');
+    var workDays   = {{ $project->estimated_work_days ?? 0 }};
+
+    function calcEndDate() {
+        if (!startInput.value || workDays <= 0) return;
+
+        var start = new Date(startInput.value);
+        start.setDate(start.getDate() + workDays - 1);
+
+        var y = start.getFullYear();
+        var m = String(start.getMonth() + 1).padStart(2, '0');
+        var d = String(start.getDate()).padStart(2, '0');
+        endInput.value = y + '-' + m + '-' + d;
+    }
+
+    startInput.addEventListener('change', calcEndDate);
+
+    if (startInput.value) calcEndDate();
+})();
 </script>
 @endsection
